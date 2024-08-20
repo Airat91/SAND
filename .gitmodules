@@ -1,0 +1,3 @@
+[submodule "modules/DCTS"]
+	path = modules/DCTS
+	url = git@github.com:Airat91/DCTS.git
