@@ -1,13 +1,7 @@
+#include "display.h"
+#if(DISPLAY == MAX7919)
+
 #include "max7219.h"
-#include "pin_map.h"
-#include "dcts.h"
-#include "FreeRTOS.h"
-#include "cmsis_os.h"
-#include "stm32f1xx_hal_gpio.h"
-#include "stm32f1xx_hal_spi.h"
-#include "stm32f1xx_hal_rcc.h"
-#include "main.h"
-#include "string.h"
 
 #define FONT_SYMB_NMB 60
 #define DIGIT_NUM 8
@@ -260,3 +254,5 @@ max7219_symbol_t max7219_font[FONT_SYMB_NMB] = {
     {.symb = ')', .code = 0x78},
     {.symb = ']', .code = 0x78},
 };
+
+#endif // (DISPLAY == MAX7919)

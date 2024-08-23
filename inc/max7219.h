@@ -1,11 +1,19 @@
+#ifndef MAX7219_H
+#define MAX7219_H 1
+
 #include "stdint.h"
 #include "main.h"
 #include "stm32f1xx_hal.h"
 #include "stm32f1xx_hal_spi.h"
-
-#ifndef MAX7219_H
-#define MAX7219_H 1
-
+#include "pin_map.h"
+#include "dcts.h"
+#include "FreeRTOS.h"
+#include "cmsis_os.h"
+#include "stm32f1xx_hal_gpio.h"
+#include "stm32f1xx_hal_spi.h"
+#include "stm32f1xx_hal_rcc.h"
+#include "main.h"
+#include "string.h"
 /*========== TYPEDEFS ==========*/
 
 typedef struct {

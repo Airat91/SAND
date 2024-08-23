@@ -34,7 +34,6 @@
 #define MDB_RATE_0_PORT     GPIOA
 #define MDB_RATE_0_PIN      GPIO_PIN_15
 
-
 #define MDB_ADDR_6_PORT     GPIOB
 #define MDB_ADDR_6_PIN      GPIO_PIN_0
 #define MDB_ADDR_5_PORT     GPIOB

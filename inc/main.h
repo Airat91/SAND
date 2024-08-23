@@ -56,11 +56,30 @@
 #include "stdlib.h"
 #include "cmsis_os.h"
 #include "type_def.h"
-#if(MCU_LINE==STM32F103)
+#include <string.h>
+#if((MCU_DEVICE==STM32F103CB)||(MCU_DEVICE==STM32F103C8))
     #include "stm32f1xx_hal.h"
-#else
+    #include "stm32f1xx_hal_gpio.h"
+    #include "stm32f1xx_hal_iwdg.h"
+#elif(MCU_DEVICE==KP1986)
     #include
 #endif // MCU
+
+#include "dcts.h"
+#include "dcts_config.h"
+#include "pin_map.h"
+
+#include "adc_int.h"
+#include "portable.h"
+#include "am2302.h"
+#include "max7219.h"
+#include "buttons.h"
+#include "menu.h"
+#include "flash.h"
+#include "uart.h"
+#include "modbus.h"
+#include "st7735.h"
+#include "ds18b20.h"
 
 #define TIME_YIELD_THRESHOLD 100
 #define MEAS_NUM 6

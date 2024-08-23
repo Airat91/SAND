@@ -8,6 +8,9 @@
 #ifndef am2302_H_
 #define am2302_H_
 #include "stm32f1xx_hal.h"
+#include "pin_map.h"
+#include "main.h"
+#include "cmsis_os.h"
 
 /*========== TYPEDEFS ==========*/
 

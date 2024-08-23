@@ -1,8 +1,7 @@
+#include "sand_config.h"
+#if DS18B20_EN
+
 #include "ds18b20.h"
-#include "pin_map.h"
-#include "main.h"
-#include "cmsis_os.h"
-#include "dcts.h"
 
 /**
   * @defgroup ds18b20
@@ -304,3 +303,5 @@ void ds18b20_task (void const * argument){
         }
     }
 }
+
+#endif // DS18B20_EN

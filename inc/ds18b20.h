@@ -8,6 +8,10 @@
 #ifndef ds18b20_H_
 #define ds18b20_H_
 #include "stm32f1xx_hal.h"
+#include "pin_map.h"
+#include "main.h"
+#include "cmsis_os.h"
+#include "dcts.h"
 
 #define SEARCH_ROM      0xF0
 #define READ_ROM        0x33

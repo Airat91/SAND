@@ -83,7 +83,7 @@ void HardFault_Handler(void)
   while (1)
   {
     /* USER CODE BEGIN W1_HardFault_IRQn 0 */
-      HAL_GPIO_TogglePin(LED_PORT,LED_PIN);
+      HAL_GPIO_TogglePin(LED_SYS_G_PORT,LED_SYS_G_PIN);
       tick++;
       time = us_tim_get_value();
       while((cur - time) < 250000){
@@ -298,7 +298,7 @@ void EXTI9_5_IRQHandler(void) {
     }
     */
 }
-
+#if AM2302_EN
 void EXTI15_10_IRQHandler(void){
     HAL_GPIO_EXTI_IRQHandler(DATA_PIN);
     static u32 irq_time = 0;
@@ -317,6 +317,7 @@ void EXTI15_10_IRQHandler(void){
         irq_time = 0;
     }
 }
+#endif // AM2302_EN
 
 /* USER CODE END 1 */
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

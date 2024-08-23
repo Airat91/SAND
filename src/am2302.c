@@ -1,7 +1,6 @@
+#include "sand_config.h"
+#if AM2302_EN
 #include "am2302.h"
-#include "pin_map.h"
-#include "main.h"
-#include "cmsis_os.h"
 
 /**
   * @defgroup am2302
@@ -372,3 +371,4 @@ am2302_data_t am2302_get_rtc(uint8_t channel){
     return result;
 }
 
+#endif // AM2302_EN

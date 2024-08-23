@@ -3,6 +3,11 @@
 
 #include "type_def.h"
 #include "stm32f1xx_hal.h"
+#include "pin_map.h"
+#include "dcts.h"
+#include "FreeRTOS.h"
+#include "cmsis_os.h"
+#include "stm32f1xx_hal_gpio.h"
 
 /**
   * @brief list of buttons

@@ -48,26 +48,6 @@
   */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "stm32f1xx_hal.h"
-#include "stdlib.h"
-#include "cmsis_os.h"
-#include "stm32f1xx_hal_gpio.h"
-#include "stm32f1xx_hal_iwdg.h"
-#include "dcts.h"
-#include "dcts_config.h"
-#include "pin_map.h"
-#include "adc.h"
-#include "portable.h"
-#include "am2302.h"
-#include "max7219.h"
-#include "buttons.h"
-#include "menu.h"
-#include "flash.h"
-#include "uart.h"
-#include "modbus.h"
-//#include "st7735.h"
-#include <string.h>
-#include "ds18b20.h"
 
 /**
   * @defgroup MAIN
@@ -1143,7 +1123,7 @@ void uart_task(void const * argument){
         }
         if(tick == 1000/uart_task_period){
             tick = 0;
-            HAL_GPIO_TogglePin(LED_PORT,LED_PIN);
+            HAL_GPIO_TogglePin(LED_SYS_G_PORT,LED_SYS_G_PIN);
             for(uint8_t i = 0; i < MEAS_NUM; i++){
                 sprintf(string, "%s:\t%.1f(%s)\n",dcts_meas[i].name,(double)dcts_meas[i].value,dcts_meas[i].unit);
                 if(i == MEAS_NUM - 1){
@@ -1160,6 +1140,7 @@ void uart_task(void const * argument){
     }
 }
 
+#if AM2302_EN
 static void data_pin_irq_init(void){
     irq_state = IRQ_NONE;
     GPIO_InitTypeDef GPIO_InitStruct = {0};
@@ -1169,6 +1150,8 @@ static void data_pin_irq_init(void){
     HAL_GPIO_Init(DATA_PORT, &GPIO_InitStruct);
     HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 }
+
+#endif // AM2302_EN
 
 static void MX_IWDG_Init(void){
 
@@ -1460,9 +1443,9 @@ static void led_lin_init(void){
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
     GPIO_InitStruct.Pull = GPIO_PULLUP;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    GPIO_InitStruct.Pin = LED_PIN;
-    HAL_GPIO_WritePin(LED_PORT, LED_PIN, GPIO_PIN_SET);
-    HAL_GPIO_Init (LED_PORT, &GPIO_InitStruct);
+    GPIO_InitStruct.Pin = LED_SYS_G_PIN;
+    HAL_GPIO_WritePin(LED_SYS_G_PORT, LED_SYS_G_PIN, GPIO_PIN_SET);
+    HAL_GPIO_Init (LED_SYS_G_PORT, &GPIO_InitStruct);
 }
 
 void refresh_watchdog(void){

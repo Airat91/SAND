@@ -1,9 +1,7 @@
-#include "pin_map.h"
+#include "sand_config.h"
+#if BUTTONS_EN
+
 #include "buttons.h"
-#include "dcts.h"
-#include "FreeRTOS.h"
-#include "cmsis_os.h"
-#include "stm32f1xx_hal_gpio.h"
 
 
 /**
@@ -118,3 +116,5 @@ uint8_t button_clamp(button_list_t button, uint16_t time){
     }
     return result;
 }
+
+#endif // BUTTONS_EN

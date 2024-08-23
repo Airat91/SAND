@@ -1,13 +1,7 @@
-#include "adc.h"
-#include "pin_map.h"
-#include "dcts.h"
-#include "dcts_config.h"
-#include "FreeRTOS.h"
-#include "cmsis_os.h"
-#include "stm32f1xx_hal_gpio.h"
-#include "stm32f1xx_hal_rcc.h"
-#include <math.h>
-#include "main.h"
+#include "sand_config.h"
+#if ADC_INT_EN
+
+#include "adc_int.h"
 /**
   * @defgroup ADC
   * @brief work with ADC channels
@@ -119,8 +113,8 @@ void adc_gpio_init (void){
 
     GPIO_InitTypeDef GPIO_InitStruct = {0};
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
-    GPIO_InitStruct.Pin = PWR_PIN;
-    HAL_GPIO_Init(PWR_PORT, &GPIO_InitStruct);
+    GPIO_InitStruct.Pin = PWR_CTRL_PIN;
+    HAL_GPIO_Init(PWR_CTRL_PORT, &GPIO_InitStruct);
     /*GPIO_InitStruct.Pin = TMPR_PIN;
     HAL_GPIO_Init(TMPR_PORT, &GPIO_InitStruct);*/
 }
@@ -129,7 +123,7 @@ void adc_gpio_init (void){
  * @ingroup ADC
  */
 void adc_gpio_deinit (void){
-    HAL_GPIO_DeInit(PWR_PORT,PWR_PIN);
+    HAL_GPIO_DeInit(PWR_CTRL_PORT,PWR_CTRL_PIN);
     /*HAL_GPIO_DeInit(TMPR_PORT,TMPR_PIN);*/
 }
 /**
@@ -197,3 +191,5 @@ static float tmpr_calc(float vlt){
     tmpr = vlt * coef_a + coef_b;
     return tmpr;
 }
+
+#endif // ADC_INT_EN
