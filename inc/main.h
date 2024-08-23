@@ -51,11 +51,16 @@
 #ifndef __MAIN_H__
 #define __MAIN_H__
 
+#include "sand_config.h"
 #include "stdint.h"
-#include "stm32f1xx_hal.h"
 #include "stdlib.h"
 #include "cmsis_os.h"
 #include "type_def.h"
+#if(MCU_LINE==STM32F103)
+    #include "stm32f1xx_hal.h"
+#else
+    #include
+#endif // MCU
 
 #define TIME_YIELD_THRESHOLD 100
 #define MEAS_NUM 6
