@@ -1,5 +1,4 @@
 set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
-set(MCU_LINKER_SCRIPT STM32F103CBTx_FLASH.ld)
 set(MCU_ARCH cortex-m3)
 set(MCU_FLOAT_ABI soft)
 
@@ -7,6 +6,26 @@ set(CMAKE_SYSTEM_NAME Generic)
 set(CMAKE_SYSTEM_VERSION 1)
 
 set(COMMON_FLAGS "-mcpu=${MCU_ARCH} -mthumb -mthumb-interwork -ffunction-sections -fdata-sections -g -Os -fno-common -fmessage-length=0 ")
+
+#MCU_DEVICE enumeration
+set(STM32F103CB 103)
+set(STM32F103C8 1038)
+set(KP1986 1986)
+add_definitions(-DSTM32F103CB=103)
+add_definitions(-DSTM32F103C8=1038)
+add_definitions(-DKP1986=1986)
+
+#MODULE enumeration
+set(AO_2 11)
+set(DO_2 12)
+set(AI_2 13)
+set(DI_2 14)
+set(DOR_1 17)
+add_definitions(-DAO_2=11)
+add_definitions(-DDO_2=12)
+add_definitions(-DAI_2=13)
+add_definitions(-DDI_2=14)
+add_definitions(-DDOR_1=17)
 
 
 set(COMPILER_DIRECT $ENV{STMCompilerDirectory})

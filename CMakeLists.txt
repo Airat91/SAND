@@ -2,10 +2,32 @@ cmake_minimum_required(VERSION 3.6)
 set(PRJ_NAME SAND)
 include(STM32Toolchain.cmake)
 
-set(MCU_FAMILY STM32F1xx)
-set(MCU_LINE STM32F103xx)
-set(MCU_TARGET STM32F103c8t6)
-add_definitions(-DSTM32F103xB)
+#Device select
+set(MCU_DEVICE ${STM32F103CB})  # Select STM32F103CB, STM32F103C8, KP1986
+set(MODULE ${AI_2}) #Select AO_2, DO_2, AI_2, DI_2, DOR_1
+add_definitions(-DMCU_DEVICE=${MCU_DEVICE})
+add_definitions(-DMODULE=${MODULE})
+
+# MCU configuration
+if(MCU_DEVICE EQUAL ${STM32F103CB})
+    message("Use STM32F103CB")
+    set(MCU_FAMILY STM32F1xx)
+    set(MCU_LINE STM32F103xx)
+    set(MCU_TARGET STM32F103cbt6)
+    set(MCU_LINKER_SCRIPT STM32F103CBT6.ld)
+    add_definitions(-DSTM32F103xb)
+elseif(MCU_DEVICE EQUAL ${STM32F103C8})
+    message("Use STM32F103C8")
+    set(MCU_FAMILY STM32F1xx)
+    set(MCU_LINE STM32F103xx)
+    set(MCU_TARGET STM32F103c8t6)
+    set(MCU_LINKER_SCRIPT STM32F103C8T6.ld)
+    add_definitions(-DSTM32F103x8)
+elseif(MCU_DEVICE EQUAL ${KP1986})
+    message("Use KP1986")
+else()
+    message("MCU_DEVICE undefined")
+endif()
 
 project(${PRJ_NAME} C CXX ASM)
 
