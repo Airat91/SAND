@@ -13,3 +13,4 @@ CMakeLists.txt.user
 *.ioc
 *.mxproject
 *.cold
+*.autosave
