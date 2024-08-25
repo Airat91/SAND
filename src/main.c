@@ -53,7 +53,6 @@
   * @defgroup MAIN
   */
 
-#define RELEASE 1
 #define RESET_HOLD 3000
 
 typedef enum{
@@ -81,12 +80,12 @@ uint8_t irq_state = IRQ_NONE;
 void SystemClock_Config(void);
 static void MX_IWDG_Init(void);
 static void RTC_Init(void);
-static void tim2_init(void);
+static void tim_us_init(void);
 static void save_to_bkp(u8 bkp_num, u8 var);
 static void save_float_to_bkp(u8 bkp_num, float var);
 static u8 read_bkp(u8 bkp_num);
 static float read_float_bkp(u8 bkp_num, u8 sign);
-static void led_lin_init(void);
+static void gpio_init(void);
 static void data_pin_irq_init(void);
 static void save_params(void);
 static void restore_params(void);
@@ -167,42 +166,46 @@ void dcts_init (void) {
   * @retval None
   */
 int main(void){
-
     HAL_Init();
     SystemClock_Config();
-    tim2_init();
-    dcts_init();
-    restore_params();
-    led_lin_init();
-    menu_init();
+    tim_us_init();
+    //restore_params();
+    gpio_init();
+    //menu_init();
 #if RELEASE
     MX_IWDG_Init();
 #endif //RELEASE
 
+#if RTC_EN
     osThreadDef(rtc_task, rtc_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
     defaultTaskHandle = osThreadCreate(osThread(rtc_task), NULL);
-
+#endif // RTC_EN
+#if DISPLAY_EN
     osThreadDef(display_task, display_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE*2);
     displayTaskHandle = osThreadCreate(osThread(display_task), NULL);
-
-    osThreadDef(adc_task, adc_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE*2);
-    adcTaskHandle = osThreadCreate(osThread(adc_task), NULL);
-
+#endif // DISPLAY_EN
+#if ADC_INT_EN
+    osThreadDef(adc_int_task, adc_int_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE*2);
+    adcTaskHandle = osThreadCreate(osThread(adc_int_task), NULL);
+#endif // ADC_INT_EN
+#if AM2302_EN
     osThreadDef(am2302_task, am2302_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
     am2302TaskHandle = osThreadCreate(osThread(am2302_task), NULL);
-
+#endif // AM2302_EN
+#if BUTTONS_EN
     osThreadDef(buttons_task, buttons_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
     buttonsTaskHandle = osThreadCreate(osThread(buttons_task), NULL);
-
     osThreadDef(navigation_task, navigation_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
     navigationTaskHandle = osThreadCreate(osThread(navigation_task), NULL);
-
+#endif // BUTTONS_EN
+#if MODBUS_RTU_EN
     osThreadDef(uart_task, uart_task, osPriorityHigh, 0, configMINIMAL_STACK_SIZE*4);
     uartTaskHandle = osThreadCreate(osThread(uart_task), NULL);
-
+#endif // MODBUS_RTU_EN
+#if DS18B20_EN
     osThreadDef(ds18b20_task, ds18b20_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
     am2302TaskHandle = osThreadCreate(osThread(ds18b20_task), NULL);
-
+#endif // DS18B20_EN
     /* Start scheduler */
     osKernelStart();
 
@@ -1168,7 +1171,7 @@ static void MX_IWDG_Init(void){
  * @brief Init us timer
  * @ingroup MAIN
  */
-static void tim2_init(void){
+static void tim_us_init(void){
     TIM_ClockConfigTypeDef sClockSourceConfig;
     TIM_MasterConfigTypeDef sMasterConfig;
     __HAL_RCC_TIM2_CLK_ENABLE();
@@ -1437,7 +1440,7 @@ static float read_float_bkp(u8 bkp_num, u8 sign){
     return atoff(buf);
 }
 
-static void led_lin_init(void){
+static void gpio_init(void){
     __HAL_RCC_GPIOC_CLK_ENABLE();
     GPIO_InitTypeDef GPIO_InitStruct;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;

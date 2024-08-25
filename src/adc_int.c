@@ -131,7 +131,7 @@ void adc_gpio_deinit (void){
  * @param argument - none
  * @ingroup ADC
  */
-void adc_task(void const * argument){
+void adc_int_task(void const * argument){
     (void)argument;
     uint16_t pwr[ADC_BUF_SIZE];
     //uint16_t tmpr[ADC_BUF_SIZE];

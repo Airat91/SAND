@@ -5,8 +5,8 @@
 #include "stm32f1xx_hal_gpio.h"
 
 
-#if((MCU_DEVICE == STM32F103CB)||(MCU_DEVICE == STM32F103C8)&&(MODULE == AI_2))
-    #include "pin_map_stm32f103_ai_2.h"
+#if(MODULE == AI_2)
+    #include "pin_map_ai_2.h"
 #elif()
 
 #endif // MCU_DEVICE & MODULE

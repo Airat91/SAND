@@ -3,10 +3,14 @@ set(PRJ_NAME SAND)
 include(STM32Toolchain.cmake)
 
 #Device select
-set(MCU_DEVICE ${STM32F103CB})  # Select STM32F103CB, STM32F103C8, KP1986
+set(MCU_DEVICE ${STM32F103CB})  # Select STM32F103CB, STM32F103C8, K1986
 set(MODULE ${AI_2}) #Select AO_2, DO_2, AI_2, DI_2, DOR_1
+set(BOARD_VERSION 0)
+set(RELEASE 0) #0 - Debug version, 1 - Release version
 add_definitions(-DMCU_DEVICE=${MCU_DEVICE})
 add_definitions(-DMODULE=${MODULE})
+add_definitions(-DBOARD_VERSION=${BOARD_VERSION})
+add_definitions(-DRELEASE=${RELEASE})
 
 # MCU configuration
 if(MCU_DEVICE EQUAL ${STM32F103CB})
@@ -23,8 +27,8 @@ elseif(MCU_DEVICE EQUAL ${STM32F103C8})
     set(MCU_TARGET STM32F103c8t6)
     set(MCU_LINKER_SCRIPT STM32F103C8T6.ld)
     add_definitions(-DSTM32F103x8)
-elseif(MCU_DEVICE EQUAL ${KP1986})
-    message("Use KP1986")
+elseif(MCU_DEVICE EQUAL ${K1986})
+    message("Use K1986")
 else()
     message("MCU_DEVICE undefined")
 endif()

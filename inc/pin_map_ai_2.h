@@ -1,6 +1,10 @@
 #ifndef PIN_MAP_STM32F103_AI_2_H
 #define PIN_MAP_STM32F103_AI_2_H
 
+#if((MCU_DEVICE == STM32F103C8)||(MCU_DEVICE == STM32F103CB))
+// For STM device
+#if(BOARD_VERSION == 0)
+// For PCB_V0
 #define AI_MCU_0_PORT       GPIOA
 #define AI_MCU_0_PIN        GPIO_PIN_0
 #define PWR_CTRL_PORT    	GPIOA
@@ -73,5 +77,19 @@
 #define LED_CON_G_PIN       GPIO_PIN_14
 #define LED_CON_R_PORT      GPIOC
 #define LED_CON_R_PIN       GPIO_PIN_15
+
+#elif(BOARD_VERSION == 1)
+// For PCB_V1
+#endif // BOARD_VERSION
+
+#elif(MCU_DEVICE == K1986)
+// For K1986 device
+#if(BOARD_VERSION == 0)
+// For PCB_V0
+#elif(BOARD_VERSION == 1)
+// For PCB_V1
+#endif // BOARD_VERSION
+
+#endif // MCU_DEVICE
 
 #endif // PIN_MAP_STM32F103_AI_2_H

@@ -34,6 +34,6 @@ int adc_init (void);
 void adc_deinit (void);
 void adc_gpio_init (void);
 void adc_gpio_deinit (void);
-void adc_task(void const * argument);
+void adc_int_task(void const * argument);
 
 #endif // ADC_H

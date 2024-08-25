@@ -10,10 +10,10 @@ set(COMMON_FLAGS "-mcpu=${MCU_ARCH} -mthumb -mthumb-interwork -ffunction-section
 #MCU_DEVICE enumeration
 set(STM32F103CB 103)
 set(STM32F103C8 1038)
-set(KP1986 1986)
+set(K1986 1986)
 add_definitions(-DSTM32F103CB=103)
 add_definitions(-DSTM32F103C8=1038)
-add_definitions(-DKP1986=1986)
+add_definitions(-DK1986=1986)
 
 #MODULE enumeration
 set(AO_2 11)
