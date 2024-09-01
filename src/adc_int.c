@@ -113,10 +113,22 @@ void adc_gpio_init (void){
 
     GPIO_InitTypeDef GPIO_InitStruct = {0};
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+
+    //Init internal service channels
+    GPIO_InitStruct.Pin = VREF_PIN;
+    HAL_GPIO_Init(VREF_PORT, &GPIO_InitStruct);
     GPIO_InitStruct.Pin = PWR_CTRL_PIN;
     HAL_GPIO_Init(PWR_CTRL_PORT, &GPIO_InitStruct);
-    /*GPIO_InitStruct.Pin = TMPR_PIN;
-    HAL_GPIO_Init(TMPR_PORT, &GPIO_InitStruct);*/
+
+    //Init MODULE channels
+#if(MODULE == AI_2)
+    GPIO_InitStruct.Pin = AI_MCU_0_PIN;
+    HAL_GPIO_Init(AI_MCU_0_PORT, &GPIO_InitStruct);
+    GPIO_InitStruct.Pin = AI_MCU_1_PIN;
+    HAL_GPIO_Init(AI_MCU_1_PORT, &GPIO_InitStruct);
+#elif(MODULE == ANOTHER_MODULE)
+
+#endif // MODULE
 }
 /**
  * @brief Deinit ADC gpio

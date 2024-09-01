@@ -1,3 +1,6 @@
+#include "sand_config.h"
+#if ((DISPLAY_EN) && (BUTTONS_EN))
+
 #include "menu.h"
 #include "main.h"
 #include "buttons.h"
@@ -85,3 +88,291 @@ void menuChange(menuItem* NewMenu){
         selectedMenuItem = NewMenu;
     }
 }
+
+static void print_menu(void){
+    char string[50] = {0};
+    sprintf(string, selectedMenuItem->Text);
+    max7219_print_string(string);
+}
+
+static void print_value(u8 position){
+    char string[50] = {0};
+    char * p_string = string;
+    switch (selectedMenuItem->Page){
+    case DCTS_VER:
+        sprintf(string, "%s %s",selectedMenuItem->Text, dcts.dcts_ver);
+        break;
+    case V_PWR:
+        sprintf(string, "%s %.2f",selectedMenuItem->Text, (double)dcts.dcts_pwr);
+        break;
+    case MEAS_CH_0:
+        sprintf(string, "%s %.2f",selectedMenuItem->Text, (double)dcts_meas[0].value);
+        break;
+    case MEAS_CH_1:
+        sprintf(string, "%s %.2f",selectedMenuItem->Text, (double)dcts_meas[1].value);
+        break;
+    case MEAS_CH_2:
+        sprintf(string, "%s %.2f",selectedMenuItem->Text, (double)dcts_meas[2].value);
+        break;
+    case MEAS_CH_3:
+        sprintf(string, "%s %.2f",selectedMenuItem->Text, (double)dcts_meas[3].value);
+        break;
+    case MEAS_CH_4:
+        sprintf(string, "%s %.2f",selectedMenuItem->Text, (double)dcts_meas[4].value);
+        break;
+    case MEAS_CH_5:
+        sprintf(string, "%s %.2f",selectedMenuItem->Text, (double)dcts_meas[5].value);
+        break;
+    case TMPR_COEF_A:
+        if(navigation_style == MENU_NAVIGATION){
+            sprintf(string, "%s %d",selectedMenuItem->Text, config.params.tmpr_coef_a);
+            edit_val.type = VAL_UINT16;
+            edit_val.digit_max = 2;
+            edit_val.digit = 0;
+            edit_val.val_min.uint16 = 0;
+            edit_val.val_max.uint16 = 999;
+            edit_val.p_val.p_uint16 = &config.params.tmpr_coef_a;
+        }else{
+            sprintf(string, "       %d",config.params.tmpr_coef_a);
+        }
+        break;
+    case TMPR_COEF_B:
+        if(navigation_style == MENU_NAVIGATION){
+            sprintf(string, "%s %d",selectedMenuItem->Text, config.params.tmpr_coef_b);
+            edit_val.type = VAL_INT16;
+            edit_val.digit_max = 1;
+            edit_val.digit = 0;
+            edit_val.val_min.int16 = -99;
+            edit_val.val_max.int16 = 99;
+            edit_val.p_val.p_int16 = &config.params.tmpr_coef_b;
+        }else{
+            sprintf(string, "       %d",config.params.tmpr_coef_b);
+        }
+        break;
+    case MDB_ADDR:
+        if(navigation_style == MENU_NAVIGATION){
+            sprintf(string, "%s %d",selectedMenuItem->Text, config.params.mdb_address);
+            edit_val.type = VAL_UINT16;
+            edit_val.digit_max = 1;
+            edit_val.digit = 0;
+            edit_val.val_min.uint16 = 0;
+            edit_val.val_max.uint16 = 99;
+            edit_val.p_val.p_uint16 = &config.params.mdb_address;
+        }else{
+            sprintf(string, "       %d",config.params.mdb_address);
+        }
+        break;
+    case MDB_BITRATE:
+        if(navigation_style == MENU_NAVIGATION){
+            sprintf(string, "%s %d",selectedMenuItem->Text, bitrate_array[bitrate_array_pointer]*100);
+            edit_val.type = VAL_UINT16;
+            edit_val.digit_max = 0;
+            edit_val.digit = 0;
+            edit_val.val_min.uint16 = 0;
+            edit_val.val_max.uint16 = 13;
+            edit_val.p_val.p_uint16 = &bitrate_array_pointer;
+        }else{
+            sprintf(string, "       %d",bitrate_array[bitrate_array_pointer]*100);
+        }
+        config.params.mdb_bitrate = (uint16_t)bitrate_array[bitrate_array_pointer];
+        break;
+    case MDB_RECIEVED_CNT:
+        sprintf(string, "%s %d",selectedMenuItem->Text, uart_2.recieved_cnt);
+        break;
+    case MDB_SEND_CNT:
+        sprintf(string, "%s %d",selectedMenuItem->Text, uart_2.send_cnt);
+        break;
+    case MDB_OVERRUN_ERR:
+        sprintf(string, "%s %d",selectedMenuItem->Text, uart_2.overrun_err_cnt);
+        break;
+    case MDB_PARITY_ERR:
+        sprintf(string, "%s %d",selectedMenuItem->Text, uart_2.parity_err_cnt);
+        break;
+    case MDB_FRAME_ERR:
+        sprintf(string, "%s %d",selectedMenuItem->Text, uart_2.frame_err_cnt);
+        break;
+    case MDB_NOISE_ERR:
+        sprintf(string, "%s %d",selectedMenuItem->Text, uart_2.noise_err_cnt);
+        break;
+    case LIGHT_LVL:
+        if(navigation_style == MENU_NAVIGATION){
+            sprintf(string, "%s %d",selectedMenuItem->Text, config.params.light_lvl);
+            edit_val.type = VAL_UINT16;
+            edit_val.digit_max = 2;
+            edit_val.digit = 1;
+            edit_val.val_min.uint16 = 10;
+            edit_val.val_max.uint16 = 100;
+            edit_val.p_val.p_uint16 = &config.params.light_lvl;
+        }else{
+            sprintf(string, "       %d",config.params.light_lvl);
+            if(navigation_style == DIGIT_EDIT){
+                max7219_send(0x0A,(u8)(config.params.light_lvl/10));
+            }
+        }
+        break;
+    case SKIN:
+        if(navigation_style == MENU_NAVIGATION){
+            sprintf(string, "%s %s",selectedMenuItem->Text, skin_description[config.params.skin]);
+            edit_val.type = VAL_UINT16;
+            edit_val.digit_max = 0;
+            edit_val.digit = 0;
+            edit_val.val_min.uint16 = 0;
+            edit_val.val_max.uint16 = SKIN_NMB-1;
+            edit_val.p_val.p_uint16 = &config.params.skin;
+        }else{
+            sprintf(string, "       %s",skin_description[config.params.skin]);
+        }
+        break;
+    case PIN_CONFIG:
+        if(navigation_style == MENU_NAVIGATION){
+            sprintf(string, "%s %s",selectedMenuItem->Text, data_pin_description[config.params.data_pin_config]);
+            edit_val.type = VAL_UINT16;
+            edit_val.digit_max = 0;
+            edit_val.digit = 0;
+            edit_val.val_min.uint16 = 0;
+            edit_val.val_max.uint16 = 2;
+            edit_val.p_val.p_uint16 = &config.params.data_pin_config;
+        }else{
+            sprintf(string, "       %s",data_pin_description[config.params.data_pin_config]);
+        }
+        break;
+    case TIME_HOUR:
+        if(navigation_style == MENU_NAVIGATION){
+            sprintf(string, "%s  %02d",selectedMenuItem->Text, dcts.dcts_rtc.hour);
+            edit_val.type = VAL_UINT8;
+            edit_val.digit_max = 1;
+            edit_val.digit = 0;
+            edit_val.val_min.uint8 = 0;
+            edit_val.val_max.uint8 = 23;
+            edit_val.p_val.p_uint8 = &dcts.dcts_rtc.hour;
+        }else{
+            sprintf(string, "      %02d",dcts.dcts_rtc.hour);
+        }
+        break;
+    case TIME_MIN:
+        if(navigation_style == MENU_NAVIGATION){
+            sprintf(string, "%s %02d",selectedMenuItem->Text, dcts.dcts_rtc.minute);
+            edit_val.type = VAL_UINT8;
+            edit_val.digit_max = 1;
+            edit_val.digit = 0;
+            edit_val.val_min.uint8 = 0;
+            edit_val.val_max.uint8 = 59;
+            edit_val.p_val.p_uint8 = &dcts.dcts_rtc.minute;
+        }else{
+            sprintf(string, "      %02d",dcts.dcts_rtc.minute);
+        }
+        break;
+    case TIME_SEC:
+        if(navigation_style == MENU_NAVIGATION){
+            sprintf(string, "%s %02d",selectedMenuItem->Text, dcts.dcts_rtc.second);
+            edit_val.type = VAL_UINT8;
+            edit_val.digit_max = 1;
+            edit_val.digit = 0;
+            edit_val.val_min.uint8 = 0;
+            edit_val.val_max.uint8 = 59;
+            edit_val.p_val.p_uint8 = &dcts.dcts_rtc.second;
+        }else{
+            sprintf(string, "      %02d",dcts.dcts_rtc.second);
+        }
+        break;
+    case DATE_DAY:
+        if(navigation_style == MENU_NAVIGATION){
+            sprintf(string, "%s   %02d",selectedMenuItem->Text, dcts.dcts_rtc.day);
+            edit_val.type = VAL_UINT8;
+            edit_val.digit_max = 1;
+            edit_val.digit = 0;
+            edit_val.val_min.uint8 = 1;
+            edit_val.val_max.uint8 = 31;
+            edit_val.p_val.p_uint8 = &dcts.dcts_rtc.day;
+        }else{
+            sprintf(string, "      %02d",dcts.dcts_rtc.day);
+        }
+        break;
+    case DATE_MONTH:
+        if(navigation_style == MENU_NAVIGATION){
+            sprintf(string, "%s %02d",selectedMenuItem->Text, dcts.dcts_rtc.month);
+            edit_val.type = VAL_UINT8;
+            edit_val.digit_max = 1;
+            edit_val.digit = 0;
+            edit_val.val_min.uint8 = 1;
+            edit_val.val_max.uint8 = 12;
+            edit_val.p_val.p_uint8 = &dcts.dcts_rtc.month;
+        }else{
+            sprintf(string, "      %02d",dcts.dcts_rtc.month);
+        }
+        break;
+    case DATE_YEAR:
+        if(navigation_style == MENU_NAVIGATION){
+            sprintf(string, "%s %d",selectedMenuItem->Text, dcts.dcts_rtc.year);
+            edit_val.type = VAL_UINT16;
+            edit_val.digit_max = 3;
+            edit_val.digit = 0;
+            edit_val.val_min.uint16 = 2000;
+            edit_val.val_max.uint16 = 5000;
+            edit_val.p_val.p_uint16 = &dcts.dcts_rtc.year;
+        }else{
+            sprintf(string, "    %d",dcts.dcts_rtc.year);
+        }
+        break;
+    case SAVING:
+        sprintf(string, "%s",selectedMenuItem->Text);
+        max7219_print_string(string);
+        save_params();
+        //osDelay(2000);
+        menuChange(selectedMenuItem->Parent);
+        break;
+    default:
+        sprintf(string, "not found");
+    }
+
+    if(navigation_style == DIGIT_POSITION){
+        // add point before edit position
+        char string_pos[50] = {0};
+        strncpy(string_pos,string,strlen(string) - edit_val.digit - 1);
+        strcat(string_pos,".");
+        p_string += (strlen(string) - edit_val.digit - 1);
+        strcat(string_pos,p_string);
+        strcpy(string,string_pos);
+        p_string = string;
+    }else if(navigation_style == DIGIT_EDIT){
+        // blink edited digit
+        if(position%2 == 1){
+            string[strlen(string) - edit_val.digit - 1] = ' ';
+        }
+    }
+
+    // remove points len from string
+    u8 len = (u8)strlen(string) - (u8)str_smb_num(string, '.');
+    if(len > 8){
+        if(position < (len-8)){
+            p_string += position;
+        }else{
+            p_string += (len-8);
+        }
+    }
+    max7219_print_string(p_string);
+}
+
+/**
+ * @brief Get number of symbols in string
+ * @param string - string for find
+ * @param symbol - symbol for find
+ * @return number of symbols in string
+ */
+u16 str_smb_num(char* string, char symbol){
+    u16 result = 0;
+    char * p_string = string;
+    while(1){
+        p_string = strchr(p_string, symbol);
+        if(p_string){
+            result++;
+            p_string++;
+        }else{
+            break;
+        }
+    }
+
+    return result;
+}
+
+#endif // ((DISPLAY_EN) && (BUTTONS_EN))

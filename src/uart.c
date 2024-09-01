@@ -304,3 +304,52 @@ int uart_handle(void){
     }
     return result;
 }
+
+#define uart_task_period 5
+void uart_task(void const * argument){
+    (void)argument;
+    uart_init(config.params.mdb_bitrate, 8, 1, PARITY_NONE, 1000, UART_CONN_LOST_TIMEOUT);
+    uint16_t tick = 0;
+    char string[100];
+    uint32_t last_wake_time = osKernelSysTick();
+    while(1){
+        if((uart_2.state & UART_STATE_RECIEVE)&&\
+                ((uint16_t)(us_tim_get_value() - uart_2.timeout_last) > uart_2.timeout)){
+            memcpy(uart_2.buff_received, uart_2.buff_in, uart_2.in_ptr);
+            uart_2.received_len = uart_2.in_ptr;
+            uart_2.in_ptr = 0;
+            uart_2.state &= ~UART_STATE_RECIEVE;
+            uart_2.state &= ~UART_STATE_ERROR;
+            uart_2.state |= UART_STATE_IN_HANDING;
+            uart_2.conn_last = 0;
+            uart_2.recieved_cnt ++;
+
+            if(modbus_packet_for_me(uart_2.buff_received, uart_2.received_len)){
+                memcpy(uart_2.buff_out, uart_2.buff_received, uart_2.received_len);
+                uint16_t new_len = modbus_rtu_packet(uart_2.buff_out, uart_2.received_len);
+                uart_send(uart_2.buff_out, new_len);
+            }
+            uart_2.state &= ~UART_STATE_IN_HANDING;
+        }
+        if(uart_2.conn_last > uart_2.conn_lost_timeout){
+            uart_deinit();
+            uart_init(config.params.mdb_bitrate, 8, 1, PARITY_NONE, 1000, UART_CONN_LOST_TIMEOUT);
+        }
+        if(tick == 1000/uart_task_period){
+            tick = 0;
+            HAL_GPIO_TogglePin(LED_SYS_G_PORT,LED_SYS_G_PIN);
+            for(uint8_t i = 0; i < MEAS_NUM; i++){
+                sprintf(string, "%s:\t%.1f(%s)\n",dcts_meas[i].name,(double)dcts_meas[i].value,dcts_meas[i].unit);
+                if(i == MEAS_NUM - 1){
+                    strncat(string,"\n",1);
+                }
+                //uart_send(string,(uint16_t)strlen(string));
+            }
+        }else{
+            tick++;
+            uart_2.conn_last += uart_task_period;
+        }
+
+        osDelayUntil(&last_wake_time, uart_task_period);
+    }
+}

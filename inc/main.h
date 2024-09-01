@@ -56,6 +56,7 @@
 #include "stdlib.h"
 #include "cmsis_os.h"
 #include "type_def.h"
+#include "portable.h"
 #include <string.h>
 #if((MCU_DEVICE==STM32F103CB)||(MCU_DEVICE==STM32F103C8))
     #include "stm32f1xx_hal.h"
@@ -69,22 +70,75 @@
 #include "dcts_config.h"
 #include "pin_map.h"
 
+#if ADC_EXT_EN
+#include "adc_ext.h"
+#endif // ADC_EXT_EN
+
+#if ADC_INT_EN
 #include "adc_int.h"
-#include "portable.h"
-#include "am2302.h"
-#include "max7219.h"
-#include "buttons.h"
-#include "menu.h"
-#include "flash.h"
-#include "uart.h"
+#endif // ADC_INT_EN
+
+#if CAN_EN
+#include "can.h"
+#endif // CAN_EN
+
+#if MODBUS_RTU_EN
 #include "modbus.h"
-#include "st7735.h"
+#endif // MODBUS_RTU_EN
+
+#if LWIP_EN
+#include "lwip.h"
+#endif // LWIP_EN
+
+#if SLIP_EN
+#include "slip.h"
+#endif // SLIP_EN
+
+#if CHAIN_EN
+#include "chain.h"
+#endif // CHAIN_EN
+
+#if RTC_EN
+#include "rtc.h"
+#endif // RTC_EN
+
+#if TASK_MANAGER_EN
+#include "task_manager.h"
+#endif // TASK_MANAGER_EN
+
+#if DISPLAY_EN
+#include "display.h"
+#endif // DISPLAY_EN
+
+#if BUTTONS_EN
+#include "buttons.h"
+#endif // BUTTONS_EN
+
+#if AM2302_EN
+#include "am2302.h"
+#endif // AM2302_EN
+
+#if DS18B20_EN
 #include "ds18b20.h"
+#endif // DS18B20_EN
+
+#if USB_DEVICE_EN
+#include "usb_device.h"
+#endif // USB_DEVICE_EN
+
+#if FLASH_INT_EN || FLASH_EXT_EN
+#include "flash.h"
+#endif // FLASH_INT_EN || FLASH_EXT_EN
+
+#if LFS_EN
+#include "lfs.h"
+#endif // LFS_EN
 
 #define TIME_YIELD_THRESHOLD 100
 #define MEAS_NUM 6
 #define SAVED_PARAMS_SIZE 7
 #define SKIN_NMB 6
+#define DUTY_TASK_PERIOD_MS 100
 
 
 /* ########################## Assert Selection ############################## */
@@ -192,11 +246,10 @@ typedef enum{
 
 void _Error_Handler(char *, int);
 extern uint32_t us_cnt_H;
-extern RTC_HandleTypeDef hrtc;
 extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim3;
 extern IWDG_HandleTypeDef hiwdg;
-extern osThreadId defaultTaskHandle;
+extern osThreadId dutyTaskHandle;
 extern osThreadId buttonsTaskHandle;
 extern osThreadId displayTaskHandle;
 extern osThreadId menuTaskHandle;
@@ -207,15 +260,22 @@ extern osThreadId navigationTaskHandle;
 extern osThreadId uartTaskHandle;
 extern uint8_t irq_state;
 extern saved_to_flash_t config;
+extern u16 led_os_error_on_time;
+extern u16 led_os_on_time;
+extern u16 led_packet_recv_time;
+extern u16 led_packet_send_time;
 
-void display_task(void const * argument);
+void duty_task(void const * argument);
 void am2302_task(void const * argument);
-void rtc_task(void const * argument);
 void navigation_task(void const * argument);
 void uart_task(void const * argument);
 void refresh_watchdog(void);
 uint32_t uint32_pow(uint16_t x, uint8_t pow);
 u16 str_smb_num(char* string, char symbol);
+void led_os_error_on(u16 time_ms) MCU_ROOT_CODE;
+void led_os_on(u16 time_ms) MCU_ROOT_CODE;
+void led_packet_recv_on(u16 time_ms) MCU_ROOT_CODE;
+void led_packet_send_on(u16 time_ms) MCU_ROOT_CODE;
 
 uint32_t us_tim_get_value(void);
 void us_tim_delay(uint32_t us);

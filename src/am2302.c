@@ -24,6 +24,84 @@ const am2302_pin_t am2302_pin[AM2302_CH_NUM] = {
 
 /*========== FUNCTIONS ==========*/
 
+
+/**
+ * @brief am2302_task
+ * @param argument
+ */
+void am2302_task (void const * argument){
+    (void)argument;
+    am2302_init();
+    am2302_data_t data_pin;
+    uint8_t data_pin_lost_con_cnt = 0;
+    uint32_t data_pin_recieved = 0;
+    uint32_t data_pin_lost = 0;
+    data_pin_irq_init();
+    am2302_data_t data = {0};
+    refresh_watchdog();
+    osDelay(1000);
+    refresh_watchdog();
+    uint32_t last_wake_time = osKernelSysTick();
+    while(1){
+        refresh_watchdog();
+        switch (config.params.data_pin_config){
+        case DATA_PIN_EXT_AM2302:
+            data_pin = am2302_get(0);
+            taskENTER_CRITICAL();
+            if(data_pin.error == 1){
+                data_pin_lost++;
+                data_pin_lost_con_cnt++;
+                if(data_pin_lost_con_cnt > 2){
+                    dcts_meas[AM2302_H].valid = FALSE;
+                    dcts_meas[AM2302_T].valid = FALSE;
+                }
+            }else{
+                data_pin_recieved++;
+                data_pin_lost_con_cnt = 0;
+                dcts_meas[AM2302_H].value = (float)data_pin.hum/10;
+                dcts_meas[AM2302_H].valid = TRUE;
+                dcts_meas[AM2302_T].value = (float)data_pin.tmpr/10;
+                dcts_meas[AM2302_T].valid = TRUE;
+            }
+            taskEXIT_CRITICAL();
+            osDelayUntil(&last_wake_time, 3000);
+            break;
+        case DATA_PIN_CLONE_AM2302:
+            switch (irq_state) {
+            case IRQ_SEND_TMPR:
+                data.tmpr = (int16_t)(dcts_meas[TMPR].value * 10.0f);
+                data.hum = 0;
+                am2302_send(data, 0);
+                data_pin_irq_init();
+                break;
+            case IRQ_READ_RTC:
+                data = am2302_get_rtc(0);
+                if(data.error != 1){
+                    dcts.dcts_rtc.hour = (uint8_t)((data.hum & 0xFF00) >> 8);
+                    dcts.dcts_rtc.minute = (uint8_t)(data.hum & 0xFF);
+                    dcts.dcts_rtc.second = (uint8_t)((data.tmpr & 0xFF00) >> 8);
+                    RTC_set(dcts.dcts_rtc);
+                }
+                data_pin_irq_init();
+                break;
+            default:
+                taskYIELD();
+            }
+            break;
+        }
+    }
+}
+
+static void data_pin_irq_init(void){
+    irq_state = IRQ_NONE;
+    GPIO_InitTypeDef GPIO_InitStruct = {0};
+    GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
+    GPIO_InitStruct.Pin = DATA_PIN;
+    HAL_GPIO_Init(DATA_PORT, &GPIO_InitStruct);
+    HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+}
+
 /**
  * @brief Init AM2302 pins
  * @return  0 - AM2302 pins init successfull,\n

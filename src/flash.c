@@ -1,71 +1,65 @@
+#include "sand_config.h"
+#if ((FLASH_INT_EN == 1)||(FLASH_EXT_EN == 1))
 #include "flash.h"
-#include "main.h"
-#include "FreeRTOS.h"
-#include "cmsis_os.h"
-#include "stm32f1xx_hal_flash.h"
-#include "stm32f1xx_hal.h"
 
-/**
-  * @defgroup flash
-  * @brief work with flash
-  */
+/*
 
-
-/*========= GLOBAL VARIABLES ==========*/
-
-
-
-/*========== FUNCTIONS ==========*/
-
-/**
- * @brief save_to_flash
- * @param area_cnt
- * @param start_position
- * @param data
- * @return
- */
-int save_to_flash(int area_cnt, uint8_t start_position, uint16_t *data){
-    int result = 0;
-    //int area_cnt = find_free_area();
-    //uint64_t * pbuf = (void*)data;
-    uint32_t area_addr = FLASH_SAVE_PAGE_ADDRESS + (uint32_t)area_cnt*SAVE_AREA_SIZE;;
-    uint32_t cur_addr = area_addr + start_position*2U;
-
-    if(0){//area_cnt < find_free_area()){
-        result = -1;
-    }else{
+static void save_params(void){
+    int area_cnt = find_free_area();
+    if(area_cnt < 0){
+        uint32_t erase_error = 0;
+        FLASH_EraseInitTypeDef flash_erase = {0};
+        flash_erase.TypeErase = FLASH_TYPEERASE_PAGES;
+        flash_erase.NbPages = 1;
+        flash_erase.PageAddress = FLASH_SAVE_PAGE_ADDRESS;
         HAL_FLASH_Unlock();
-        if(HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD, cur_addr, *data) != HAL_OK){
-            result = -2;
-        }
+        HAL_FLASHEx_Erase(&flash_erase, &erase_error);
         HAL_FLASH_Lock();
+        area_cnt = 0;
     }
-
-    return result;
+    for(uint8_t i = 0; i < SAVED_PARAMS_SIZE; i ++){
+        save_to_flash(area_cnt, i, &config.word[i]);
+    }
+    // rewrite new params
+    dcts.dcts_address = (uint8_t)config.params.mdb_address;
+    uart_deinit();
+    uart_init(config.params.mdb_bitrate, 8, 1, PARITY_NONE, 10000, UART_CONN_LOST_TIMEOUT);
+    //delay for show message
+    osDelay(2000);
 }
 
-/**
- * @brief Find free area in page to save
- * @return  -1 - page is fill, \n
- *          area number
- * @ingroup flash
- */
-int find_free_area(void){
-    int result = -1;
-    uint8_t area_cnt = 0;
-    uint8_t read = 0xFF;
-    uint8_t *addr = (uint8_t*)FLASH_SAVE_PAGE_ADDRESS;
-    for(area_cnt = 0; area_cnt < SAVE_AREA_NMB; area_cnt++){
-        read = 0xFF;
-        for(uint8_t i = 0; i < SAVE_AREA_SIZE; i++){
-            read &= *addr;
+static void restore_params(void){
+    int area_cnt = find_free_area();
+    if(area_cnt != 0){
+        if(area_cnt == -1){
+            // page is fill, actual values in last area
+            area_cnt = SAVE_AREA_NMB - 1;
+        }else{
+            // set last filled area number
+            area_cnt--;
+        }
+        uint16_t *addr;
+        addr = (uint32_t)(FLASH_SAVE_PAGE_ADDRESS + area_cnt*SAVE_AREA_SIZE);
+        for(uint8_t i = 0; i < SAVED_PARAMS_SIZE; i++){
+            config.word[i] = *addr;
             addr++;
         }
-        if(read == 0xFF){
-            result = area_cnt;
+    }else{
+        //init default values if saved params not found
+        config.params.mdb_address = dcts.dcts_address;
+        config.params.mdb_bitrate = BITRATE_115200;
+        config.params.light_lvl = 20;
+        config.params.skin = HIGH_T_AND_TIME;
+        config.params.data_pin_config = DATA_PIN_DISABLE;
+        config.params.tmpr_coef_a = 100;
+        config.params.tmpr_coef_b = 0;
+    }
+    for(bitrate_array_pointer = 0; bitrate_array_pointer < 14; bitrate_array_pointer++){
+        if(bitrate_array[bitrate_array_pointer] == config.params.mdb_bitrate){
             break;
         }
     }
-
-    return result;
 }
+*/
+
+#endif // ((FLASH_INT_EN == 1)||(FLASH_EXT_EN == 1))
