@@ -1,3 +1,4 @@
+.idea/
 build/
 cmake_arm/
 CMakeLists.txt.user

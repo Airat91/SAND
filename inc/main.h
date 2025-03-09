@@ -58,7 +58,7 @@
 #include "type_def.h"
 
 #define TIME_YIELD_THRESHOLD 100
-#define MEAS_NUM 6
+//#define MEAS_NUM 6
 #define SAVED_PARAMS_SIZE 7
 #define SKIN_NMB 6
 

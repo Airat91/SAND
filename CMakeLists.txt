@@ -30,6 +30,7 @@ file(GLOB FREERTOS_HEADERS  freertos/inc/*.h)
 file(GLOB FREERTOS_HEADERS  ${FREERTOS_HEADERS} freertos/inc/portable/*.h)
 file(GLOB FREERTOS_HEADERS  ${FREERTOS_HEADERS} freertos/cmsis_os/*.h)
 #freertos source and headers files END
+
 #2.check stm_hal
 file(GLOB HAL_SOURCES Drivers/${MCU_FAMILY}_HAL_DRIVER/Src/*.c)
 file(GLOB STM32F1_SYSTEM Drivers/CMSIS/Device/ST/${MCU_FAMILY}/Source/Templates/system_${MCU_FAMILY}.c)
