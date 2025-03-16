@@ -54,6 +54,9 @@ class Project():
             "sofi_reg_py",
         ]
         self.was_changed_list = []      #list of files for generate
+        self.sofi_properties = {        #list of sofi_prop_xxx_t structs
+            "prop_name":    [],         #list of property names
+        }
 
         #read version
         repo = Repo(self.path["project_path"])
@@ -87,9 +90,8 @@ class Project():
         else:
             # tags not found so set version to 0.0.0
             self.version = [0, 0, 0]
-            print(
-                Fore.YELLOW + Style.BRIGHT + "WARNING: Don't found tags in project's git repository.\n\tPlease check it by 'git pull origin --tags' command.\n\tAt now version resets to: {}.{}.{}".format(
-                    self.version[0], self.version[1], self.version[2]))
+            print(Fore.YELLOW + Style.BRIGHT + "WARNING: Don't found tags in project's git repository.\n\tPlease check it"
+                                             " by 'git pull origin --tags' command.\n\tAt now version resets to: {}.{}.{}".format(                    self.version[0], self.version[1], self.version[2]))
         self.version_str = "{"+"{}, {}, {}".format(self.version[0], self.version[1], self.version[2])+"}"
 
     def print_new_errors(self):
@@ -163,12 +165,29 @@ def main():
             for file_name in PROJECT.generated_list:
                 if hash_calc(PROJECT.path[file_name]) != hash_data[file_name]:
                     PROJECT.was_changed_list.append(file_name)
-            print("Files {} was changed".format(PROJECT.was_changed_list))
+            if len(PROJECT.was_changed_list) > 0:
+                print("Files {} was changed".format(PROJECT.was_changed_list))
 
-        #4.3 If sofi_reg.py changed rewrite sofi_reg.h
+        #4.3 If sofi_reg.py in changed list
         if "sofi_reg_py" in PROJECT.was_changed_list:
-            sofi_reg_py_processing(PROJECT)
-            # Rewrite hash
+            # Rewrite hash for sofi_reg.py
+            hash_json = open(PROJECT.path["hash_json"], "r", encoding='UTF-8')
+            hash_data = json.load(hash_json)
+            hash_data["sofi_reg_py"] = hash_calc(PROJECT.path["sofi_reg_py"])
+            hash_json = open(PROJECT.path["hash_json"], "w", encoding='UTF-8')
+            json.dump(hash_data, hash_json, indent=4)
+            hash_json.close()
+            
+            # Add sofi_reg.h to changed list
+            if "sofi_reg_h" not in PROJECT.was_changed_list:
+                PROJECT.was_changed_list.append("sofi_reg_h")
+            
+        # 4.4 If sofi_reg.h in changed list
+        if "sofi_reg_h" in PROJECT.was_changed_list:
+            sofi_reg_h_processing(PROJECT)
+            # Rewrite hash for sofi_reg.h
+            hash_json = open(PROJECT.path["hash_json"], "r", encoding='UTF-8')
+            hash_data = json.load(hash_json)
             hash_data["sofi_reg_h"] = hash_calc(PROJECT.path["sofi_reg_h"])
             hash_json = open(PROJECT.path["hash_json"], "w", encoding='UTF-8')
             json.dump(hash_data, hash_json, indent=4)
@@ -275,7 +294,26 @@ def check_generator_descriptions(line):
     else:
         return "none"
 
-def sofi_reg_py_processing(Proj):
+def sofi_reg_h_processing(Proj):
+    # Insert sofi_prop_xxx_t structs from sofi_reg.py to sofi_reg.h
+    # 1 Read sofi_reg.py and find structs
+    import sofi_reg
+
+    for prop_name in sofi_reg.sofi_prop_list:
+        property = sofi_reg.sofi_prop_list[prop_name]
+        if "header" in property:
+            if property["header"]["type"] != "sofi_header_t":
+                print(Fore.YELLOW + Style.BRIGHT + "WARNING: generator/sofi_reg.py: '{}' header is '{}' (expected "
+                                                   "'sofi_header_t')\n".format(prop_name, property["header"]["type"]))
+            else:
+                Proj.sofi_properties["prop_name"].append(prop_name)
+                Proj.sofi_properties[prop_name] = property
+        else:
+            Proj.errors["err_msg"].append("generator/sofi_reg.py: '{}' haven't header".format(prop_name))
+    if len(Proj.errors["err_msg"]) > 0:
+        Proj.print_new_errors()
+        quit("Generator breaked")
+
     file_name = "sofi_reg_h"
     file = open(Proj.path[file_name], "r", encoding='UTF-8')
     text_lines = file.readlines()
@@ -310,7 +348,47 @@ def sofi_reg_py_processing(Proj):
         # add sofi_properties to buffer for not corrupting file if errors
         buffer = []
         try:
-            buffer.append("// This part of file generated automatically, don't change it\n")
+            buffer.append("// This part of file generated automatically, don't change it\n\n")
+            # write sofi_prop enumeration
+            buffer.append("typedef enum{\n")
+            for prop_name in Proj.sofi_properties["prop_name"]:
+                buffer.append("\t{},\n".format(prop_name.replace("_t","").upper()))
+            buffer.append("}sofi_prop_enum_t;\n\n")
+
+            # calc words len for align text
+            max_spaces = [0,0]
+            for param in sofi_reg.sofi_header_t:
+                if len(sofi_reg.sofi_header_t[param]["type"]) > max_spaces[0]:
+                    max_spaces[0] = len(sofi_reg.sofi_header_t[param]["type"])
+                if len(param) > max_spaces[1]:
+                    max_spaces[1] = len(param)
+            for prop_name in Proj.sofi_properties["prop_name"]:
+                property = Proj.sofi_properties[prop_name]
+                for param in property:
+                    if len(property[param]["type"]) > max_spaces[0]:
+                        max_spaces[0] = len(property[param]["type"])
+                    if len(param) > max_spaces[1]:
+                        max_spaces[1] = len(param)
+
+            # write header to buffer
+            buffer.append("typedef struct{\n")
+            for param in sofi_reg.sofi_header_t:
+                space_0 = " "*(max_spaces[0] - len(sofi_reg.sofi_header_t[param]["type"]) + 1)
+                space_1 = " "*(max_spaces[1] - len(param) + 1)
+                buffer.append("\t{}{}{};{}// {}\n".format(sofi_reg.sofi_header_t[param]["type"], space_0, param,
+                                                          space_1, sofi_reg.sofi_header_t[param]["comment"]))
+            buffer.append("}sofi_header_t;\n\n")
+
+            # write sofi_prop_t to buffer
+            for prop_name in Proj.sofi_properties["prop_name"]:
+                property = Proj.sofi_properties[prop_name]
+                buffer.append("typedef struct{\n")
+                for param in property:
+                    space_0 = " "*(max_spaces[0] - len(property[param]["type"]) + 1)
+                    space_1 = " "*(max_spaces[1] - len(param) + 1)
+                    buffer.append("\t{}{}{};{}// {}\n".format(property[param]["type"], space_0, param,
+                                                              space_1, property[param]["comment"]))
+                buffer.append("}"+"{};\n\n".format(prop_name))
         except:
             Proj.errors["err_msg"].append("Error during adding data to " + file_name)
 
@@ -332,6 +410,9 @@ def sofi_reg_py_processing(Proj):
             file.writelines(text_lines[line_index])
             line_index += 1
         file.close()
+    if len(Proj.errors["err_msg"]) > 0:
+        Proj.print_new_errors()
+        quit("Generator breaked")
 
 if __name__ == "__main__":
     main()
