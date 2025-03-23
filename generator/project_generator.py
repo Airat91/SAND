@@ -14,6 +14,8 @@ import json
 import math
 import colorama
 from colorama import Fore, Back, Style, init
+from pkg_resources import file_ns_handler
+import file_handler as handler
 init(autoreset=True)
 
 GENERATOR = {
@@ -184,7 +186,7 @@ def main():
             
         # 4.4 If sofi_reg.h in changed list
         if "sofi_reg_h" in PROJECT.was_changed_list:
-            sofi_reg_h_processing(PROJECT)
+            handler.sofi_reg_h_processing(PROJECT)
             # Rewrite hash for sofi_reg.h
             hash_json = open(PROJECT.path["hash_json"], "r", encoding='UTF-8')
             hash_data = json.load(hash_json)
@@ -294,125 +296,7 @@ def check_generator_descriptions(line):
     else:
         return "none"
 
-def sofi_reg_h_processing(Proj):
-    # Insert sofi_prop_xxx_t structs from sofi_reg.py to sofi_reg.h
-    # 1 Read sofi_reg.py and find structs
-    import sofi_reg
 
-    for prop_name in sofi_reg.sofi_prop_list:
-        property = sofi_reg.sofi_prop_list[prop_name]
-        if "header" in property:
-            if property["header"]["type"] != "sofi_header_t":
-                print(Fore.YELLOW + Style.BRIGHT + "WARNING: generator/sofi_reg.py: '{}' header is '{}' (expected "
-                                                   "'sofi_header_t')\n".format(prop_name, property["header"]["type"]))
-            else:
-                Proj.sofi_properties["prop_name"].append(prop_name)
-                Proj.sofi_properties[prop_name] = property
-        else:
-            Proj.errors["err_msg"].append("generator/sofi_reg.py: '{}' haven't header".format(prop_name))
-    if len(Proj.errors["err_msg"]) > 0:
-        Proj.print_new_errors()
-        quit("Generator breaked")
-
-    file_name = "sofi_reg_h"
-    file = open(Proj.path[file_name], "r", encoding='UTF-8')
-    text_lines = file.readlines()
-    file.close()
-    # find start of regs_description struct
-    line_index = 0
-    start_insert = 0
-    end_insert = 0
-    generator_insertion_find = False
-    while line_index < len(text_lines) and generator_insertion_find == False:
-        line = text_lines[line_index]
-        generator_marker = check_generator_descriptions(text_lines[line_index])
-        if generator_marker != "none":
-            # We found generator marker
-            if (type(generator_marker) == dict and generator_marker["msg"] == "sofi_properties" and
-                    generator_marker["action"] == "insert_start"):
-                # We found correct generator_marker. Lets find end of struct
-                start_insert = line_index
-                end_insert = line_index + 1
-                generator_marker = check_generator_descriptions(text_lines[end_insert])
-                while generator_marker == "none" and end_insert < len(text_lines):
-                    generator_marker = check_generator_descriptions(text_lines[end_insert])
-                    end_insert += 1
-                    if (type(generator_marker) == dict and generator_marker["msg"] == "sofi_properties" and
-                            generator_marker["action"] == "insert_end"):
-                        # We found end of regs_description struct
-                        generator_insertion_find = True
-        line_index += 1
-    if generator_insertion_find == False:
-        Proj.errors["err_msg"].append("Don't found #generator_message in " + file_name)
-    else:
-        # add sofi_properties to buffer for not corrupting file if errors
-        buffer = []
-        try:
-            buffer.append("// This part of file generated automatically, don't change it\n\n")
-            # write sofi_prop enumeration
-            buffer.append("typedef enum{\n")
-            for prop_name in Proj.sofi_properties["prop_name"]:
-                buffer.append("\t{},\n".format(prop_name.replace("_t","").upper()))
-            buffer.append("}sofi_prop_enum_t;\n\n")
-
-            # calc words len for align text
-            max_spaces = [0,0]
-            for param in sofi_reg.sofi_header_t:
-                if len(sofi_reg.sofi_header_t[param]["type"]) > max_spaces[0]:
-                    max_spaces[0] = len(sofi_reg.sofi_header_t[param]["type"])
-                if len(param) > max_spaces[1]:
-                    max_spaces[1] = len(param)
-            for prop_name in Proj.sofi_properties["prop_name"]:
-                property = Proj.sofi_properties[prop_name]
-                for param in property:
-                    if len(property[param]["type"]) > max_spaces[0]:
-                        max_spaces[0] = len(property[param]["type"])
-                    if len(param) > max_spaces[1]:
-                        max_spaces[1] = len(param)
-
-            # write header to buffer
-            buffer.append("typedef struct{\n")
-            for param in sofi_reg.sofi_header_t:
-                space_0 = " "*(max_spaces[0] - len(sofi_reg.sofi_header_t[param]["type"]) + 1)
-                space_1 = " "*(max_spaces[1] - len(param) + 1)
-                buffer.append("\t{}{}{};{}// {}\n".format(sofi_reg.sofi_header_t[param]["type"], space_0, param,
-                                                          space_1, sofi_reg.sofi_header_t[param]["comment"]))
-            buffer.append("}sofi_header_t;\n\n")
-
-            # write sofi_prop_t to buffer
-            for prop_name in Proj.sofi_properties["prop_name"]:
-                property = Proj.sofi_properties[prop_name]
-                buffer.append("typedef struct{\n")
-                for param in property:
-                    space_0 = " "*(max_spaces[0] - len(property[param]["type"]) + 1)
-                    space_1 = " "*(max_spaces[1] - len(param) + 1)
-                    buffer.append("\t{}{}{};{}// {}\n".format(property[param]["type"], space_0, param,
-                                                              space_1, property[param]["comment"]))
-                buffer.append("}"+"{};\n\n".format(prop_name))
-        except:
-            Proj.errors["err_msg"].append("Error during adding data to " + file_name)
-
-        # rewrite sofi_reg.h file with new insertion from generator
-        file = open(Proj.path[file_name], 'w', encoding='UTF-8')
-        line_index = 0
-        # Write file before insertion
-        while line_index <= start_insert:
-            file.writelines(text_lines[line_index])
-            line_index += 1
-        line_index -= 1
-        # Write insertion
-        if len(buffer) > 0:
-            for line in buffer:
-                file.writelines(line)
-        # Write file afer insertion
-        line_index = end_insert - 1
-        while line_index < len(text_lines):
-            file.writelines(text_lines[line_index])
-            line_index += 1
-        file.close()
-    if len(Proj.errors["err_msg"]) > 0:
-        Proj.print_new_errors()
-        quit("Generator breaked")
 
 if __name__ == "__main__":
     main()

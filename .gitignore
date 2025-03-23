@@ -3,6 +3,7 @@ build/
 cmake_arm/
 CMakeLists.txt.user
 generator/hash.json
+generator/__pycache__
 *.a
 *.*-pre1
 *.bin
