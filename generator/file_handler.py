@@ -139,3 +139,12 @@ def sofi_reg_h_processing(Proj):
     if len(Proj.errors["err_msg"]) > 0:
         Proj.print_new_errors()
         quit("Generator breaked")
+
+def reg_map_module_xls_processing(Proj):
+    return True
+
+def regs_module_h_processing(Proj):
+    return True
+
+def regs_module_c_processing(Proj):
+    return True

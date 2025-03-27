@@ -28,13 +28,20 @@ GENERATOR = {
     "type_module": ["ai","ao","di","do","do_16","multi","bric","all","do_r_16","di_n_16","do_24", "comb_22"],
     "name": "",
 }
+DEVICE = {
+    "sand_ai"   : {
+        "device_type"   : 3,
+        "device_name"   : "SAND_AI",
+    }
+}
 
 compilation_max_len = 20    #max length of compilation info string
 __description__ = 'Add build info into project and rename output HEX-file'
 
 class Project():
-    def __init__(self, project_path):
-        name = "",
+    def __init__(self, project_path, module_name):
+        self.name = module_name.upper(),
+        self.module = module_name,
         self.path = {                   #path of files
             "project_path"              : project_path,
             "sofi_reg_h"                : project_path + "\\inc\\sofi_reg.h",
@@ -43,6 +50,9 @@ class Project():
             "output_hex"                : project_path + "\\build\\SAND.hex",
             "output_hex_dir"            : project_path + "\\build\\",
             "hash_json"                 : project_path + "\\generator\hash.json",
+            "regs_module_h"             : project_path + "\\inc\\regs_{}.h".format(module_name),
+            "regs_module_c"             : project_path + "\\src\\regs_{}.c".format(module_name),
+            "reg_map_{}_xls".format(module_name)    : project_path + "\\generator\\input\\reg_maps\\reg_map_{}.xlsx".format(module_name),
         }
         self.version = []               #version
         self.version_str = ""           #version like string
@@ -54,11 +64,15 @@ class Project():
         self.generated_list = [         #list of generate files
             "sofi_reg_h",
             "sofi_reg_py",
+            "reg_map_{}_xls".format(module_name),
+            "regs_module_h",
+            "regs_module_c",
         ]
         self.was_changed_list = []      #list of files for generate
         self.sofi_properties = {        #list of sofi_prop_xxx_t structs
             "prop_name":    [],         #list of property names
         }
+        self.struct_list = []           #List of structs from reg_map_module_xls
 
         #read version
         repo = Repo(self.path["project_path"])
@@ -123,12 +137,22 @@ def main():
                         dest='generate_force',
                         default=False,
                         help='rewrite all generated files')
+    parser.add_argument('-m', '--module',
+                        required=True,
+                        dest='module',
+                        default=False,
+                        help='type of module')
     args = parser.parse_args()
 
+    if args.module not in DEVICE:
+        quit(Fore.RED + Style.BRIGHT + "Module \"{}\" is unknown.\nPlease select module from list: {}".format(args.module, list(DEVICE)))
+
     #2. Read repo information
-    print("Adding compilation info to project...")
-    PROJECT = Project(os.path.abspath(__file__).replace("generator\project_generator.py",""))
+    PROJECT = Project(os.path.abspath(__file__).replace("generator\project_generator.py",""), args.module)
     #print("Project version; {}.{}.{}".format(PROJECT.version[0], PROJECT.version[1], PROJECT.version[2]))
+    PROJECT.name = args.module.upper()
+    PROJECT.module = args.module
+    print("Project \"{}\"".format(PROJECT.name))
     print("Compilation info string: {}".format(PROJECT.compiled))
 
     #3. Check errors
@@ -187,10 +211,70 @@ def main():
         # 4.4 If sofi_reg.h in changed list
         if "sofi_reg_h" in PROJECT.was_changed_list:
             handler.sofi_reg_h_processing(PROJECT)
-            # Rewrite hash for sofi_reg.h
+            if PROJECT.errors["err_cnt"] > 0:
+                PROJECT.print_all_errors()
+                quit("Generator breaked")
+            # Rewrite hash for sofi_reg_h
             hash_json = open(PROJECT.path["hash_json"], "r", encoding='UTF-8')
             hash_data = json.load(hash_json)
             hash_data["sofi_reg_h"] = hash_calc(PROJECT.path["sofi_reg_h"])
+            hash_json = open(PROJECT.path["hash_json"], "w", encoding='UTF-8')
+            json.dump(hash_data, hash_json, indent=4)
+            hash_json.close()
+
+        #4.5 If reg_map_module_xls in changed list
+        reg_map_module_xls = "reg_map_{}_xls".format(PROJECT.module)
+        if reg_map_module_xls in PROJECT.was_changed_list:
+            # Check reg_map_module_xls correction and read structs to PROJECT
+            handler.reg_map_module_xls_processing(PROJECT)
+            if PROJECT.errors["err_cnt"] > 0:
+                PROJECT.print_all_errors()
+                quit("Generator breaked")
+            # Rewrite hash for sofi_reg_py
+            hash_json = open(PROJECT.path["hash_json"], "r", encoding='UTF-8')
+            hash_data = json.load(hash_json)
+            hash_data[reg_map_module_xls] = hash_calc(PROJECT.path[reg_map_module_xls])
+            hash_json = open(PROJECT.path["hash_json"], "w", encoding='UTF-8')
+            json.dump(hash_data, hash_json, indent=4)
+            hash_json.close()
+
+            # Add regs_module_h to changed list
+            if "regs_module_h" not in PROJECT.was_changed_list:
+                PROJECT.was_changed_list.append("regs_module_h")
+
+        #4.6 If regs_module_h in changed list
+        if "regs_module_h" in PROJECT.was_changed_list:
+            if len(PROJECT.struct_list) == 0:
+                # Read structs from reg_map_module_xls to PROJECT
+                handler.reg_map_module_xls_processing(PROJECT)
+            # Fill regs_module_h by structs from reg_map_module_xls
+            handler.regs_module_h_processing(PROJECT)
+            if PROJECT.errors["err_cnt"] > 0:
+                PROJECT.print_all_errors()
+                quit("Generator breaked")
+            # Rewrite hash for regs_module_h
+            hash_json = open(PROJECT.path["hash_json"], "r", encoding='UTF-8')
+            hash_data = json.load(hash_json)
+            hash_data["regs_module_h"] = hash_calc(PROJECT.path["regs_module_h"])
+            hash_json = open(PROJECT.path["hash_json"], "w", encoding='UTF-8')
+            json.dump(hash_data, hash_json, indent=4)
+            hash_json.close()
+
+            # Add regs_module_c to changed list
+            if "regs_module_c" not in PROJECT.was_changed_list:
+                PROJECT.was_changed_list.append("regs_module_c")
+
+        #4.7 If regs_module_c in changed list
+        if "regs_module_c" in PROJECT.was_changed_list:
+            # Fill regs_module_c by declarations
+            handler.regs_module_c_processing(PROJECT)
+            if PROJECT.errors["err_cnt"] > 0:
+                PROJECT.print_all_errors()
+                quit("Generator breaked")
+            # Rewrite hash for regs_module_c
+            hash_json = open(PROJECT.path["hash_json"], "r", encoding='UTF-8')
+            hash_data = json.load(hash_json)
+            hash_data["regs_module_c"] = hash_calc(PROJECT.path["regs_module_c"])
             hash_json = open(PROJECT.path["hash_json"], "w", encoding='UTF-8')
             json.dump(hash_data, hash_json, indent=4)
             hash_json.close()
