@@ -1,11 +1,13 @@
 import project_generator as generator
 import colorama
 from colorama import Fore, Back, Style, init
+import openpyxl
+import sofi_reg
+import copy
 
 def sofi_reg_h_processing(Proj):
     # Insert sofi_prop_xxx_t structs from sofi_reg.py to sofi_reg.h
     # 1 Read sofi_reg.py and find structs
-    import sofi_reg
 
     for prop_name in sofi_reg.sofi_prop_list:
         property = sofi_reg.sofi_prop_list[prop_name]
@@ -141,7 +143,106 @@ def sofi_reg_h_processing(Proj):
         quit("Generator breaked")
 
 def reg_map_module_xls_processing(Proj):
-    return True
+    if len(Proj.struct_list) > 0:
+        return
+    file_name = Proj.path["reg_map_{}_xls".format(Proj.module)]
+    file_xls = openpyxl.load_workbook(file_name)
+    # Check struct_list existence in file
+    if "struct_list" not in file_xls.sheetnames:
+        Proj.errors["err_msg"].append("\"reg_map_{}.xls\": struct list not found".format(Proj.module))
+        Proj.errors["err_cnt"] += 1
+    # Read struct_list and check structs existence in file
+    for worksheet in file_xls.worksheets:
+        if worksheet.title == "struct_list":
+            file_xls.active = worksheet
+            break
+    found = False
+    for column in range(worksheet.min_column, worksheet.max_column + 1):
+        if worksheet.cell(1, column).value == "Struct name":
+            found = True
+            break
+    if found == False:
+        Proj.errors["err_msg"].append("\"reg_map_{}.xls\": \"Struct name\" column not found".format(Proj.module))
+        Proj.errors["err_cnt"] += 1
+    struct_list_xls = []
+    for row in range (2, worksheet.max_row + 1):
+        struct_list_xls.append(worksheet.cell(row, column).value)
+    for struct in struct_list_xls:
+        if struct not in file_xls.sheetnames:
+            print(Fore.YELLOW + Style.BRIGHT + "WARNING: \"reg_map_{}.xls\": struct \"{}\" define in struct_list but "
+                                               "don't found in sheets\nStruct \"{}\" excluded from project"
+                                               "".format(Proj.module, struct, struct))
+            struct_list_xls.remove(struct)
+    # Add structs to project
+    for struct_name in struct_list_xls:
+        Proj.struct_list[struct_name] = {
+            "name": struct_name,
+            "reg_list": {},
+        }
+        project_struct = Proj.struct_list[struct_name]
+        # Find sheet of current struct
+        for worksheet in file_xls.worksheets:
+            if worksheet.title == struct_name:
+                break
+        # Read properties in first row
+        property_headers = {}   # column indexes for property parameters
+        property_list = {}      # list of properties founded on sheet
+        column = 1
+        max_column = worksheet.max_column
+        while column < (max_column + 1):
+            property = worksheet.cell(1, column).value
+            if property != None:
+                property = property.lower() + "_t"
+                if property in sofi_reg.sofi_prop_list:
+                    property_list[property] = copy.copy(sofi_reg.sofi_prop_list[property])
+                    property_list[property]["is_exist"] = False
+                    # Read property parameters and save its indexes into property_headers
+                    param = worksheet.cell(2, column).value
+                    if param not in property_list[property]:
+                        avl_list = list(property_list[property].keys())
+                        avl_list.remove("header")
+                        print(Fore.YELLOW + Style.BRIGHT + "WARNING: \"reg_map_{}.xls\" struct \"{}\" property \"{}\" "
+                                                           "param \"{}\" is unknown.\nAvailable parameters defined in "
+                                                           "\"sofi_reg.py\": {}".format(Proj.module, struct, property,
+                                                                                        param, avl_list))
+                    else:
+                        property_headers[column] = {
+                            "property": property,
+                            "param": param,
+                        }
+                    column += 1
+                    while ((worksheet.cell(1, column).value == None) and (column < (max_column + 1))):
+                        param = worksheet.cell(2, column).value
+                        if param not in property_list[property]:
+                            avl_list = list(property_list[property].keys())
+                            avl_list.remove("header")
+                            print(
+                                Fore.YELLOW + Style.BRIGHT + "WARNING: \"reg_map_{}.xls\" struct \"{}\" property \"{}\" "
+                                                             "param \"{}\" is unknown.\nAvailable parameters defined in "
+                                                             "\"sofi_reg.py\": {}".format(Proj.module, struct, property,
+                                                                                          param, avl_list))
+                        else:
+                            property_headers[column] = {
+                                "property": property,
+                                "param": param,
+                            }
+                        column += 1
+                    column -= 1
+            column += 1
+        # Read regs on sheet
+        for row in range(3, worksheet.max_row + 1):
+            reg = copy.copy(property_list)
+            for column in range(1, max_column):
+                property = property_headers[column]["property"]
+                param = property_headers[column]["param"]
+                reg[property][param]["value"] = worksheet.cell(row, column).value
+                if worksheet.cell(row, column).value != None:
+                    reg[property]["is_exist"] = True
+            reg_name = reg["sofi_prop_base_t"]["name"]["value"]
+            project_struct["reg_list"][reg_name] = copy.copy(reg)
+        print("Struct \"{}\" found {} registers".format(struct_name, len(project_struct["reg_list"])))
+    # Read regs from reg_map_module_xls
+
 
 def regs_module_h_processing(Proj):
     return True

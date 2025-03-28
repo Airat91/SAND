@@ -72,7 +72,7 @@ class Project():
         self.sofi_properties = {        #list of sofi_prop_xxx_t structs
             "prop_name":    [],         #list of property names
         }
-        self.struct_list = []           #List of structs from reg_map_module_xls
+        self.struct_list = {}           #List of structs from reg_map_module_xls
 
         #read version
         repo = Repo(self.path["project_path"])
