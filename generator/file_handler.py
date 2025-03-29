@@ -6,7 +6,12 @@ import sofi_reg
 import copy
 
 def sofi_reg_h_processing(Proj):
-    # Insert sofi_prop_xxx_t structs from sofi_reg.py to sofi_reg.h
+    """
+    Insert sofi_prop_xxx_t structs from sofi_reg.py to sofi_reg.h
+    :param Proj: class Project (project_generator.Project)
+    :return:
+    """
+
     # 1 Read sofi_reg.py and find structs
 
     for prop_name in sofi_reg.sofi_prop_list:
@@ -143,6 +148,11 @@ def sofi_reg_h_processing(Proj):
         quit("Generator breaked")
 
 def reg_map_module_xls_processing(Proj):
+    """
+    Read regs from reg_map_module.xls to Proj
+    :param Proj: class Project (project_generator.Project)
+    :return:
+    """
     if len(Proj.struct_list) > 0:
         return
     file_name = Proj.path["reg_map_{}_xls".format(Proj.module)]
@@ -245,7 +255,17 @@ def reg_map_module_xls_processing(Proj):
 
 
 def regs_module_h_processing(Proj):
+    """
+    Write project structs into regs_module.h
+    :param Proj: class Project (project_generator.Project)
+    :return:
+    """
     return True
 
 def regs_module_c_processing(Proj):
+    """
+    Write project regs declarations into regs_module.c
+    :param Proj: class Project (project_generator.Project)
+    :return:
+    """
     return True

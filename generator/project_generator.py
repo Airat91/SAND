@@ -40,6 +40,11 @@ __description__ = 'Add build info into project and rename output HEX-file'
 
 class Project():
     def __init__(self, project_path, module_name):
+        """
+        Init PROJECT-object
+        :param project_path: path of project GIT-repository
+        :param module_name: project module name from DEVICE dict
+        """
         self.name = module_name.upper(),
         self.module = module_name,
         self.path = {                   #path of files
@@ -230,7 +235,7 @@ def main():
             if PROJECT.errors["err_cnt"] > 0:
                 PROJECT.print_all_errors()
                 quit("Generator breaked")
-            # Rewrite hash for sofi_reg_py
+            # Rewrite hash for reg_map_module_xls
             hash_json = open(PROJECT.path["hash_json"], "r", encoding='UTF-8')
             hash_data = json.load(hash_json)
             hash_data[reg_map_module_xls] = hash_calc(PROJECT.path[reg_map_module_xls])
@@ -294,6 +299,13 @@ def main():
 
 
 def replace_define(file_path, define_str, define_value):
+    """
+    Find "#define DEFINE_STR VALUE" string and replace value
+    :param file_path: file for replace
+    :param define_str: definition for looking
+    :param define_value: new value for replace
+    :return:
+    """
     line_index = 0
     file = open(file_path, "r", encoding='UTF-8')
     text_lines = file.readlines()
@@ -314,6 +326,11 @@ def replace_define(file_path, define_str, define_value):
     file.close()
 
 def hash_calc(file_path):
+    """
+    Calculate hash for file
+    :param file_path: file for read
+    :return: hash value like string
+    """
     # check fsdata was changed?
     file = open(file_path, "rb")
     hash = hashlib.sha256()
@@ -322,13 +339,13 @@ def hash_calc(file_path):
     return  str(hash.hexdigest())
 
 def check_generator_descriptions(line):
-    '''
+    """
     Find generator_marker in line.
-    Return values
-        string "none" - generator_marker not found,
-        string error - generator_marker found but it incorrect,
-        dict {json object} - generator_marker found and correct
-    '''
+    :param line: string for looking
+    :return:    string "none" - generator_marker not found,
+                string error - generator_marker found but it incorrect,
+                dict {json object} - generator_marker found and correct
+    """
     if GENERATOR["marker"] in line and "{" in line and "}" in line:
         last_str = [pos for pos, char in enumerate(line) if char == "}"]
         json_part = line[line.index("{"):last_str[-1]+1]
