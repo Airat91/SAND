@@ -241,7 +241,7 @@ def reg_map_module_xls_processing(Proj):
             column += 1
         # Read regs on sheet
         for row in range(3, worksheet.max_row + 1):
-            reg = copy.copy(property_list)
+            reg = copy.deepcopy(property_list)
             for column in range(1, max_column):
                 property = property_headers[column]["property"]
                 param = property_headers[column]["param"]
@@ -249,7 +249,7 @@ def reg_map_module_xls_processing(Proj):
                 if worksheet.cell(row, column).value != None:
                     reg[property]["is_exist"] = True
             reg_name = reg["sofi_prop_base_t"]["name"]["value"]
-            project_struct["reg_list"][reg_name] = copy.copy(reg)
+            project_struct["reg_list"][reg_name] = reg
         print("Struct \"{}\" found {} registers".format(struct_name, len(project_struct["reg_list"])))
     # Read regs from reg_map_module_xls
 

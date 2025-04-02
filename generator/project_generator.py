@@ -16,6 +16,8 @@ import colorama
 from colorama import Fore, Back, Style, init
 from pkg_resources import file_ns_handler
 import file_handler as handler
+import regs_handler
+
 init(autoreset=True)
 
 GENERATOR = {
@@ -242,6 +244,10 @@ def main():
             hash_json = open(PROJECT.path["hash_json"], "w", encoding='UTF-8')
             json.dump(hash_data, hash_json, indent=4)
             hash_json.close()
+            regs_handler.regs_handler(PROJECT)
+            if PROJECT.errors["err_cnt"] > 0:
+                PROJECT.print_all_errors()
+                quit("Generator breaked")
 
             # Add regs_module_h to changed list
             if "regs_module_h" not in PROJECT.was_changed_list:
@@ -252,6 +258,13 @@ def main():
             if len(PROJECT.struct_list) == 0:
                 # Read structs from reg_map_module_xls to PROJECT
                 handler.reg_map_module_xls_processing(PROJECT)
+                if PROJECT.errors["err_cnt"] > 0:
+                    PROJECT.print_all_errors()
+                    quit("Generator breaked")
+                regs_handler.regs_handler(PROJECT)
+                if PROJECT.errors["err_cnt"] > 0:
+                    PROJECT.print_all_errors()
+                    quit("Generator breaked")
             # Fill regs_module_h by structs from reg_map_module_xls
             handler.regs_module_h_processing(PROJECT)
             if PROJECT.errors["err_cnt"] > 0:
