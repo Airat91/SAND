@@ -1,24 +1,23 @@
 # coding: utf_8
 import datetime
-import sys
+#import sys
 import os
 import re
-import subprocess
-import fileinput
-import msvcrt as m
+#import subprocess
+#import fileinput
+#import msvcrt as m
 #import markdown
 import argparse
 from git import Repo
 import hashlib
 import json
-import math
+#import math
 import colorama
 from colorama import Fore, Back, Style, init
-from pkg_resources import file_ns_handler
-import file_handler as handler
-import regs_handler
+#from pkg_resources import file_ns_handler
+import file_handler
 
-init(autoreset=True)
+#init(autoreset=True)
 
 GENERATOR = {
     "marker": "#generator_message",     #marker in file for parse by generator
@@ -38,7 +37,7 @@ DEVICE = {
 }
 
 compilation_max_len = 20    #max length of compilation info string
-__description__ = 'Add build info into project and rename output HEX-file'
+__description__ = 'Generate project'
 
 class Project():
     def __init__(self, project_path, module_name):
@@ -80,6 +79,7 @@ class Project():
             "prop_name":    [],         #list of property names
         }
         self.struct_list = {}           #List of structs from reg_map_module_xls
+        self.prop_list = {}             #List of regs by properties
 
         #read version
         repo = Repo(self.path["project_path"])
@@ -217,7 +217,7 @@ def main():
             
         # 4.4 If sofi_reg.h in changed list
         if "sofi_reg_h" in PROJECT.was_changed_list:
-            handler.sofi_reg_h_processing(PROJECT)
+            file_handler.sofi_reg_h_processing(PROJECT)
             if PROJECT.errors["err_cnt"] > 0:
                 PROJECT.print_all_errors()
                 quit("Generator breaked")
@@ -233,7 +233,7 @@ def main():
         reg_map_module_xls = "reg_map_{}_xls".format(PROJECT.module)
         if reg_map_module_xls in PROJECT.was_changed_list:
             # Check reg_map_module_xls correction and read structs to PROJECT
-            handler.reg_map_module_xls_processing(PROJECT)
+            file_handler.reg_map_module_xls_processing(PROJECT)
             if PROJECT.errors["err_cnt"] > 0:
                 PROJECT.print_all_errors()
                 quit("Generator breaked")
@@ -257,7 +257,7 @@ def main():
         if "regs_module_h" in PROJECT.was_changed_list:
             if len(PROJECT.struct_list) == 0:
                 # Read structs from reg_map_module_xls to PROJECT
-                handler.reg_map_module_xls_processing(PROJECT)
+                file_handler.reg_map_module_xls_processing(PROJECT)
                 if PROJECT.errors["err_cnt"] > 0:
                     PROJECT.print_all_errors()
                     quit("Generator breaked")
@@ -266,7 +266,7 @@ def main():
                     PROJECT.print_all_errors()
                     quit("Generator breaked")
             # Fill regs_module_h by structs from reg_map_module_xls
-            handler.regs_module_h_processing(PROJECT)
+            file_handler.regs_module_h_processing(PROJECT)
             if PROJECT.errors["err_cnt"] > 0:
                 PROJECT.print_all_errors()
                 quit("Generator breaked")
@@ -285,7 +285,7 @@ def main():
         #4.7 If regs_module_c in changed list
         if "regs_module_c" in PROJECT.was_changed_list:
             # Fill regs_module_c by declarations
-            handler.regs_module_c_processing(PROJECT)
+            file_handler.regs_module_c_processing(PROJECT)
             if PROJECT.errors["err_cnt"] > 0:
                 PROJECT.print_all_errors()
                 quit("Generator breaked")
