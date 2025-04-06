@@ -1,8 +1,14 @@
 # This file is base for generate sofi_option_t structs
 # For adding new sofi_option add it to "sofi_prop_list" dictionary
 
-descr_max_len = 40
-name_max_len = 20
+SOFI_LIMITS = {
+	"descr_max_len" 	: 40,
+	"name_max_len" 		: 20,
+	"mdb_addr_min" 		: 0,
+	"mdb_addr_max" 		: 65535,
+	"save_addr_min" 	: 0,
+	"save_addr_max" 	: 2047 # 2Kb
+}
 
 # Available types of variables
 sofi_var_t = {

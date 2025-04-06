@@ -16,6 +16,7 @@ import colorama
 from colorama import Fore, Back, Style, init
 #from pkg_resources import file_ns_handler
 import file_handler
+#import regs_handler
 
 #init(autoreset=True)
 
@@ -244,7 +245,7 @@ def main():
             hash_json = open(PROJECT.path["hash_json"], "w", encoding='UTF-8')
             json.dump(hash_data, hash_json, indent=4)
             hash_json.close()
-            regs_handler.regs_handler(PROJECT)
+            #regs_handler.regs_handler(PROJECT)
             if PROJECT.errors["err_cnt"] > 0:
                 PROJECT.print_all_errors()
                 quit("Generator breaked")
@@ -261,7 +262,7 @@ def main():
                 if PROJECT.errors["err_cnt"] > 0:
                     PROJECT.print_all_errors()
                     quit("Generator breaked")
-                regs_handler.regs_handler(PROJECT)
+                #regs_handler.regs_handler(PROJECT)
                 if PROJECT.errors["err_cnt"] > 0:
                     PROJECT.print_all_errors()
                     quit("Generator breaked")

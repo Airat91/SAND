@@ -150,6 +150,10 @@ def sofi_reg_h_processing(Proj):
 def reg_map_module_xls_processing(Proj):
     """
     Read regs from reg_map_module.xls to Proj
+    1. Read structs into Proj[struct_list]
+    2. Read regs into Proj[struct_list][struct][reg_list]
+    3. Read properties into Proj[prop_list]
+    4. Add regs into Proj[prop_list][prop][reg_list]
     :param Proj: class Project (project_generator.Project)
     :return:
     """
@@ -183,6 +187,11 @@ def reg_map_module_xls_processing(Proj):
                                                "don't found in sheets\nStruct \"{}\" excluded from project"
                                                "".format(Proj.module, struct, struct))
             struct_list_xls.remove(struct)
+    # Add properties to project
+    for prop in sofi_reg.sofi_prop_list:
+        Proj.prop_list[prop] = {
+            "reg_list" : {}
+        }
     # Add structs to project
     for struct_name in struct_list_xls:
         Proj.struct_list[struct_name] = {
@@ -251,7 +260,17 @@ def reg_map_module_xls_processing(Proj):
             reg_name = reg["sofi_prop_base_t"]["name"]["value"]
             project_struct["reg_list"][reg_name] = reg
         print("Struct \"{}\" found {} registers".format(struct_name, len(project_struct["reg_list"])))
-    # Read regs from reg_map_module_xls
+        for reg_name in project_struct["reg_list"]:
+            reg = project_struct["reg_list"][reg_name]
+            for property_name in reg:
+                property = reg[property_name]
+                # Add regs to Proj.prop_lists
+                if property["is_exist"] == True:
+                    Proj.prop_list[property_name]["reg_list"][reg_name] = reg
+    print("reg_map_module_xls_processing done")
+
+
+
 
 
 def regs_module_h_processing(Proj):
