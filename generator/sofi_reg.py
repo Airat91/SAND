@@ -7,12 +7,14 @@ SOFI_LIMITS = {
 	"mdb_addr_min" 		: 0,
 	"mdb_addr_max" 		: 65535,
 	"save_addr_min" 	: 0,
-	"save_addr_max" 	: 2047 # 2Kb
+	"save_addr_max" 	: 2047, # 2Kb
+	"access_lvl_min"	: 0,
+	"access_lvl_max"	: 4,
 }
 
 # Available types of variables
 sofi_var_t = {
-	# var_type_name			# opt_type						# comment for header-file
+	# var_type_name			# opt_type			# comment for header-file
 	"VAR_TYPE_UNKNOWN":		{"byte_num":	0,	"comment":	"Error value"},
     "VAR_TYPE_U8":			{"byte_num":	1,	"comment":	"uint8_t"},
     "VAR_TYPE_U16":			{"byte_num":	2,	"comment":	"uint16_t"},
@@ -25,6 +27,16 @@ sofi_var_t = {
 	"VAR_TYPE_FLOAT":		{"byte_num":	4,	"comment":	"float"},
     "VAR_TYPE_DOUBLE":		{"byte_num":	8,	"comment":	"double"},
 	"VAR_TYPE_STR":			{"byte_num":	1,	"comment":	"char"},
+}
+
+#Available types of access level
+sofi_access_lvl_t = {
+	# lvl_name				# lvl_value		# comment for header-file
+	"ACC_LVL_ROOT":			{"value": 	0,	"comment":	"Only for developers"},
+	"ACC_LVL_ADMIN_HIGH":	{"value": 	1,	"comment":	"Administrator  with high priority"},
+	"ACC_LVL_ADMIN_LOW":	{"value": 	2,	"comment":	"Administrator"},
+	"ACC_LVL_USER_HIGH":	{"value": 	3,	"comment":	"User with high priority"},
+	"ACC_LVL_USER_LOW":		{"value": 	4,	"comment":	"User"},
 }
 
 # Header of sofi_prop_t
@@ -69,7 +81,7 @@ sofi_prop_list = {
 	"sofi_prop_access_t":{
 		# opt_name		# opt_type						# comment for header-file
 		"header":		{"type":	"sofi_header_t",	"comment":	"Header of property"},
-		"access_lvl":	{"type": 	"u8",				"comment":	"Access level (higher value is strongly protect)"},
+		"access_lvl":	{"type": 	"u8",				"comment":	"Access level (lower value is strongly protect)"},
 		"access_en_timer_ms":	{"type": 	"u32",		"comment":	"Timer for access (if =0 the access disable)"},
 	},
 }

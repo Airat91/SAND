@@ -266,6 +266,7 @@ def reg_map_module_xls_processing(Proj):
                 property = reg[property_name]
                 # Add regs to Proj.prop_lists
                 if property["is_exist"] == True:
+                    #reg["struct_name"] = struct_name
                     Proj.prop_list[property_name]["reg_list"][reg_name] = reg
     print("reg_map_module_xls_processing done")
 
