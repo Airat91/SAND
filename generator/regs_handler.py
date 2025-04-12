@@ -1,4 +1,5 @@
 #from Scripts.rst2html4 import description
+from copy import deepcopy
 from csv import excel
 from types import NoneType
 
@@ -172,13 +173,17 @@ def regs_handler(Proj):
                             "register \"{}\" in struct \"{}\" ModBUS address can't be assigned".format(
                                 reg_name, struct_name))
                         Proj.errors["err_cnt"] += 1
-                else:
+                if space_found == True:
                     # If empty range is found
                     reg["sofi_prop_mdb_t"]["mdb_addr"]["value"] = mdb_addr_head
                     for i in range(0, math.ceil(reg_byte_len / 2)):
                         mdb_addr_list.append(mdb_addr_head)
                         mdb_addr_head += 1
                     mdb_addr_list.sort()
+    #2.2.3 Sort prop_list in Proj by MDB address
+    prop_list = Proj.prop_list["sofi_prop_mdb_t"]["reg_list"]
+    prop_list = dict(sorted(prop_list.items(), key=lambda item: item[1]["sofi_prop_mdb_t"]["mdb_addr"]["value"]))
+    Proj.prop_list["sofi_prop_mdb_t"]["reg_list"] = deepcopy(prop_list)
 
     #2.3 sofi_prop_range_t
     for reg_name in Proj.prop_list["sofi_prop_range_t"]["reg_list"]:
@@ -244,13 +249,18 @@ def regs_handler(Proj):
                             "register \"{}\" in struct \"{}\" save address can't be assigned".format(
                                 reg_name, struct_name))
                         Proj.errors["err_cnt"] += 1
-                else:
+                if space_found == True:
                     # If empty range is found
                     reg["sofi_prop_save_t"]["save_addr"]["value"] = save_addr_head
                     for i in range(0, reg_byte_len):
                         save_addr_list.append(save_addr_head)
                         save_addr_head += 1
                     save_addr_list.sort()
+
+    #2.4.3 Sort prop_list in Proj by save address
+    prop_list = Proj.prop_list["sofi_prop_save_t"]["reg_list"]
+    prop_list = dict(sorted(prop_list.items(), key=lambda item: item[1]["sofi_prop_save_t"]["save_addr"]["value"]))
+    Proj.prop_list["sofi_prop_save_t"]["reg_list"] = deepcopy(prop_list)
 
     #2.5 sofi_prop_access_t
     for reg_name in Proj.prop_list["sofi_prop_access_t"]["reg_list"]:
@@ -280,6 +290,20 @@ def regs_handler(Proj):
                     Fore.YELLOW + Style.BRIGHT + "WARNING: register \"{}\" in struct \"{}\" access_lvl \"{}\" is "
                                                  "undefined and changed to \"{}\"".format(reg_name, struct_name,
                                                                                           access_lvl, access_lvl_new))
+
+    #3. Appoint property headers links
+    for reg_name in Proj.prop_list["sofi_prop_base_t"]["reg_list"]:
+        reg = Proj.prop_list["sofi_prop_base_t"]["reg_list"][reg_name]
+        reg["sofi_prop_base_t"]["prop_num"]["value"] = 0
+        # Create exist_prop_list
+        exist_prop_list = []
+        for prop_name in reg:
+            prop = reg[prop_name]
+            if prop["is_exist"] == True:
+                exist_prop_list.append(prop_name)
+                reg["sofi_prop_base_t"]["prop_num"]["value"] += 1
+    #4. Create struct declarations (for regs_module.h)
+    #5. Create property lists for each sofi_prop_t (for regs_module.c)
 
     print("Regs_handler done. Handled {} registers".format(reg_index))
 
