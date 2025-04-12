@@ -154,15 +154,18 @@ def regs_handler(Proj):
                 space_found = False
                 mdb_addr_list.sort()
                 mdb_addr_head = sofi_reg.SOFI_LIMITS["mdb_addr_min"]
-                for ind in range(len(mdb_addr_list)):
-                    if (mdb_addr_list[ind] - mdb_addr_head) >= math.ceil(reg_byte_len / 2):
-                        space_found = True
-                        break
-                    else:
-                        mdb_addr_head = mdb_addr_list[ind] + 1
-                        ind += 1
+                if len(mdb_addr_list) == 0:
+                    space_found = True
+                else:
+                    for ind in range(len(mdb_addr_list)):
+                        if (mdb_addr_list[ind] - mdb_addr_head) >= math.ceil(reg_byte_len / 2):
+                            space_found = True
+                            break
+                        else:
+                            mdb_addr_head = mdb_addr_list[ind] + 1
+                            ind += 1
                 if space_found == False:
-                    if sofi_reg.SOFI_LIMITS["mdb_addr_min"] - mdb_addr_head >= math.ceil(reg_byte_len / 2):
+                    if sofi_reg.SOFI_LIMITS["mdb_addr_max"] - mdb_addr_head >= math.ceil(reg_byte_len / 2):
                         space_found = True
                     else:
                         Proj.errors["err_msg"].append(
@@ -223,15 +226,18 @@ def regs_handler(Proj):
                 space_found = False
                 save_addr_list.sort()
                 save_addr_head = sofi_reg.SOFI_LIMITS["save_addr_min"]
-                for ind in range(len(save_addr_list)):
-                    if (save_addr_list[ind] - save_addr_head) >= reg_byte_len:
-                        space_found = True
-                        break
-                    else:
-                        save_addr_head = save_addr_list[ind] + 1
-                        ind += 1
+                if len(save_addr_list) == 0:
+                    space_found = True
+                else:
+                    for ind in range(len(save_addr_list)):
+                        if (save_addr_list[ind] - save_addr_head) >= reg_byte_len:
+                            space_found = True
+                            break
+                        else:
+                            save_addr_head = save_addr_list[ind] + 1
+                            ind += 1
                 if space_found == False:
-                    if sofi_reg.SOFI_LIMITS["save_addr_min"] - save_addr_head >= reg_byte_len:
+                    if sofi_reg.SOFI_LIMITS["save_addr_max"] - save_addr_head >= reg_byte_len:
                         space_found = True
                     else:
                         Proj.errors["err_msg"].append(
