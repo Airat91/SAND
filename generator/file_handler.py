@@ -85,6 +85,11 @@ def sofi_reg_h_processing(Proj):
                     max_spaces[0] = len(var_type)
                 if len(sofi_reg.sofi_var_t[var_type]["comment"]) > max_spaces[1]:
                     max_spaces[1] = len(sofi_reg.sofi_var_t[var_type]["comment"])
+            for acc_lvl in sofi_reg.sofi_access_lvl_t:
+                if len(acc_lvl) > max_spaces[0]:
+                    max_spaces[0] = len(acc_lvl)
+                if len(str(sofi_reg.sofi_access_lvl_t[acc_lvl]["value"])) > max_spaces[1]:
+                    max_spaces[1] = len(str(sofi_reg.sofi_access_lvl_t[acc_lvl]["value"]))
 
             # 1.3 Write sofi_prop enumeration
             buffer.append("typedef enum{\n")
@@ -101,7 +106,16 @@ def sofi_reg_h_processing(Proj):
                                                                  space_1, sofi_reg.sofi_var_t[var_type]["byte_num"]))
             buffer.append("}sofi_var_t;\n\n")
 
-            # 1.4 Write header to buffer
+            # 1.4 Write sofi_access_lvl enumeration
+            buffer.append("typedef enum{\n")
+            for acc_lvl in sofi_reg.sofi_access_lvl_t:
+                space_0 = " "*(max_spaces[0] - len(acc_lvl) + 1)
+                space_1 = " "*(max_spaces[1] - len(str(sofi_reg.sofi_access_lvl_t[acc_lvl]["value"])) - 1)
+                buffer.append("\t{}{}= {},{}// {}\n".format(acc_lvl.upper(), space_0, sofi_reg.sofi_access_lvl_t[acc_lvl]["value"],
+                                                                 space_1, sofi_reg.sofi_access_lvl_t[acc_lvl]["comment"]))
+            buffer.append("}sofi_access_lvl;\n\n")
+
+            # 1.5 Write header to buffer
             buffer.append("typedef struct{\n")
             for param in sofi_reg.sofi_header_t:
                 space_0 = " "*(max_spaces[0] - len(sofi_reg.sofi_header_t[param]["type"]) + 1)
@@ -110,7 +124,7 @@ def sofi_reg_h_processing(Proj):
                                                           space_1, sofi_reg.sofi_header_t[param]["comment"]))
             buffer.append("}sofi_header_t;\n\n")
 
-            # 1.5 Write sofi_prop_t to buffer
+            # 1.6 Write sofi_prop_t to buffer
             for prop_name in Proj.sofi_properties["prop_name"]:
                 property = Proj.sofi_properties[prop_name]
                 buffer.append("typedef struct{\n")
