@@ -236,7 +236,7 @@ def reg_map_module_xls_processing(Proj):
                         avl_list.remove("header")
                         print(Fore.YELLOW + Style.BRIGHT + "WARNING: \"reg_map_{}.xls\" struct \"{}\" property \"{}\" "
                                                            "param \"{}\" is unknown.\nAvailable parameters defined in "
-                                                           "\"sofi_reg.py\": {}".format(Proj.module, struct, property,
+                                                           "\"sofi_reg.py\": {}".format(Proj.module, struct_name, property,
                                                                                         param, avl_list))
                     else:
                         property_headers[column] = {
@@ -252,7 +252,7 @@ def reg_map_module_xls_processing(Proj):
                             print(
                                 Fore.YELLOW + Style.BRIGHT + "WARNING: \"reg_map_{}.xls\" struct \"{}\" property \"{}\" "
                                                              "param \"{}\" is unknown.\nAvailable parameters defined in "
-                                                             "\"sofi_reg.py\": {}".format(Proj.module, struct, property,
+                                                             "\"sofi_reg.py\": {}".format(Proj.module, struct_name, property,
                                                                                           param, avl_list))
                         else:
                             property_headers[column] = {
@@ -264,24 +264,27 @@ def reg_map_module_xls_processing(Proj):
             column += 1
         # Read regs on sheet
         for row in range(3, worksheet.max_row + 1):
-            reg = copy.deepcopy(property_list)
+            reg = sofi_reg.reg()
             for column in range(1, max_column):
                 property = property_headers[column]["property"]
                 param = property_headers[column]["param"]
-                reg[property][param]["value"] = worksheet.cell(row, column).value
+                reg.prop_list[property][param]["value"] = worksheet.cell(row, column).value
                 if worksheet.cell(row, column).value != None:
-                    reg[property]["is_exist"] = True
-            reg_name = reg["sofi_prop_base_t"]["name"]["value"]
-            project_struct["reg_list"][reg_name] = reg
-        print("Struct \"{}\" found {} registers".format(struct_name, len(project_struct["reg_list"])))
-        for reg_name in project_struct["reg_list"]:
-            reg = project_struct["reg_list"][reg_name]
-            for property_name in reg:
-                property = reg[property_name]
+                    reg.prop_list[property]["is_exist"] = True
+            reg_name = reg.prop_list["sofi_prop_base_t"]["name"]["value"]
+            reg.name = reg_name
+            reg.struct = struct_name
+            Proj.struct_list[struct_name]["reg_list"][reg_name] = reg
+        print("Struct \"{}\" found {} registers".format(struct_name, len(Proj.struct_list[struct_name]["reg_list"])))
+        for reg_name in Proj.struct_list[struct_name]["reg_list"]:
+            reg = Proj.struct_list[struct_name]["reg_list"][reg_name]
+            for property_name in reg.prop_list:
+                property = reg.prop_list[property_name]
                 # Add regs to Proj.prop_lists
-                if property["is_exist"] == True:
-                    #reg["struct_name"] = struct_name
-                    Proj.prop_list[property_name]["reg_list"][reg_name] = reg
+                if "is_exist" in property:
+                    if property["is_exist"] == True:
+                        #reg["struct_name"] = struct_name
+                        Proj.prop_list[property_name]["reg_list"][reg_name] = reg
     print("reg_map_module_xls_processing done")
 
 

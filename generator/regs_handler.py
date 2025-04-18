@@ -30,51 +30,53 @@ def regs_handler(Proj):
         for reg_name in struct["reg_list"]:
             reg = struct["reg_list"][reg_name]
             #1.1 Check reg name
-            name = reg["sofi_prop_base_t"]["name"]["value"]
+            name = reg.prop_list["sofi_prop_base_t"]["name"]["value"]
             if len(name) > sofi_reg.SOFI_LIMITS["name_max_len"]:
                 shorted_name = name[0:sofi_reg.SOFI_LIMITS["name_max_len"]]
                 print(Fore.YELLOW + Style.BRIGHT + "WARNING: register \"{}\" in struct \"{}\" name is too long and shorted "
                                                    "to {}".format(name, struct_name, shorted_name))
                 name = shorted_name
+                reg.name = shorted_name
+                reg.prop_list["sofi_prop_base_t"]["name"]["value"] = name
             if name not in reg_name_list:
                 reg_name_list.append(name)
             else:
                 print(Fore.YELLOW + Style.BRIGHT + "WARNING: register \"{}\" in struct \"{}\" already exist, therefore "
                                                    "renamed to \"{}_{}\"".format(name, struct_name, name, reg_index))
                 name = "{}_{}".format(name, reg_index)
-                reg["sofi_prop_base_t"]["name"]["value"] = name
+                reg.name = name
+                reg.prop_list["sofi_prop_base_t"]["name"]["value"] = name
                 reg_name_list.append(name)
             #1.2 Check reg type
-            type = reg["sofi_prop_base_t"]["type"]["value"]
+            type = reg.prop_list["sofi_prop_base_t"]["type"]["value"]
             if type == None:
                 Proj.errors["err_msg"].append("register \"{}\" in struct \"{}\" type \"{}\" is undefined".format(name, struct_name, type))
                 Proj.errors["err_cnt"] += 1
-                reg_to_delete = {"reg": reg_name, "struct": struct_name}
-                regs_to_delete.append(reg_to_delete)
+                # Add reg to delete list
+                if reg not in regs_to_delete:
+                    regs_to_delete.append(reg)
             else:
                 var_type = "VAR_TYPE_{}".format(type.upper())
                 if var_type not in sofi_reg.sofi_var_t:
                     Proj.errors["err_msg"].append("register \"{}\" in struct \"{}\" type \"{}\" is unknown".format(name, struct_name, type))
                     Proj.errors["err_cnt"] += 1
                     # Add reg to delete list
-                    reg_to_delete = {"reg": reg_name, "struct": struct_name}
-                    find = False
-                    for reg in regs_to_delete:
-                        if reg["reg"] == reg_name:
-                            find = True
-                            break
-                    if find == False:
-                        regs_to_delete.append(reg_to_delete)
+                    if reg not in regs_to_delete:
+                        regs_to_delete.append(reg)
                 else:
-                    reg["sofi_prop_base_t"]["type"]["value"] = var_type
+                    reg.prop_list["sofi_prop_base_t"]["type"]["value"] = var_type
 
             if reg not in regs_to_delete:
-                reg["sofi_prop_base_t"]["ind"]["value"] = reg_index
+                reg.prop_list["sofi_prop_base_t"]["ind"]["value"] = reg_index
                 reg_index += 1
 
     if len(regs_to_delete) > 0:
         for reg in regs_to_delete:
-            Proj.struct_list[reg["struct"]]["reg_list"].pop(reg["reg"])
+            Proj.struct_list[reg.struct]["reg_list"].pop(reg.name)
+            for prop_name in Proj.prop_list:
+                prop_reg_list = Proj.prop_list[prop_name]["reg_list"]
+                if reg.name in prop_reg_list:
+                    prop_reg_list.pop(reg.name)
 
     #2. Appoint regs parameters for each prop_list
     #2.1 sofi_prop_base_t
@@ -82,36 +84,36 @@ def regs_handler(Proj):
         reg = Proj.prop_list["sofi_prop_base_t"]["reg_list"][reg_name]
         struct_name = get_struct_of_reg(reg_name, Proj)
         #2.1.1 Check reg description
-        description = reg["sofi_prop_base_t"]["description"]["value"]
+        description = reg.prop_list["sofi_prop_base_t"]["description"]["value"]
         if isinstance(description, str):
             if len(description) > sofi_reg.SOFI_LIMITS["descr_max_len"]:
                 shorted_description = description[0:sofi_reg.SOFI_LIMITS["descr_max_len"]]
                 print(
                     Fore.YELLOW + Style.BRIGHT + "WARNING: register \"{}\" in struct \"{}\" description is too long and shorted "
                                                  "to {}".format(reg_name, struct_name, shorted_description))
-                reg["sofi_prop_base_t"]["description"]["value"] = shorted_description
+                reg.prop_list["sofi_prop_base_t"]["description"]["value"] = shorted_description
         #2.1.2 Check array len
-        array_len = reg["sofi_prop_base_t"]["array_len"]["value"]
+        array_len = reg.prop_list["sofi_prop_base_t"]["array_len"]["value"]
         if isinstance(array_len, int):
             array_len = array_len
         else:
-            reg["sofi_prop_base_t"]["array_len"]["value"] = 1
+            reg.prop_list["sofi_prop_base_t"]["array_len"]["value"] = 1
             print(
                 Fore.YELLOW + Style.BRIGHT + "WARNING: register \"{}\" in struct \"{}\" array len is undefined so setted "
                                              "to 1".format(reg_name, struct_name))
         #2.1.3 Check read_only flag
-        read_only = reg["sofi_prop_base_t"]["read_only"]["value"]
+        read_only = reg.prop_list["sofi_prop_base_t"]["read_only"]["value"]
         if read_only == None:
-            reg["sofi_prop_base_t"]["read_only"]["value"] = 0
+            reg.prop_list["sofi_prop_base_t"]["read_only"]["value"] = 0
             print(
                 Fore.YELLOW + Style.BRIGHT + "WARNING: register \"{}\" in struct \"{}\" read_only is undefined so setted "
                                              "to 0".format(reg_name, struct_name))
         elif (read_only == 1) or (read_only.lower() == "true"):
-            reg["sofi_prop_base_t"]["read_only"]["value"] = 1
+            reg.prop_list["sofi_prop_base_t"]["read_only"]["value"] = 1
         elif (read_only == 0) or (read_only.lower() == "false"):
-            reg["sofi_prop_base_t"]["read_only"]["value"] = 0
+            reg.prop_list["sofi_prop_base_t"]["read_only"]["value"] = 0
         else:
-            reg["sofi_prop_base_t"]["read_only"]["value"] = 0
+            reg.prop_list["sofi_prop_base_t"]["read_only"]["value"] = 0
             print(
                 Fore.YELLOW + Style.BRIGHT + "WARNING: register \"{}\" in struct \"{}\" read_only is undefined so setted "
                                              "to 0".format(reg_name, struct_name))
@@ -122,10 +124,10 @@ def regs_handler(Proj):
     for reg_name in Proj.prop_list["sofi_prop_mdb_t"]["reg_list"]:
         reg = Proj.prop_list["sofi_prop_mdb_t"]["reg_list"][reg_name]
         struct_name = get_struct_of_reg(reg_name, Proj)
-        reg_byte_len = int(reg["sofi_prop_base_t"]["array_len"]["value"]) * \
-                       sofi_reg.sofi_var_t[reg["sofi_prop_base_t"]["type"]["value"]]["byte_num"]
+        reg_byte_len = int(reg.prop_list["sofi_prop_base_t"]["array_len"]["value"]) * \
+                       sofi_reg.sofi_var_t[reg.prop_list["sofi_prop_base_t"]["type"]["value"]]["byte_num"]
         # mdb_addr reading
-        mdb_addr = reg["sofi_prop_mdb_t"]["mdb_addr"]["value"]
+        mdb_addr = reg.prop_list["sofi_prop_mdb_t"]["mdb_addr"]["value"]
         if isinstance(mdb_addr, int):
             for i in range(0, math.ceil(reg_byte_len/2)):
                 if mdb_addr not in mdb_addr_list:
@@ -140,10 +142,10 @@ def regs_handler(Proj):
     for reg_name in Proj.prop_list["sofi_prop_mdb_t"]["reg_list"]:
         reg = Proj.prop_list["sofi_prop_mdb_t"]["reg_list"][reg_name]
         struct_name = get_struct_of_reg(reg_name, Proj)
-        reg_byte_len = int(reg["sofi_prop_base_t"]["array_len"]["value"]) * \
-                       sofi_reg.sofi_var_t[reg["sofi_prop_base_t"]["type"]["value"]]["byte_num"]
+        reg_byte_len = int(reg.prop_list["sofi_prop_base_t"]["array_len"]["value"]) * \
+                       sofi_reg.sofi_var_t[reg.prop_list["sofi_prop_base_t"]["type"]["value"]]["byte_num"]
         # mdb_addr reading
-        mdb_addr = reg["sofi_prop_mdb_t"]["mdb_addr"]["value"]
+        mdb_addr = reg.prop_list["sofi_prop_mdb_t"]["mdb_addr"]["value"]
         if isinstance(mdb_addr, str):
             if mdb_addr != "auto":
                 Proj.errors["err_msg"].append("register \"{}\" in struct \"{}\" ModBUS address is unknown value "
@@ -175,15 +177,20 @@ def regs_handler(Proj):
                         Proj.errors["err_cnt"] += 1
                 if space_found == True:
                     # If empty range is found
-                    reg["sofi_prop_mdb_t"]["mdb_addr"]["value"] = mdb_addr_head
+                    reg.prop_list["sofi_prop_mdb_t"]["mdb_addr"]["value"] = mdb_addr_head
                     for i in range(0, math.ceil(reg_byte_len / 2)):
                         mdb_addr_list.append(mdb_addr_head)
                         mdb_addr_head += 1
                     mdb_addr_list.sort()
     #2.2.3 Sort prop_list in Proj by MDB address
-    prop_list = Proj.prop_list["sofi_prop_mdb_t"]["reg_list"]
-    prop_list = dict(sorted(prop_list.items(), key=lambda item: item[1]["sofi_prop_mdb_t"]["mdb_addr"]["value"]))
-    Proj.prop_list["sofi_prop_mdb_t"]["reg_list"] = deepcopy(prop_list)
+    prop_list = deepcopy(Proj.prop_list["sofi_prop_mdb_t"]["reg_list"])
+    Proj.prop_list["sofi_prop_mdb_t"]["reg_list"] = {}
+    for mdb_ind in mdb_addr_list:
+        for reg_name in prop_list:
+            reg = Proj.prop_list["sofi_prop_base_t"]["reg_list"][reg_name]
+            if reg.prop_list["sofi_prop_mdb_t"]["mdb_addr"]["value"] == mdb_ind:
+                Proj.prop_list["sofi_prop_mdb_t"]["reg_list"][reg_name] = reg
+                break
 
     #2.3 sofi_prop_range_t
     for reg_name in Proj.prop_list["sofi_prop_range_t"]["reg_list"]:
@@ -196,10 +203,10 @@ def regs_handler(Proj):
     for reg_name in Proj.prop_list["sofi_prop_save_t"]["reg_list"]:
         reg = Proj.prop_list["sofi_prop_save_t"]["reg_list"][reg_name]
         struct_name = get_struct_of_reg(reg_name, Proj)
-        reg_byte_len = int(reg["sofi_prop_base_t"]["array_len"]["value"]) * \
-                       sofi_reg.sofi_var_t[reg["sofi_prop_base_t"]["type"]["value"]]["byte_num"]
+        reg_byte_len = int(reg.prop_list["sofi_prop_base_t"]["array_len"]["value"]) * \
+                       sofi_reg.sofi_var_t[reg.prop_list["sofi_prop_base_t"]["type"]["value"]]["byte_num"]
         # save_addr reading
-        save_addr = reg["sofi_prop_save_t"]["save_addr"]["value"]
+        save_addr = reg.prop_list["sofi_prop_save_t"]["save_addr"]["value"]
         if isinstance(save_addr, int):
             for i in range(0, reg_byte_len):
                 if save_addr not in save_addr_list:
@@ -216,10 +223,10 @@ def regs_handler(Proj):
     for reg_name in Proj.prop_list["sofi_prop_save_t"]["reg_list"]:
         reg = Proj.prop_list["sofi_prop_save_t"]["reg_list"][reg_name]
         struct_name = get_struct_of_reg(reg_name, Proj)
-        reg_byte_len = int(reg["sofi_prop_base_t"]["array_len"]["value"]) * \
-                       sofi_reg.sofi_var_t[reg["sofi_prop_base_t"]["type"]["value"]]["byte_num"]
+        reg_byte_len = int(reg.prop_list["sofi_prop_base_t"]["array_len"]["value"]) * \
+                       sofi_reg.sofi_var_t[reg.prop_list["sofi_prop_base_t"]["type"]["value"]]["byte_num"]
         # save_addr reading
-        save_addr = reg["sofi_prop_save_t"]["save_addr"]["value"]
+        save_addr = reg.prop_list["sofi_prop_save_t"]["save_addr"]["value"]
         if isinstance(save_addr, str):
             if save_addr != "auto":
                 Proj.errors["err_msg"].append("register \"{}\" in struct \"{}\" save address is unknown value "
@@ -251,33 +258,38 @@ def regs_handler(Proj):
                         Proj.errors["err_cnt"] += 1
                 if space_found == True:
                     # If empty range is found
-                    reg["sofi_prop_save_t"]["save_addr"]["value"] = save_addr_head
+                    reg.prop_list["sofi_prop_save_t"]["save_addr"]["value"] = save_addr_head
                     for i in range(0, reg_byte_len):
                         save_addr_list.append(save_addr_head)
                         save_addr_head += 1
                     save_addr_list.sort()
 
     #2.4.3 Sort prop_list in Proj by save address
-    prop_list = Proj.prop_list["sofi_prop_save_t"]["reg_list"]
-    prop_list = dict(sorted(prop_list.items(), key=lambda item: item[1]["sofi_prop_save_t"]["save_addr"]["value"]))
-    Proj.prop_list["sofi_prop_save_t"]["reg_list"] = deepcopy(prop_list)
+    prop_list = deepcopy(Proj.prop_list["sofi_prop_save_t"]["reg_list"])
+    Proj.prop_list["sofi_prop_save_t"]["reg_list"] = {}
+    for save_ind in save_addr_list:
+        for reg_name in prop_list:
+            reg = Proj.prop_list["sofi_prop_base_t"]["reg_list"][reg_name]
+            if reg.prop_list["sofi_prop_save_t"]["save_addr"]["value"] == save_ind:
+                Proj.prop_list["sofi_prop_save_t"]["reg_list"][reg_name] = reg
+                break
 
     #2.5 sofi_prop_access_t
     for reg_name in Proj.prop_list["sofi_prop_access_t"]["reg_list"]:
         reg = Proj.prop_list["sofi_prop_access_t"]["reg_list"][reg_name]
         struct_name = get_struct_of_reg(reg_name, Proj)
-        access_lvl = reg["sofi_prop_access_t"]["access_lvl"]["value"]
+        access_lvl = reg.prop_list["sofi_prop_access_t"]["access_lvl"]["value"]
         if isinstance(access_lvl, int):
             # access_lvl is digit
             if access_lvl < sofi_reg.SOFI_LIMITS["access_lvl_min"]:
                 access_lvl = sofi_reg.SOFI_LIMITS["access_lvl_min"]
-                reg["sofi_prop_access_t"]["access_lvl"]["value"] = access_lvl
+                reg.prop_list["sofi_prop_access_t"]["access_lvl"]["value"] = access_lvl
                 print(
                     Fore.YELLOW + Style.BRIGHT + "WARNING: register \"{}\" in struct \"{}\" access_lvl is too low and changed "
                                                  "to {}".format(reg_name, struct_name, access_lvl))
             elif access_lvl > sofi_reg.SOFI_LIMITS["access_lvl_max"]:
                 access_lvl = sofi_reg.SOFI_LIMITS["access_lvl_max"]
-                reg["sofi_prop_access_t"]["access_lvl"]["value"] = access_lvl
+                reg.prop_list["sofi_prop_access_t"]["access_lvl"]["value"] = access_lvl
                 print(
                     Fore.YELLOW + Style.BRIGHT + "WARNING: register \"{}\" in struct \"{}\" access_lvl is too high and changed "
                                                  "to {}".format(reg_name, struct_name, access_lvl))
@@ -285,23 +297,52 @@ def regs_handler(Proj):
             # access_lvl is define
             if access_lvl.upper() not in sofi_reg.sofi_access_lvl_t:
                 access_lvl_new = list(sofi_reg.sofi_access_lvl_t.keys())[-1]
-                reg["sofi_prop_access_t"]["access_lvl"]["value"] = access_lvl_new
+                reg.prop_list["sofi_prop_access_t"]["access_lvl"]["value"] = access_lvl_new
                 print(
                     Fore.YELLOW + Style.BRIGHT + "WARNING: register \"{}\" in struct \"{}\" access_lvl \"{}\" is "
                                                  "undefined and changed to \"{}\"".format(reg_name, struct_name,
                                                                                           access_lvl, access_lvl_new))
 
     #3. Appoint property headers links
+    #3.1 Add header_t struct to property headers for all regs and properties
+    for struct_name in Proj.struct_list:
+        struct = Proj.struct_list[struct_name]
+        for reg_name in struct["reg_list"]:
+            reg = struct["reg_list"][reg_name]
+            for prop_name in reg.prop_list:
+                prop = reg.prop_list[prop_name]
+                prop["header"]["header_t"] = {}
+                for header_param in sofi_reg.sofi_header_t:
+                    prop["header"]["header_t"][header_param] = "NULL"
+    #3.2 Appoint links
     for reg_name in Proj.prop_list["sofi_prop_base_t"]["reg_list"]:
         reg = Proj.prop_list["sofi_prop_base_t"]["reg_list"][reg_name]
-        reg["sofi_prop_base_t"]["prop_num"]["value"] = 0
+        reg.prop_list["sofi_prop_base_t"]["prop_num"]["value"] = 0
+        header_base = "&sofi_prop_base_list[{}]".format(list(Proj.prop_list["sofi_prop_base_t"]["reg_list"]).index(reg_name))
         # Create exist_prop_list
         exist_prop_list = []
-        for prop_name in reg:
-            prop = reg[prop_name]
-            if prop["is_exist"] == True:
-                exist_prop_list.append(prop_name)
-                reg["sofi_prop_base_t"]["prop_num"]["value"] += 1
+        for prop_name in reg.prop_list:
+            prop = reg.prop_list[prop_name]
+            if "is_exist" in prop:
+                if prop["is_exist"] == True:
+                    exist_prop_list.append(prop_name)
+                    reg.prop_list["sofi_prop_base_t"]["prop_num"]["value"] += 1
+        for prop_name in exist_prop_list:
+            #prop_name = exist_prop_list[i]
+            header_prop = prop_name.replace("_t", "").upper()
+            if prop_name == exist_prop_list[-1]:
+                # if it last property
+                header_next = "NULL"
+            else:
+                next_prop_name = exist_prop_list[exist_prop_list.index(prop_name) + 1]
+                next_prop = Proj.prop_list[next_prop_name]["reg_list"]
+                next_prop_ind = list(next_prop).index(reg_name)
+                header_next = "&{}[{}]".format(next_prop_name.replace("_t", "_list"),next_prop_ind)
+            header_t = {}
+            header_t["prop"] = header_prop
+            header_t["header_next"] = header_next
+            header_t["header_base"] = header_base
+            reg.prop_list[prop_name]["header"]["header_t"] = header_t
     #4. Create struct declarations (for regs_module.h)
     #5. Create property lists for each sofi_prop_t (for regs_module.c)
 

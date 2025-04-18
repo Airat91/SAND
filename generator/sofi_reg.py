@@ -85,3 +85,13 @@ sofi_prop_list = {
 		"access_en_timer_ms":	{"type": 	"u32",		"comment":	"Timer for access (if =0 the access disable)"},
 	},
 }
+
+class reg():
+	def __init__(self):
+		self.name = ""
+		self.struct = ""
+		self.prop_list = {}
+		for prop_name in sofi_prop_list:
+			self.prop_list[prop_name] = {}
+			for prop in sofi_prop_list[prop_name]:
+				self.prop_list[prop_name][prop] = {}
