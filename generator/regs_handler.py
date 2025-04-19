@@ -95,10 +95,12 @@ def regs_handler(Proj):
         if isinstance(array_len, int):
             array_len = array_len
         else:
-            reg.prop_list["sofi_prop_base_t"]["array_len"]["value"] = 1
+            array_len = 1
+            reg.prop_list["sofi_prop_base_t"]["array_len"]["value"] = array_len
             print(
                 Fore.YELLOW + Style.BRIGHT + "WARNING: register \"{}\" in struct \"{}\" array len is undefined so setted "
                                              "to 1".format(reg_name, struct_name))
+        reg.size_in_bytes = array_len * sofi_reg.sofi_var_t[reg.prop_list["sofi_prop_base_t"]["type"]["value"]]["byte_num"]
         #2.1.3 Check read_only flag
         read_only = reg.prop_list["sofi_prop_base_t"]["read_only"]["value"]
         if read_only == None:

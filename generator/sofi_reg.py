@@ -26,7 +26,7 @@ sofi_var_t = {
     "VAR_TYPE_S64":			{"byte_num":	8,	"comment":	"int64_t"},
 	"VAR_TYPE_FLOAT":		{"byte_num":	4,	"comment":	"float"},
     "VAR_TYPE_DOUBLE":		{"byte_num":	8,	"comment":	"double"},
-	"VAR_TYPE_STR":			{"byte_num":	1,	"comment":	"char"},
+	"VAR_TYPE_CHAR":		{"byte_num":	1,	"comment":	"char"},
 }
 
 #Available types of access level
@@ -89,7 +89,9 @@ sofi_prop_list = {
 class reg():
 	def __init__(self):
 		self.name = ""
+		self.type = ""
 		self.struct = ""
+		self.size_in_bytes = 0
 		self.prop_list = {}
 		for prop_name in sofi_prop_list:
 			self.prop_list[prop_name] = {}

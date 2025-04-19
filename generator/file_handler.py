@@ -257,6 +257,7 @@ def reg_map_module_xls_processing(Proj):
                     reg.prop_list[property]["is_exist"] = True
             reg_name = reg.prop_list["sofi_prop_base_t"]["name"]["value"]
             reg.name = reg_name
+            reg.type = reg.prop_list["sofi_prop_base_t"]["type"]["value"]
             reg.struct = struct_name
             Proj.struct_list[struct_name]["reg_list"][reg_name] = reg
         print("Struct \"{}\" found {} registers".format(struct_name, len(Proj.struct_list[struct_name]["reg_list"])))
@@ -277,6 +278,91 @@ def regs_module_h_processing(Proj):
     :param Proj: class Project (project_generator.Project)
     :return:
     """
+    file_name = "regs_module_h"
+    file = open(Proj.path[file_name], "r", encoding='UTF-8')
+    text_lines = file.readlines()
+    file.close()
+    # find start and end of regs_description struct
+    start_insert = generator.get_msg_line_nmbr(Proj, file_name, "sofi_struct", "insert_start")
+    end_insert = generator.get_msg_line_nmbr(Proj, file_name, "sofi_struct", "insert_end")
+    generator_insertion_find = False
+    if start_insert != "none" and end_insert != "none":
+        if start_insert < end_insert:
+            # We found end of regs_description struct
+            generator_insertion_find = True
+    if generator_insertion_find == False:
+        Proj.errors["err_msg"].append("Don't found #generator_message in " + file_name)
+    else:
+        # 1. Add sofi_properties to buffer for not corrupting file if errors
+        buffer = []
+        try:
+            # 1.1 Write generator message
+            buffer.append("// This part of file generated automatically, don't change it\n\n")
+
+            # 1.2 Calc words len for align text
+            max_spaces = [0, 0, 0, 0]
+            for struct_name in Proj.struct_list:
+                struct = Proj.struct_list[struct_name]
+                for reg_name in struct["reg_list"]:
+                    reg = struct["reg_list"][reg_name]
+                    # reg_type
+                    if len(reg.type) > max_spaces[0]:
+                        max_spaces[0] = len(reg.type)
+                    #reg_name
+                    if len(reg.name) > max_spaces[1]:
+                        max_spaces[1] = len(reg.name)
+                    #array_len
+                    array_len = reg.prop_list["sofi_prop_base_t"]["array_len"]["value"]
+                    if array_len > 1:
+                        if len("[{}]".format(array_len)) > max_spaces[2]:
+                            max_spaces[2] = len("[{}]".format(array_len))
+            # 1.3 Write struct to buffer
+            for struct_name in Proj.struct_list:
+                struct = Proj.struct_list[struct_name]
+                buffer.append("typedef union{\n\tstruct MCU_PACK{\n")
+                struct_byte_size = 0
+                for reg_name in struct["reg_list"]:
+                    reg = struct["reg_list"][reg_name]
+                    struct_byte_size += reg.size_in_bytes
+                    space_0 = " " * (max_spaces[0] - len(reg.type) + 1)
+                    space_1 = " " * (max_spaces[1] - len(reg.name) + 1)
+                    array_len = reg.prop_list["sofi_prop_base_t"]["array_len"]["value"]
+                    array_len_str = ""
+                    if array_len > 1:
+                        array_len_str = "[{}]".format(array_len)
+                        space_2 = " " * (max_spaces[2] - len(array_len_str))
+                    else:
+                        space_2 = " " * max_spaces[2]
+                    descr = reg.prop_list["sofi_prop_base_t"]["description"]["value"]
+                    buffer.append("\t\t{}{}{}{};{}{}// {}\n".format(reg.type, space_0, reg.name, array_len_str, space_1,
+                                                                space_2, descr))
+                buffer.append("\t}vars;\n")
+                buffer.append("\tu8 bytes[{}];\n".format(struct_byte_size))
+                buffer.append("}"+"{}_struct;\n".format(struct_name))
+                buffer.append("extern {}_struct {};\n\n".format(struct_name, struct_name))
+        except:
+            Proj.errors["err_msg"].append("Error during adding data to " + file_name)
+
+        # 2. Rewrite file with new insertion from generator
+        file = open(Proj.path[file_name], 'w', encoding='UTF-8')
+        line_index = 0
+        # 3. Write file before insertion
+        while line_index <= start_insert:
+            file.writelines(text_lines[line_index])
+            line_index += 1
+        line_index -= 1
+        # 4. Write insertion
+        if len(buffer) > 0:
+            for line in buffer:
+                file.writelines(line)
+        # 5. Write file afer insertion
+        line_index = end_insert - 1
+        while line_index < len(text_lines):
+            file.writelines(text_lines[line_index])
+            line_index += 1
+        # 6. Close modified file
+        file.close()
+
     return True
 
 def regs_module_c_processing(Proj):

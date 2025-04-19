@@ -134,7 +134,14 @@ def main():
     2. Read git-repository information
     3. Check errors
     4. Preprocess: Generate project structs and handle project files
-    5. Postprocess: Handle output hex-file
+        4.1 Replace build info
+        4.2 Checking project files hash and add into changed_list if changed
+        4.3 If sofi_reg.py in changed_list, add sofi_reg.h into changed_list
+        4.4 If sofi_reg.h in changed_list, run sofi_reg_h_processing()
+        4.5 If reg_map_module.xls in changed_list, run reg_map_module_xls_processing() and add regs_module_h into changed_list
+        4.6 If regs_module_h in changed_list, run regs_module_h_processing(), and add regs_module_c to changed_list
+        4.7 If regs_module_c in changed_list, run regs_module_c_processing()
+    5. Postprocess: Rename output HEX-file
     :return:
     """
     #1. Parse input parameters
@@ -187,7 +194,7 @@ def main():
                                                                        dt_now.hour, dt_now.minute)
         replace_define(PROJECT.path["build_info_h"], "BUILD_DATE", datetime_str)
 
-        #4.2 Fill generated_list
+        #4.2 Checking project files hash and add into generated_list if changed
         if args.generate_force:
             #4.2.1 Copy all generate files to generate list
             for file_name in PROJECT.generated_list:
