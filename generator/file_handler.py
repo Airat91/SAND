@@ -25,6 +25,7 @@ def sofi_reg_h_processing(Proj):
                 Proj.sofi_properties[prop_name] = property
         else:
             Proj.errors["err_msg"].append("generator/sofi_reg.py: '{}' haven't header".format(prop_name))
+            Proj.errors["err_cnt"] += 1
     if len(Proj.errors["err_msg"]) > 0:
         Proj.print_new_errors()
         quit("Generator breaked")
@@ -37,12 +38,13 @@ def sofi_reg_h_processing(Proj):
     start_insert = generator.get_msg_line_nmbr(Proj,file_name, "sofi_properties", "insert_start")
     end_insert = generator.get_msg_line_nmbr(Proj,file_name, "sofi_properties", "insert_end")
     generator_insertion_find = False
-    if start_insert != "none" and end_insert != "none":
+    if start_insert != "not_found" and end_insert != "not_found":
         if start_insert < end_insert:
             # We found end of regs_description struct
             generator_insertion_find = True
     if generator_insertion_find == False:
         Proj.errors["err_msg"].append("Don't found #generator_message in " + file_name)
+        Proj.errors["err_cnt"] += 1
     else:
         # 1. Add sofi_properties to buffer for not corrupting file if errors
         buffer = []
@@ -120,7 +122,10 @@ def sofi_reg_h_processing(Proj):
                 buffer.append("}"+"{};\n\n".format(prop_name))
         except:
             Proj.errors["err_msg"].append("Error during adding data to " + file_name)
+            Proj.errors["err_cnt"] += 1
 
+    # 4. Rewrite file with new insertion from generator
+    if generator_insertion_find == True:
         # 2. Rewrite sofi_reg.h file with new insertion from generator
         file = open(Proj.path[file_name], 'w', encoding='UTF-8')
         line_index = 0
@@ -308,6 +313,11 @@ def regs_module_h_processing(Proj):
                 if len(define_str) > max_spaces[0]:
                     max_spaces[0] = len(define_str)
 
+            for prop_name in Proj.prop_list:
+                define_str = "{}_REG_NUM".format(prop_name.replace("_t",""))
+                if len(define_str) > max_spaces[0]:
+                    max_spaces[0] = len(define_str)
+
             # 1.1.3 Write defines to buffer_define
             for struct_name in Proj.struct_list:
                 struct = Proj.struct_list[struct_name]
@@ -315,6 +325,15 @@ def regs_module_h_processing(Proj):
                 define_str = "{}_STRUCT_SIZE".format(struct_name).upper()
                 space_0 = " " * (max_spaces[0] - len(define_str) + 1)
                 buffer_define.append("#define {}{}\t{}\n".format(define_str, space_0, struct_byte_size))
+
+            buffer_define.append("\n")
+            for prop_name in Proj.prop_list:
+                prop = Proj.prop_list[prop_name]
+                prop_reg_num = len(prop["reg_list"])
+                define_str = "{}_REG_NUM".format(prop_name.replace("_t","")).upper()
+                space_0 = " " * (max_spaces[0] - len(define_str) + 1)
+                buffer_define.append("#define {}{}\t{}\n".format(define_str, space_0, prop_reg_num))
+
         except:
             Proj.errors["err_msg"].append("Error during adding defines to " + file_name)
             Proj.errors["err_cnt"] += 1
@@ -401,7 +420,11 @@ def regs_module_h_processing(Proj):
             # 3.1.2 Calc words len for align text
             max_spaces = [0]
             for struct_name in Proj.struct_list:
-                ext_str = "#{}_struct".format(struct_name)
+                ext_str = "{}_struct".format(struct_name)
+                if len(ext_str) > max_spaces[0]:
+                    max_spaces[0] = len(ext_str)
+            for prop_name in Proj.prop_list:
+                ext_str = "const {}".format(prop_name)
                 if len(ext_str) > max_spaces[0]:
                     max_spaces[0] = len(ext_str)
 
@@ -410,6 +433,13 @@ def regs_module_h_processing(Proj):
                 ext_str = "{}_struct".format(struct_name)
                 space_0 = " " * (max_spaces[0] - len(ext_str) + 1)
                 buffer_external.append("extern {}{}\t{};\n".format(ext_str, space_0, struct_name))
+            buffer_external.append("\n")
+
+            for prop_name in Proj.prop_list:
+                ext_str = "const {}".format(prop_name)
+                prop_list_name = prop_name.replace("_t", "_list")
+                space_0 = " " * (max_spaces[0] - len(ext_str) + 1)
+                buffer_external.append("extern {}{}\t{}[];\n".format(ext_str, space_0, prop_list_name))
         except:
             Proj.errors["err_msg"].append("Error during adding external variables declaration to " + file_name)
             Proj.errors["err_cnt"] += 1
@@ -465,5 +495,126 @@ def regs_module_c_processing(Proj):
     :param Proj: class Project (project_generator.Project)
     :return:
     """
+    file_name = "regs_module_c"
+    file = open(Proj.path[file_name], "r", encoding='UTF-8')
+    text_lines = file.readlines()
+    file.close()
+    # 1 Find start and end of sofi_properties
+    prop_insert_start = generator.get_msg_line_nmbr(Proj, file_name, "sofi_properties", "insert_start")
+    prop_insert_end = generator.get_msg_line_nmbr(Proj, file_name, "sofi_properties", "insert_end")
+    prop_insert_find = False
+    if prop_insert_start != "not_found" and prop_insert_end != "not_found":
+        if prop_insert_start < prop_insert_end:
+            # We found end of regs_description struct
+            prop_insert_find = True
+    if prop_insert_find == False:
+        Proj.errors["err_msg"].append("Don't found #generator_message \"sofi_properties\" in " + file_name)
+        Proj.errors["err_cnt"] += 1
+    else:
+        # 1.1. Add defines to buffer for not corrupting file if errors
+        buffer_prop = []
+        try:
+            # 1.1.1 Write generator message
+            buffer_prop.append("// This part of file generated automatically, don't change it\n")
+
+            for prop_name in Proj.prop_list:
+                prop_list = Proj.prop_list[prop_name]
+                # 1.1.2 Calc words len for align text
+                prop_param_list = list(sofi_reg.sofi_prop_list[prop_name].keys())
+                prop_param_list.remove("header")
+                header_param_list = list(sofi_reg.sofi_header_t.keys())
+                max_spaces = [0] * (len(prop_param_list) + len(header_param_list))
+                for header_param in header_param_list:
+                    ind = header_param_list.index(header_param)
+                    if len(header_param) > max_spaces[ind]:
+                        max_spaces[ind] = len(header_param)
+                for prop_param in prop_param_list:
+                    ind = prop_param_list.index(prop_param) + len(header_param_list)
+                    if len(prop_param) > max_spaces[ind]:
+                        max_spaces[ind] = len(prop_param)
+
+                for reg_name in prop_list["reg_list"]:
+                    reg = prop_list["reg_list"][reg_name]
+                    for header_param in header_param_list:
+                        ind = header_param_list.index(header_param)
+                        header = reg.prop_list[prop_name]["header"]
+                        if len(header["header_t"][header_param]) > max_spaces[ind]:
+                            max_spaces[ind] = len(header["header_t"][header_param])
+                    for prop_param in prop_param_list:
+                        ind = prop_param_list.index(prop_param) + len(header_param_list)
+                        prop = reg.prop_list[prop_name][prop_param]
+                        if "value" in prop:
+                            if len(str(prop["value"])) > max_spaces[ind]:
+                                max_spaces[ind] = len(str(prop["value"]))
+
+                # 1.1.3 Write prop_list to buffer_prop
+                prop_list_name = prop_name.replace("_t", "_list")
+                prop_list_reg_num = prop_name.replace("_t", "").upper() + "_REG_NUM"
+                buffer_prop.append("const {} {}[{}]".format(prop_name, prop_list_name, prop_list_reg_num))
+                buffer_prop.append("={\n")
+
+                # Write property parameters
+                buffer_prop.append("//")
+                for header_param in header_param_list:
+                    ind = header_param_list.index(header_param)
+                    spaces = " " * (max_spaces[ind] - len(header_param) + 1)
+                    buffer_prop.append("{}{}\t".format(header_param, spaces))
+                for prop_param in prop_param_list:
+                    ind = prop_param_list.index(prop_param) + len(header_param_list)
+                    spaces = " " * (max_spaces[ind] - len(prop_param) + 1)
+                    buffer_prop.append("{}{}\t".format(prop_param, spaces))
+                buffer_prop.append("\n")
+
+                # Write property values
+                for reg_name in prop_list["reg_list"]:
+                    reg = prop_list["reg_list"][reg_name]
+                    buffer_prop.append("{{")
+                    for header_param in header_param_list:
+                        ind = header_param_list.index(header_param)
+                        header_val = reg.prop_list[prop_name]["header"]["header_t"][header_param]
+                        if header_param != header_param_list[-1]:
+                            spaces = " " * (max_spaces[ind] - len(header_val))
+                            buffer_prop.append("{},{}\t".format(header_val, spaces))
+                        else:
+                            spaces = " " * (max_spaces[ind] - len(header_val))
+                            buffer_prop.append(header_val + "}," + spaces + "\t")
+
+
+                    for prop_param in prop_param_list:
+                        ind = prop_param_list.index(prop_param) + len(header_param_list)
+                        if "value" in reg.prop_list[prop_name][prop_param]:
+                            prop_val = reg.prop_list[prop_name][prop_param]["value"]
+                        else:
+                            prop_val = "error"
+                        if prop_param != prop_param_list[-1]:
+                            spaces = " " * (max_spaces[ind] - len(str(prop_val)))
+                            buffer_prop.append("{},{}\t".format(prop_val, spaces))
+                        else:
+                            buffer_prop.append("{}".format(prop_val) + "},\n")
+                buffer_prop.append("};\n\n")
+        except:
+            Proj.errors["err_msg"].append("Error during adding property lists to " + file_name)
+            Proj.errors["err_cnt"] += 1
+
+    # 2. Rewrite file with new insertion from generator
+    if prop_insert_find == True:
+
+        file = open(Proj.path[file_name], 'w', encoding='UTF-8')
+        line_index = 0
+        # 2.1. Write file before insertion
+        while line_index <= prop_insert_start:
+            file.writelines(text_lines[line_index])
+            line_index += 1
+        # 2.2. Write property lists insertion
+        for line in buffer_prop:
+            file.writelines(line)
+        # 2.3. Write file after insertion
+        line_index = prop_insert_end
+        while line_index < len(text_lines):
+            file.writelines(text_lines[line_index])
+            line_index += 1
+        # 2.4. Close modified file
+        file.close()
+
     return True
 

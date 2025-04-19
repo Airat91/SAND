@@ -35,7 +35,9 @@ def regs_handler(Proj):
                                                    "to {}".format(name, struct_name, shorted_name))
                 name = shorted_name
                 reg.name = shorted_name
-                reg.prop_list["sofi_prop_base_t"]["name"]["value"] = name
+                reg.prop_list["sofi_prop_base_t"]["name"]["value"] = "\"{}\"".format(name)
+            else:
+                reg.prop_list["sofi_prop_base_t"]["name"]["value"] = "\"{}\"".format(name)
             if name not in reg_name_list:
                 reg_name_list.append(name)
             else:
@@ -43,7 +45,7 @@ def regs_handler(Proj):
                                                    "renamed to \"{}_{}\"".format(name, struct_name, name, reg_index))
                 name = "{}_{}".format(name, reg_index)
                 reg.name = name
-                reg.prop_list["sofi_prop_base_t"]["name"]["value"] = name
+                reg.prop_list["sofi_prop_base_t"]["name"]["value"] = "\"{}\"".format(name)
                 reg_name_list.append(name)
             #1.2 Check reg type
             type = reg.prop_list["sofi_prop_base_t"]["type"]["value"]
@@ -81,7 +83,9 @@ def regs_handler(Proj):
     for reg_name in Proj.prop_list["sofi_prop_base_t"]["reg_list"]:
         reg = Proj.prop_list["sofi_prop_base_t"]["reg_list"][reg_name]
         struct_name = get_struct_of_reg(reg_name, Proj)
-        #2.1.1 Check reg description
+        #2.1.1 A pointer to value
+        reg.prop_list["sofi_prop_base_t"]["p_value"]["value"] = "(u8*)&{}.vars.{}".format(struct_name, reg.name)
+        #2.1.2 Check reg description
         description = reg.prop_list["sofi_prop_base_t"]["description"]["value"]
         if isinstance(description, str):
             if len(description) > sofi_reg.SOFI_LIMITS["descr_max_len"]:
@@ -90,7 +94,9 @@ def regs_handler(Proj):
                     Fore.YELLOW + Style.BRIGHT + "WARNING: register \"{}\" in struct \"{}\" description is too long and shorted "
                                                  "to {}".format(reg_name, struct_name, shorted_description))
                 reg.prop_list["sofi_prop_base_t"]["description"]["value"] = shorted_description
-        #2.1.2 Check array len
+        description = reg.prop_list["sofi_prop_base_t"]["description"]["value"]
+        reg.prop_list["sofi_prop_base_t"]["description"]["value"] = "\"{}\"".format(description)
+        #2.1.3 Check array len
         array_len = reg.prop_list["sofi_prop_base_t"]["array_len"]["value"]
         if isinstance(array_len, int):
             array_len = array_len
@@ -102,7 +108,7 @@ def regs_handler(Proj):
                                              "to 1".format(reg_name, struct_name))
         reg.size_in_bytes = array_len * sofi_reg.sofi_var_t[reg.prop_list["sofi_prop_base_t"]["type"]["value"]]["byte_num"]
         Proj.struct_list[struct_name]["byte_size"] += reg.size_in_bytes
-        #2.1.3 Check read_only flag
+        #2.1.4 Check read_only flag
         read_only = reg.prop_list["sofi_prop_base_t"]["read_only"]["value"]
         if read_only == None:
             reg.prop_list["sofi_prop_base_t"]["read_only"]["value"] = 0
@@ -303,6 +309,7 @@ def regs_handler(Proj):
                     Fore.YELLOW + Style.BRIGHT + "WARNING: register \"{}\" in struct \"{}\" access_lvl \"{}\" is "
                                                  "undefined and changed to \"{}\"".format(reg_name, struct_name,
                                                                                           access_lvl, access_lvl_new))
+        reg.prop_list["sofi_prop_access_t"]["access_en_timer_ms"]["value"] = 0
 
     #3. Appoint property headers links
     #3.1 Add header_t struct to property headers for all regs and properties
@@ -319,7 +326,7 @@ def regs_handler(Proj):
     for reg_name in Proj.prop_list["sofi_prop_base_t"]["reg_list"]:
         reg = Proj.prop_list["sofi_prop_base_t"]["reg_list"][reg_name]
         reg.prop_list["sofi_prop_base_t"]["prop_num"]["value"] = 0
-        header_base = "&sofi_prop_base_list[{}]".format(list(Proj.prop_list["sofi_prop_base_t"]["reg_list"]).index(reg_name))
+        header_base = "(void*)&sofi_prop_base_list[{}]".format(list(Proj.prop_list["sofi_prop_base_t"]["reg_list"]).index(reg_name))
         # Create exist_prop_list
         exist_prop_list = []
         for prop_name in reg.prop_list:
@@ -338,7 +345,7 @@ def regs_handler(Proj):
                 next_prop_name = exist_prop_list[exist_prop_list.index(prop_name) + 1]
                 next_prop = Proj.prop_list[next_prop_name]["reg_list"]
                 next_prop_ind = list(next_prop).index(reg_name)
-                header_next = "&{}[{}]".format(next_prop_name.replace("_t", "_list"),next_prop_ind)
+                header_next = "(void*)&{}[{}]".format(next_prop_name.replace("_t", "_list"),next_prop_ind)
             header_t = {}
             header_t["prop"] = header_prop
             header_t["header_next"] = header_next
