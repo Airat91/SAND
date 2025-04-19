@@ -18,13 +18,13 @@ from colorama import Fore, Back, Style, init
 import file_handler
 import regs_handler
 
-#init(autoreset=True)
-
 GENERATOR = {
     "marker": "#generator_message",     #marker in file for parse by generator
     "msg": [                            #list of available messages
         "sofi_properties",                  #properties typedefs
         "sofi_struct",                      #global struct
+        "sofi_struct_external",             #external struct definitions
+        "sofi_struct_define",               #global struct defines
     ],
     "action": ["insert_start","insert_end","search_start","search_end"],
     "type_module": ["ai","ao","di","do","do_16","multi","bric","all","do_r_16","di_n_16","do_24", "comb_22"],

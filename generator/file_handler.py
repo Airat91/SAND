@@ -195,6 +195,7 @@ def reg_map_module_xls_processing(Proj):
         Proj.struct_list[struct_name] = {
             "name": struct_name,
             "reg_list": {},
+            "byte_size": 0,
         }
         project_struct = Proj.struct_list[struct_name]
         # Find sheet of current struct
@@ -282,24 +283,61 @@ def regs_module_h_processing(Proj):
     file = open(Proj.path[file_name], "r", encoding='UTF-8')
     text_lines = file.readlines()
     file.close()
-    # find start and end of regs_description struct
-    start_insert = generator.get_msg_line_nmbr(Proj, file_name, "sofi_struct", "insert_start")
-    end_insert = generator.get_msg_line_nmbr(Proj, file_name, "sofi_struct", "insert_end")
-    generator_insertion_find = False
-    if start_insert != "none" and end_insert != "none":
-        if start_insert < end_insert:
+    # 1 Find start and end of sofi_struct_define
+    define_insert_start = generator.get_msg_line_nmbr(Proj, file_name, "sofi_struct_define", "insert_start")
+    define_insert_end = generator.get_msg_line_nmbr(Proj, file_name, "sofi_struct_define", "insert_end")
+    define_insert_find = False
+    if define_insert_start != "not_found" and define_insert_end != "not_found":
+        if define_insert_start < define_insert_end:
             # We found end of regs_description struct
-            generator_insertion_find = True
-    if generator_insertion_find == False:
-        Proj.errors["err_msg"].append("Don't found #generator_message in " + file_name)
+            define_insert_find = True
+    if define_insert_find == False:
+        Proj.errors["err_msg"].append("Don't found #generator_message \"sofi_struct_define\" in " + file_name)
+        Proj.errors["err_cnt"] += 1
     else:
-        # 1. Add sofi_properties to buffer for not corrupting file if errors
-        buffer = []
+        # 1.1. Add defines to buffer for not corrupting file if errors
+        buffer_define = []
         try:
-            # 1.1 Write generator message
-            buffer.append("// This part of file generated automatically, don't change it\n\n")
+            # 1.1.1 Write generator message
+            buffer_define.append("// This part of file generated automatically, don't change it\n")
 
-            # 1.2 Calc words len for align text
+            # 1.1.2 Calc words len for align text
+            max_spaces = [0]
+            for struct_name in Proj.struct_list:
+                define_str = "{}_STRUCT_SIZE".format(struct_name)
+                if len(define_str) > max_spaces[0]:
+                    max_spaces[0] = len(define_str)
+
+            # 1.1.3 Write defines to buffer_define
+            for struct_name in Proj.struct_list:
+                struct = Proj.struct_list[struct_name]
+                struct_byte_size = struct["byte_size"]
+                define_str = "{}_STRUCT_SIZE".format(struct_name).upper()
+                space_0 = " " * (max_spaces[0] - len(define_str) + 1)
+                buffer_define.append("#define {}{}\t{}\n".format(define_str, space_0, struct_byte_size))
+        except:
+            Proj.errors["err_msg"].append("Error during adding defines to " + file_name)
+            Proj.errors["err_cnt"] += 1
+
+    # 2. Find start and end of sofi_struct
+    struct_insert_start = generator.get_msg_line_nmbr(Proj, file_name, "sofi_struct", "insert_start")
+    struct_insert_end = generator.get_msg_line_nmbr(Proj, file_name, "sofi_struct", "insert_end")
+    struct_insertion_find = False
+    if struct_insert_start != "not_found" and struct_insert_end != "not_found":
+        if struct_insert_start < struct_insert_end:
+            # We found end of sofi_struct
+            struct_insertion_find = True
+    if struct_insertion_find == False:
+        Proj.errors["err_msg"].append("Don't found #generator_message \"sofi_struct\" in " + file_name)
+        Proj.errors["err_cnt"] += 1
+    else:
+        # 2.1. Add structs to buffer for not corrupting file if errors
+        buffer_struct = []
+        try:
+            # 2.1.1 Write generator message
+            buffer_struct.append("// This part of file generated automatically, don't change it\n")
+
+            # 2.1.2 Calc words len for align text
             max_spaces = [0, 0, 0, 0]
             for struct_name in Proj.struct_list:
                 struct = Proj.struct_list[struct_name]
@@ -316,14 +354,12 @@ def regs_module_h_processing(Proj):
                     if array_len > 1:
                         if len("[{}]".format(array_len)) > max_spaces[2]:
                             max_spaces[2] = len("[{}]".format(array_len))
-            # 1.3 Write struct to buffer
+            # 2.1.3 Write struct to buffer_struct
             for struct_name in Proj.struct_list:
                 struct = Proj.struct_list[struct_name]
-                buffer.append("typedef union{\n\tstruct MCU_PACK{\n")
-                struct_byte_size = 0
+                buffer_struct.append("typedef union{\n\tstruct MCU_PACK{\n")
                 for reg_name in struct["reg_list"]:
                     reg = struct["reg_list"][reg_name]
-                    struct_byte_size += reg.size_in_bytes
                     space_0 = " " * (max_spaces[0] - len(reg.type) + 1)
                     space_1 = " " * (max_spaces[1] - len(reg.name) + 1)
                     array_len = reg.prop_list["sofi_prop_base_t"]["array_len"]["value"]
@@ -334,33 +370,91 @@ def regs_module_h_processing(Proj):
                     else:
                         space_2 = " " * max_spaces[2]
                     descr = reg.prop_list["sofi_prop_base_t"]["description"]["value"]
-                    buffer.append("\t\t{}{}{}{};{}{}// {}\n".format(reg.type, space_0, reg.name, array_len_str, space_1,
+                    buffer_struct.append("\t\t{}{}{}{};{}{}// {}\n".format(reg.type, space_0, reg.name, array_len_str, space_1,
                                                                 space_2, descr))
-                buffer.append("\t}vars;\n")
-                buffer.append("\tu8 bytes[{}];\n".format(struct_byte_size))
-                buffer.append("}"+"{}_struct;\n".format(struct_name))
-                buffer.append("extern {}_struct {};\n\n".format(struct_name, struct_name))
+                buffer_struct.append("\t}vars;\n")
+                struct_size = struct_name.upper()+"_STRUCT_SIZE"
+                buffer_struct.append("\tu8 bytes[{}];\n".format(struct_size))
+                buffer_struct.append("}"+"{}_struct;\n\n".format(struct_name))
         except:
-            Proj.errors["err_msg"].append("Error during adding data to " + file_name)
+            Proj.errors["err_msg"].append("Error during adding structs to " + file_name)
+            Proj.errors["err_cnt"] += 1
 
-        # 2. Rewrite file with new insertion from generator
+    # 3. Find start and end of sofi_struct_external
+    external_insert_start = generator.get_msg_line_nmbr(Proj, file_name, "sofi_struct_external", "insert_start")
+    external_insert_end = generator.get_msg_line_nmbr(Proj, file_name, "sofi_struct_external", "insert_end")
+    external_insertion_find = False
+    if external_insert_start != "not_found" and external_insert_end != "not_found":
+        if external_insert_start < external_insert_end:
+            # We found end of sofi_struct_external
+            external_insertion_find = True
+    if external_insertion_find == False:
+        Proj.errors["err_msg"].append("Don't found #generator_message \"sofi_struct_external\" in " + file_name)
+        Proj.errors["err_cnt"] += 1
+    else:
+        # 3.1. Add structs to buffer for not corrupting file if errors
+        buffer_external = []
+        try:
+            # 3.1.1 Write generator message
+            buffer_external.append("// This part of file generated automatically, don't change it\n")
+
+            # 3.1.2 Calc words len for align text
+            max_spaces = [0]
+            for struct_name in Proj.struct_list:
+                ext_str = "#{}_struct".format(struct_name)
+                if len(ext_str) > max_spaces[0]:
+                    max_spaces[0] = len(ext_str)
+
+            # 3.1.3 Write external variables declaration to buffer_external
+            for struct_name in Proj.struct_list:
+                ext_str = "{}_struct".format(struct_name)
+                space_0 = " " * (max_spaces[0] - len(ext_str) + 1)
+                buffer_external.append("extern {}{}\t{};\n".format(ext_str, space_0, struct_name))
+        except:
+            Proj.errors["err_msg"].append("Error during adding external variables declaration to " + file_name)
+            Proj.errors["err_cnt"] += 1
+
+    # 4. Rewrite file with new insertion from generator
+    if define_insert_find == True and struct_insertion_find == True and external_insertion_find == True:
+        # 4.1 Check sequence of insertions
+        if (define_insert_start > struct_insert_start) or (define_insert_end > external_insert_start) or (struct_insert_start > external_insert_start):
+            Proj.errors["err_msg"].append("Error sequence of insertions in " + file_name)
+            Proj.errors["err_cnt"] += 1
+            return False
+
         file = open(Proj.path[file_name], 'w', encoding='UTF-8')
         line_index = 0
-        # 3. Write file before insertion
-        while line_index <= start_insert:
+        # 4.1. Write file before insertion
+        while line_index <= define_insert_start:
             file.writelines(text_lines[line_index])
             line_index += 1
-        line_index -= 1
-        # 4. Write insertion
-        if len(buffer) > 0:
-            for line in buffer:
-                file.writelines(line)
-        # 5. Write file afer insertion
-        line_index = end_insert - 1
+        # 4.2. Write defines insertion
+        for line in buffer_define:
+            file.writelines(line)
+        # 4.3. Write file between defines and structs insertion
+        line_index = define_insert_end
+        while line_index <= struct_insert_start:
+            file.writelines(text_lines[line_index])
+            line_index += 1
+        #line_index -= 1
+        # 4.4. Write structs insertion
+        for line in buffer_struct:
+            file.writelines(line)
+        # 4.5. Write file between structs and external insertion
+        line_index = struct_insert_end
+        while line_index <= external_insert_start:
+            file.writelines(text_lines[line_index])
+            line_index += 1
+        #line_index -= 1
+        # 4.6. Write external insertion
+        for line in buffer_external:
+            file.writelines(line)
+        # 4.7. Write file after external insertion
+        line_index = external_insert_end
         while line_index < len(text_lines):
             file.writelines(text_lines[line_index])
             line_index += 1
-        # 6. Close modified file
+        # 4.8. Close modified file
         file.close()
 
     return True

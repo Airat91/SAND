@@ -101,6 +101,7 @@ def regs_handler(Proj):
                 Fore.YELLOW + Style.BRIGHT + "WARNING: register \"{}\" in struct \"{}\" array len is undefined so setted "
                                              "to 1".format(reg_name, struct_name))
         reg.size_in_bytes = array_len * sofi_reg.sofi_var_t[reg.prop_list["sofi_prop_base_t"]["type"]["value"]]["byte_num"]
+        Proj.struct_list[struct_name]["byte_size"] += reg.size_in_bytes
         #2.1.3 Check read_only flag
         read_only = reg.prop_list["sofi_prop_base_t"]["read_only"]["value"]
         if read_only == None:
