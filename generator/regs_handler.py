@@ -15,8 +15,6 @@ def regs_handler(Proj):
     1. Validate regs names and regs types in project structs and appoint indexes
     2. Appoint regs parameters for each prop_list
     3. Appoint property headers links
-    4. Create struct declarations (for regs_module.h)
-    5. Create property lists for each sofi_prop_t (for regs_module.c)
     :param Proj: class Project (project_generator.Project)
     :return:
     """
@@ -343,8 +341,6 @@ def regs_handler(Proj):
             header_t["header_next"] = header_next
             header_t["header_base"] = header_base
             reg.prop_list[prop_name]["header"]["header_t"] = header_t
-    #4. Create struct declarations (for regs_module.h)
-    #5. Create property lists for each sofi_prop_t (for regs_module.c)
 
     print("Regs_handler done. Handled {} registers".format(reg_index))
 

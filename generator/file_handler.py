@@ -33,30 +33,14 @@ def sofi_reg_h_processing(Proj):
     file = open(Proj.path[file_name], "r", encoding='UTF-8')
     text_lines = file.readlines()
     file.close()
-    # find start of regs_description struct
-    line_index = 0
-    start_insert = 0
-    end_insert = 0
+    # find start and end of regs_description struct
+    start_insert = generator.get_msg_line_nmbr(Proj,file_name, "sofi_properties", "insert_start")
+    end_insert = generator.get_msg_line_nmbr(Proj,file_name, "sofi_properties", "insert_end")
     generator_insertion_find = False
-    while line_index < len(text_lines) and generator_insertion_find == False:
-        line = text_lines[line_index]
-        generator_marker = generator.check_generator_descriptions(text_lines[line_index])
-        if generator_marker != "none":
-            # We found generator marker
-            if (type(generator_marker) == dict and generator_marker["msg"] == "sofi_properties" and
-                    generator_marker["action"] == "insert_start"):
-                # We found correct generator_marker. Lets find end of struct
-                start_insert = line_index
-                end_insert = line_index + 1
-                generator_marker = generator.check_generator_descriptions(text_lines[end_insert])
-                while generator_marker == "none" and end_insert < len(text_lines):
-                    generator_marker = generator.check_generator_descriptions(text_lines[end_insert])
-                    end_insert += 1
-                    if (type(generator_marker) == dict and generator_marker["msg"] == "sofi_properties" and
-                            generator_marker["action"] == "insert_end"):
-                        # We found end of regs_description struct
-                        generator_insertion_find = True
-        line_index += 1
+    if start_insert != "none" and end_insert != "none":
+        if start_insert < end_insert:
+            # We found end of regs_description struct
+            generator_insertion_find = True
     if generator_insertion_find == False:
         Proj.errors["err_msg"].append("Don't found #generator_message in " + file_name)
     else:
@@ -287,10 +271,6 @@ def reg_map_module_xls_processing(Proj):
                         Proj.prop_list[property_name]["reg_list"][reg_name] = reg
     print("reg_map_module_xls_processing done")
 
-
-
-
-
 def regs_module_h_processing(Proj):
     """
     Write project structs into regs_module.h
@@ -306,3 +286,4 @@ def regs_module_c_processing(Proj):
     :return:
     """
     return True
+

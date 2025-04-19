@@ -128,6 +128,15 @@ class Project():
             print(Fore.RED + Style.BRIGHT + "GENERATOR ERROR: {}".format(self.errors["err_msg"][i]))
 
 def main():
+    """
+    Main generator function
+    1. Parse input parameters and options
+    2. Read git-repository information
+    3. Check errors
+    4. Preprocess: Generate project structs and handle project files
+    5. Postprocess: Handle output hex-file
+    :return:
+    """
     #1. Parse input parameters
     parser = argparse.ArgumentParser(description=__description__)
     parser.add_argument('--pre',
@@ -411,6 +420,49 @@ def check_generator_descriptions(line):
     else:
         return "none"
 
+def get_msg_line_nmbr(Proj, file_name, generator_msg, generator_action):
+    """
+    Read file and return line number with generator message
+    :param Proj: Project object
+    :param file_name: file name in Proj.path list
+    :param generator_msg: see GENERATOR["msg"] value
+    :param generator_action: see  GENERATOR["action"] value
+    :return:    line_number int value,
+                "none" str if generator_message not found or invalid
+    """
+    # Check generator_message
+    if generator_msg not in GENERATOR["msg"]:
+        Proj.errors["err_msg"].append("\"get_msg_line_nmbr()\": generator_message \"{}\" is unknown. Available values: "
+                                      "{}".format(generator_msg, GENERATOR["msg"]))
+        Proj.errors["err_cnt"] += 1
+        return "not_found"
+    if generator_action not in GENERATOR["action"]:
+        Proj.errors["err_msg"].append("\"get_msg_line_nmbr()\": generator_action \"{}\" is unknown. Available values: "
+                                      "{}".format(generator_action, GENERATOR["action"]))
+        Proj.errors["err_cnt"] += 1
+        return "not_found"
+    # Find generator_message in file
+    file = open(Proj.path[file_name], "r", encoding='UTF-8')
+    text_lines = file.readlines()
+    file.close()
+    # find start of regs_description struct
+    line_index = 0
+    start_insert = 0
+    end_insert = 0
+    generator_marker_find = False
+    while line_index < len(text_lines) and generator_marker_find == False:
+        line = text_lines[line_index]
+        generator_marker = check_generator_descriptions(text_lines[line_index])
+        if generator_marker != "none":
+            # We found generator marker
+            if (type(generator_marker) == dict and generator_marker["msg"] == generator_msg and
+                    generator_marker["action"] == generator_action):
+                generator_marker_find = True
+                # We found correct generator_marker. Return line number
+                return line_index
+        line_index += 1
+    if generator_marker_find  == False:
+        return "not_found"
 
 
 if __name__ == "__main__":
