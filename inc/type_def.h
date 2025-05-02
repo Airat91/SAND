@@ -47,4 +47,13 @@ typedef volatile unsigned char const vuc8;
 #define MCU_PRIV_CODE MCU_ROOT_CODE
 #define asm __asm
 
+#if defined __MINGW32__
+#define MCU_PACK __attribute__((packed, gcc_struct))
+#else
+#define MCU_PACK __attribute__((packed))
+#endif
+
+/* A null pointer constant.  */
+#define NULL ((void *)0)
+
 #endif// TYPE_DEF_H

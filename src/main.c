@@ -1,4 +1,3 @@
-
 /**
   ******************************************************************************
   * @file           : main.c
@@ -46,43 +45,11 @@
   *
   ******************************************************************************
   */
-/* Includes ------------------------------------------------------------------*/
+
 #include "main.h"
-#include "stm32f1xx_hal.h"
-#include "stdlib.h"
-#include "cmsis_os.h"
-#include "stm32f1xx_hal_gpio.h"
-#include "stm32f1xx_hal_iwdg.h"
-#include "dcts.h"
-#include "dcts_config.h"
-#include "pin_map.h"
-#include "adc.h"
-#include "portable.h"
-#include "am2302.h"
-#include "max7219.h"
-#include "buttons.h"
-#include "menu.h"
-#include "flash.h"
-#include "uart.h"
-#include "modbus.h"
-//#include "st7735.h"
-#include <string.h>
-#include "ds18b20.h"
 
-/**
-  * @defgroup MAIN
-  */
+//-------Global variables------
 
-#define RELEASE 1
-#define RESET_HOLD 3000
-
-typedef enum{
-    READ_FLOAT_SIGNED = 0,
-    READ_FLOAT_UNSIGNED,
-}read_float_bkp_sign_t;
-
-
-/* Private variables ---------------------------------------------------------*/
 RTC_HandleTypeDef hrtc;
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
@@ -95,29 +62,10 @@ osThreadId buttonsTaskHandle;
 osThreadId navigationTaskHandle;
 osThreadId uartTaskHandle;
 uint8_t irq_state = IRQ_NONE;
-
-
-/* Private function prototypes -----------------------------------------------*/
-void SystemClock_Config(void);
-static void MX_IWDG_Init(void);
-static void RTC_Init(void);
-static void tim2_init(void);
-static void save_to_bkp(u8 bkp_num, u8 var);
-static void save_float_to_bkp(u8 bkp_num, float var);
-static u8 read_bkp(u8 bkp_num);
-static float read_float_bkp(u8 bkp_num, u8 sign);
-static void led_lin_init(void);
-static void data_pin_irq_init(void);
-static void save_params(void);
-static void restore_params(void);
-
-static void print_main(void);
-static void print_menu(void);
-static void print_value(u8 tick);
-
-void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
-
 uint32_t us_cnt_H = 0;
+
+//-------Static variables------
+
 static edit_val_t edit_val = {0};
 static navigation_t navigation_style = MENU_NAVIGATION;
 saved_to_flash_t config;
@@ -152,53 +100,40 @@ static const char data_pin_description[3][20] = {
     "cloning",
 };
 
-void dcts_init (void) {
-    dcts.dcts_id = DCTS_ID_MEASURE;
-    strcpy (dcts.dcts_ver, "1.2.0");
-    strcpy (dcts.dcts_name, "Parilka");
-    strcpy (dcts.dcts_name_cyr, "Парилка");
-    dcts.dcts_address = 0x0C;
-    dcts.dcts_rtc.day = 1;
-    dcts.dcts_rtc.month = 1;
-    dcts.dcts_rtc.year = 2000;
-    dcts.dcts_rtc.weekday = 6;
-    dcts.dcts_rtc.hour = 12;
-    dcts.dcts_rtc.minute = 0;
-    dcts.dcts_rtc.second = 0;
-    dcts.dcts_pwr = 0.0f;
-    dcts.dcts_meas_num = MEAS_NUM;
-    dcts.dcts_rele_num = RELE_NUM;
-    dcts.dcts_act_num  = ACT_NUM;
-    dcts.dcts_alrm_num = ALRM_NUM;
+//-------Static functions declaration-----------
 
-    //meas_channels
+static void SystemClock_Config(void);
+static void MX_IWDG_Init(void);
+static void RTC_Init(void);
+static void tim2_init(void);
+static void save_to_bkp(u8 bkp_num, u8 var);
+static void save_float_to_bkp(u8 bkp_num, float var);
+static u8 read_bkp(u8 bkp_num);
+static float read_float_bkp(u8 bkp_num, u8 sign);
+static void led_lin_init(void);
+static void data_pin_irq_init(void);
+static void save_params(void);
+static void restore_params(void);
 
-    dcts_meas_channel_init(TMPR, "Temperature", "Температура", "°C", "°C");
-    dcts_meas_channel_init(TMPR_ADC, "Temperature_adc", "Температура АЦП", "adc", "adc");
-    dcts_meas_channel_init(TMPR_V, "Temperature_v", "Температура В", "V", "В");
-    dcts_meas_channel_init(VREFINT_ADC, "Vref_adc", "ИОН АЦП", "adc", "adc");
-    dcts_meas_channel_init(AM2302_T, "AM2302_T", "Температура AM2302", "°C", "°C");
-    dcts_meas_channel_init(VREFINT_ADC, "AM2302_H", "Влажность AM2302", "%", "%");
-}
+static void print_main(void);
+static void print_menu(void);
+static void print_value(u8 tick);
 
-/**
-  * @brief  The application entry point.
-  *
-  * @retval None
-  */
+//-------Functions----------
+
 int main(void){
 
     HAL_Init();
     SystemClock_Config();
     tim2_init();
-    dcts_init();
-    restore_params();
+    //dcts_init();
+    //restore_params();
     led_lin_init();
     menu_init();
 #if RELEASE
     MX_IWDG_Init();
 #endif //RELEASE
-
+/*
     osThreadDef(rtc_task, rtc_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
     defaultTaskHandle = osThreadCreate(osThread(rtc_task), NULL);
 
@@ -222,7 +157,7 @@ int main(void){
 
     osThreadDef(ds18b20_task, ds18b20_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
     am2302TaskHandle = osThreadCreate(osThread(ds18b20_task), NULL);
-
+*/
     /* Start scheduler */
     osKernelStart();
 
@@ -232,11 +167,43 @@ int main(void){
 
 }
 
+void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
+
+void dcts_init (void) {
+    dcts.dcts_id = DCTS_ID_MEASURE;
+    strcpy (dcts.dcts_ver, "1.2.0");
+    strcpy (dcts.dcts_name, "Parilka");
+    strcpy (dcts.dcts_name_cyr, "???????");
+    dcts.dcts_address = 0x0C;
+    dcts.dcts_rtc.day = 1;
+    dcts.dcts_rtc.month = 1;
+    dcts.dcts_rtc.year = 2000;
+    dcts.dcts_rtc.weekday = 6;
+    dcts.dcts_rtc.hour = 12;
+    dcts.dcts_rtc.minute = 0;
+    dcts.dcts_rtc.second = 0;
+    dcts.dcts_pwr = 0.0f;
+    dcts.dcts_meas_num = MEAS_NUM;
+    dcts.dcts_rele_num = RELE_NUM;
+    dcts.dcts_act_num  = ACT_NUM;
+    dcts.dcts_alrm_num = ALRM_NUM;
+
+    //meas_channels
+
+    dcts_meas_channel_init(TMPR, "Temperature", "???????????", "?C", "?C");
+    dcts_meas_channel_init(TMPR_ADC, "Temperature_adc", "??????????? ???", "adc", "adc");
+    dcts_meas_channel_init(TMPR_V, "Temperature_v", "??????????? ?", "V", "?");
+    dcts_meas_channel_init(VREFINT_ADC, "Vref_adc", "??? ???", "adc", "adc");
+    dcts_meas_channel_init(AM2302_T, "AM2302_T", "??????????? AM2302", "?C", "?C");
+    dcts_meas_channel_init(VREFINT_ADC, "AM2302_H", "????????? AM2302", "%", "%");
+}
+
+
 /**
   * @brief System Clock Configuration
   * @retval None
   */
-void SystemClock_Config(void)
+static void SystemClock_Config(void)
 {
 
     RCC_OscInitTypeDef RCC_OscInitStruct;
@@ -1490,7 +1457,7 @@ uint32_t uint32_pow(uint16_t x, uint8_t pow){
   * @retval None
   */
 void assert_failed(uint8_t* file, uint32_t line)
-{ 
+{
     /* USER CODE BEGIN 6 */
     /* User can add his own implementation to report the file name and line number,
      tex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
@@ -1498,13 +1465,5 @@ void assert_failed(uint8_t* file, uint32_t line)
 }
 #endif /* USE_FULL_ASSERT */
 
-/**
-  * @}
-  */
-
-/**
-  * @}
-  */
-
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
+//-------Static functions----------
 

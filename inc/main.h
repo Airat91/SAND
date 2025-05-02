@@ -47,38 +47,62 @@
   ******************************************************************************
   */
 
-/* Define to prevent recursive inclusion -------------------------------------*/
 #ifndef __MAIN_H__
 #define __MAIN_H__
+/*add includes below */
 
 #include "stdint.h"
 #include "stm32f1xx_hal.h"
 #include "stdlib.h"
 #include "cmsis_os.h"
 #include "type_def.h"
+#include "stm32f1xx_hal.h"
+#include "stdlib.h"
+#include "cmsis_os.h"
+#include "stm32f1xx_hal_gpio.h"
+#include "stm32f1xx_hal_iwdg.h"
+#include "dcts.h"
+#include "dcts_config.h"
+#include "pin_map.h"
+#include "adc.h"
+#include "portable.h"
+#include "am2302.h"
+#include "max7219.h"
+#include "buttons.h"
+#include "menu.h"
+#include "flash.h"
+#include "uart.h"
+#include "modbus.h"
+//#include "st7735.h"
+#include <string.h>
+#include "ds18b20.h"
 
-#define TIME_YIELD_THRESHOLD 100
-//#define MEAS_NUM 6
-#define SAVED_PARAMS_SIZE 7
-#define SKIN_NMB 6
-
-
-/* ########################## Assert Selection ############################## */
-/**
-  * @brief Uncomment the line below to expanse the "assert_param" macro in the 
-  *        HAL drivers code
-  */
-/* #define USE_FULL_ASSERT    1U */
+/*add includes before */
 
 #ifdef __cplusplus
  extern "C" {
 #endif
 
+/**
+ * @defgroup MAIN
+ * @brief Functions for work ZTS frames
+ */
+
+//--------Defines--------
+
+#define TIME_YIELD_THRESHOLD    100
+//#define MEAS_NUM                6
+#define SAVED_PARAMS_SIZE       7
+#define SKIN_NMB                6
+
+#define RELEASE 1
+#define RESET_HOLD 3000
+
+//--------Macro--------
 
 #define Error_Handler() _Error_Handler(__FILE__, __LINE__)
-#ifdef __cplusplus
-}
-#endif
+
+//--------Typedefs-------
 
 typedef enum {
     TMPR = 0,
@@ -166,6 +190,13 @@ typedef enum{
     IRQ_READ_RTC,
 }irq_state_t;
 
+typedef enum{
+    READ_FLOAT_SIGNED = 0,
+    READ_FLOAT_UNSIGNED,
+}read_float_bkp_sign_t;
+
+//-------External variables------
+
 void _Error_Handler(char *, int);
 extern uint32_t us_cnt_H;
 extern RTC_HandleTypeDef hrtc;
@@ -184,6 +215,8 @@ extern osThreadId uartTaskHandle;
 extern uint8_t irq_state;
 extern saved_to_flash_t config;
 
+//-------Function prototypes----------
+
 void display_task(void const * argument);
 void am2302_task(void const * argument);
 void rtc_task(void const * argument);
@@ -196,6 +229,10 @@ u16 str_smb_num(char* string, char symbol);
 uint32_t us_tim_get_value(void);
 void us_tim_delay(uint32_t us);
 
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __MAIN_H__ */
 
