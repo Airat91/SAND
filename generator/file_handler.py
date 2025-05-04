@@ -517,9 +517,21 @@ def regs_module_c_processing(Proj):
             # 1.1.1 Write generator message
             buffer_prop.append("// This part of file generated automatically, don't change it\n")
 
+            # 1.1.2 Write global structs declaration
+            max_spaces = [0]
+            for struct_name in Proj.struct_list:
+                struct_declaration = struct_name + "_struct"
+                if len(struct_declaration) > max_spaces[0]:
+                    max_spaces[0] = len(struct_declaration)
+            for struct_name in Proj.struct_list:
+                struct_declaration = struct_name + "_struct"
+                spaces = " " * (max_spaces[0] - len(struct_declaration) + 1)
+                buffer_prop.append("{}{}\t{};\n".format(struct_declaration, spaces, struct_name))
+            buffer_prop.append("\n")
+
             for prop_name in Proj.prop_list:
                 prop_list = Proj.prop_list[prop_name]
-                # 1.1.2 Calc words len for align text
+                # 1.1.3 Calc words len for align text
                 prop_param_list = list(sofi_reg.sofi_prop_list[prop_name].keys())
                 prop_param_list.remove("header")
                 header_param_list = list(sofi_reg.sofi_header_t.keys())
@@ -547,7 +559,7 @@ def regs_module_c_processing(Proj):
                             if len(str(prop["value"])) > max_spaces[ind]:
                                 max_spaces[ind] = len(str(prop["value"]))
 
-                # 1.1.3 Write prop_list to buffer_prop
+                # 1.1.4 Write prop_list to buffer_prop
                 prop_list_name = prop_name.replace("_t", "_list")
                 prop_list_reg_num = prop_name.replace("_t", "").upper() + "_REG_NUM"
                 buffer_prop.append("const {} {}[{}]".format(prop_name, prop_list_name, prop_list_reg_num))
