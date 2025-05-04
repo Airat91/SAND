@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.6)
 set(PRJ_NAME SAND)
+set(RELEASE 0)
+set(BOARD_VER 0)
 include(STM32Toolchain.cmake)
+set(DEVICE_TYPE ${SAND_AI}) #select DEFPCB, SAND_AI for firmware compilation
 
 set(MCU_FAMILY STM32F1xx)
 set(MCU_LINE STM32F103xx)
@@ -8,6 +11,13 @@ set(MCU_TARGET STM32F103c8t6)
 add_definitions(-DSTM32F103xB)
 
 project(${PRJ_NAME} C CXX ASM)
+if(${RELEASE})
+    add_definitions(-DRELEASE_FLAG=1)
+else()
+    add_definitions(-DRELEASE_FLAG=0)
+endif()
+add_definitions(-DBOARD_VERSION=${BOARD_VER})
+add_definitions(-DDEVICE_TYPE=${DEVICE_TYPE})
 
 add_definitions(-D${MCU_LINE})
 add_definitions(-DUSE_HAL_LIBRARY)

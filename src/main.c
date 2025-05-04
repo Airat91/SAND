@@ -50,10 +50,12 @@
 
 //-------Global variables------
 
+IWDG_HandleTypeDef hiwdg = {0};
+osThreadId main_task_handle = {0};
+
 RTC_HandleTypeDef hrtc;
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
-IWDG_HandleTypeDef hiwdg;
 osThreadId defaultTaskHandle;
 osThreadId displayTaskHandle;
 osThreadId adcTaskHandle;
@@ -65,6 +67,8 @@ uint8_t irq_state = IRQ_NONE;
 uint32_t us_cnt_H = 0;
 
 //-------Static variables------
+
+static u32 led_sys_ok_time = 0;
 
 static edit_val_t edit_val = {0};
 static navigation_t navigation_style = MENU_NAVIGATION;
@@ -104,6 +108,10 @@ static const char data_pin_description[3][20] = {
 
 static void SystemClock_Config(void);
 static void MX_IWDG_Init(void);
+static void main_gpio_init(void);
+static void main_IWDG_refresh(void);
+static int  main_leds_handle(u32 call_period);
+
 static void RTC_Init(void);
 static void tim2_init(void);
 static void save_to_bkp(u8 bkp_num, u8 var);
@@ -125,14 +133,22 @@ int main(void){
 
     HAL_Init();
     SystemClock_Config();
-    tim2_init();
+    //tim2_init();
     //dcts_init();
     //restore_params();
-    led_lin_init();
-    menu_init();
-#if RELEASE
+    main_gpio_init();
+    //menu_init();
+#if RELEASE_FLAG
     MX_IWDG_Init();
 #endif //RELEASE
+
+    osThreadDef(main_task, main_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
+    main_task_handle = osThreadCreate(osThread(main_task), NULL);
+
+#if MDB_EN
+    osThreadDef(modbus_task, modbus_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
+    modbus_task_handle = osThreadCreate(osThread(modbus_task), NULL);
+#endif // MDB_EN
 /*
     osThreadDef(rtc_task, rtc_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
     defaultTaskHandle = osThreadCreate(osThread(rtc_task), NULL);
@@ -167,6 +183,38 @@ int main(void){
 
 }
 
+void main_task(void const * argument){
+    (void)argument;
+    uint32_t last_wake_time = osKernelSysTick();
+    u32 tick = 0;
+    while(1){
+        // Every 1 second
+        if(((tick)%(1000/MAIN_TASK_PERIOD))==0u){
+            // Blink System OK LED
+            led_sys_ok_time = 100;
+
+            // Update os.vars.runtime counter
+            os.vars.runtime += 1;
+
+            // Call adc_service_meas()
+            //adc_service_meas();
+        }
+        // Blinks LEDs control
+        main_leds_handle(MAIN_TASK_PERIOD);
+
+        // Refresh IWDG
+        main_IWDG_refresh();
+
+        // Checks other tasks state and restart them if error or suspend
+
+        osDelayUntil(&last_wake_time, MAIN_TASK_PERIOD);
+        tick++;
+        if(tick == MAIN_TASK_TICK_MAX){
+            tick = 0;
+        }
+    }
+}
+
 void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 
 void dcts_init (void) {
@@ -199,66 +247,6 @@ void dcts_init (void) {
 }
 
 
-/**
-  * @brief System Clock Configuration
-  * @retval None
-  */
-static void SystemClock_Config(void)
-{
-
-    RCC_OscInitTypeDef RCC_OscInitStruct;
-    RCC_ClkInitTypeDef RCC_ClkInitStruct;
-    RCC_PeriphCLKInitTypeDef PeriphClkInit;
-
-    /**Initializes the CPU, AHB and APB busses clocks
-    */
-    RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE|RCC_OSCILLATORTYPE_LSI;
-    RCC_OscInitStruct.HSEState = RCC_HSE_ON;
-    RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
-    RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-    RCC_OscInitStruct.LSIState = RCC_LSI_ON;
-    //RCC_OscInitStruct.LSEState = RCC_LSE_ON;
-    RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-    RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-    RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL9;
-    if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
-    {
-        _Error_Handler(__FILE__, __LINE__);
-    }
-
-    /**Initializes the CPU, AHB and APB busses clocks
-    */
-    RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-            |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-    RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-    RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-    RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
-    RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
-
-    if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
-    {
-        _Error_Handler(__FILE__, __LINE__);
-    }
-
-    PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_RTC|RCC_PERIPHCLK_ADC;
-    PeriphClkInit.RTCClockSelection = RCC_RTCCLKSOURCE_HSE_DIV128;
-    PeriphClkInit.AdcClockSelection = RCC_ADCPCLK2_DIV6;
-    if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
-    {
-        _Error_Handler(__FILE__, __LINE__);
-    }
-
-    /**Configure the Systick interrupt time
-    */
-    HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq()/1000);
-
-    /**Configure the Systick
-    */
-    HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
-
-    /* SysTick_IRQn interrupt configuration */
-    HAL_NVIC_SetPriority(SysTick_IRQn, 15, 0);
-}
 
 /* RTC init function */
 static void RTC_Init(void){
@@ -1137,16 +1125,6 @@ static void data_pin_irq_init(void){
     HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 }
 
-static void MX_IWDG_Init(void){
-
-    hiwdg.Instance = IWDG;
-    hiwdg.Init.Prescaler = IWDG_PRESCALER_128;
-    hiwdg.Init.Reload = 3124;   //10sec
-    if (HAL_IWDG_Init(&hiwdg) != HAL_OK)
-    {
-      Error_Handler();
-    }
-}
 
 /**
  * @brief Init us timer
@@ -1421,17 +1399,6 @@ static float read_float_bkp(u8 bkp_num, u8 sign){
     return atoff(buf);
 }
 
-static void led_lin_init(void){
-    __HAL_RCC_GPIOC_CLK_ENABLE();
-    GPIO_InitTypeDef GPIO_InitStruct;
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
-    GPIO_InitStruct.Pull = GPIO_PULLUP;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    GPIO_InitStruct.Pin = LED_PIN;
-    HAL_GPIO_WritePin(LED_PORT, LED_PIN, GPIO_PIN_SET);
-    HAL_GPIO_Init (LED_PORT, &GPIO_InitStruct);
-}
-
 void refresh_watchdog(void){
 #if RELEASE
         HAL_IWDG_Refresh(&hiwdg);
@@ -1467,3 +1434,212 @@ void assert_failed(uint8_t* file, uint32_t line)
 
 //-------Static functions----------
 
+/**
+  * @brief System Clock Configuration
+  * @ingroup main
+  */
+static void SystemClock_Config(void)
+{
+
+    RCC_OscInitTypeDef RCC_OscInitStruct;
+    RCC_ClkInitTypeDef RCC_ClkInitStruct;
+    RCC_PeriphCLKInitTypeDef PeriphClkInit;
+
+    /**Initializes the CPU, AHB and APB busses clocks
+    */
+    RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE|RCC_OSCILLATORTYPE_LSI;
+    RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+    RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
+    RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+    RCC_OscInitStruct.LSIState = RCC_LSI_ON;
+    //RCC_OscInitStruct.LSEState = RCC_LSE_ON;
+    RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+    RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+    RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL9;
+    if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+    {
+        _Error_Handler(__FILE__, __LINE__);
+    }
+
+    /**Initializes the CPU, AHB and APB busses clocks
+    */
+    RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+            |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+    RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+    RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+    RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
+    RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+
+    if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
+    {
+        _Error_Handler(__FILE__, __LINE__);
+    }
+
+    PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_RTC|RCC_PERIPHCLK_ADC;
+    PeriphClkInit.RTCClockSelection = RCC_RTCCLKSOURCE_HSE_DIV128;
+    PeriphClkInit.AdcClockSelection = RCC_ADCPCLK2_DIV6;
+    if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
+    {
+        _Error_Handler(__FILE__, __LINE__);
+    }
+
+    /**Configure the Systick interrupt time
+    */
+    HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq()/1000);
+
+    /**Configure the Systick
+    */
+    HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
+
+    /* SysTick_IRQn interrupt configuration */
+    HAL_NVIC_SetPriority(SysTick_IRQn, 15, 0);
+}
+
+/**
+ * @brief Watchdig timer initialisation
+ * @ingroup main
+ */
+static void MX_IWDG_Init(void){
+    hiwdg.Instance = IWDG;
+    hiwdg.Init.Prescaler = IWDG_PRESCALER_128;
+    hiwdg.Init.Reload = 3124;   //10sec
+    if (HAL_IWDG_Init(&hiwdg) != HAL_OK)
+    {
+      Error_Handler();
+    }
+}
+
+/**
+ * @brief Init GPIO common for all modules
+ * @ingroup main
+ *
+ * Init SYS and CON LEDs
+ * Init MDB_ADDR switch pins
+ * Init MDB_RATE switch pins
+ */
+static void main_gpio_init(void){
+    __HAL_RCC_GPIOA_CLK_ENABLE();
+    __HAL_RCC_GPIOB_CLK_ENABLE();
+    __HAL_RCC_GPIOC_CLK_ENABLE();
+    GPIO_InitTypeDef GPIO_InitStruct;
+
+    // Init SYS and CON LEDs
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+
+    GPIO_InitStruct.Pin = LED_SYS_R_PIN;
+    HAL_GPIO_WritePin(LED_SYS_R_PORT, LED_SYS_R_PIN, GPIO_PIN_RESET);
+    HAL_GPIO_Init (LED_SYS_R_PORT, &GPIO_InitStruct);
+    GPIO_InitStruct.Pin = LED_SYS_G_PIN;
+    HAL_GPIO_WritePin(LED_SYS_G_PORT, LED_SYS_G_PIN, GPIO_PIN_RESET);
+    HAL_GPIO_Init (LED_SYS_G_PORT, &GPIO_InitStruct);
+    GPIO_InitStruct.Pin = LED_CON_R_PIN;
+    HAL_GPIO_WritePin(LED_CON_R_PORT, LED_CON_R_PIN, GPIO_PIN_RESET);
+    HAL_GPIO_Init (LED_CON_R_PORT, &GPIO_InitStruct);
+    GPIO_InitStruct.Pin = LED_CON_G_PIN;
+    HAL_GPIO_WritePin(LED_CON_G_PORT, LED_CON_G_PIN, GPIO_PIN_RESET);
+    HAL_GPIO_Init (LED_CON_G_PORT, &GPIO_InitStruct);
+}
+
+/**
+ * @brief Refresh IWDG
+ * @ingroup main
+ */
+static void main_IWDG_refresh(void){
+#if RELEASE_FLAG
+        HAL_IWDG_Refresh(&hiwdg);
+#endif //RELEASE_FLAG
+
+}
+
+/**
+ * @brief LEDs control
+ * @param call_period - function calling period in ms
+ * @ingroup main
+ * @return  0
+ *
+ * 1. Handle System OK LED (GREEN)
+ * 2. Handle System ERROR LED (RED)
+ * 3. Handle interfaces OK LED (GREEN)
+ * 3. Handle interfaces ERROR LED (RED)
+ */
+static int main_leds_handle(u32 call_period){
+    int result = 0;
+    // Handle System OK LED (GREEN)
+    if(led_sys_ok_time){
+        HAL_GPIO_WritePin(LED_SYS_G_PORT, LED_SYS_G_PIN, GPIO_PIN_SET);
+        if(led_sys_ok_time > call_period){
+            led_sys_ok_time -= call_period;
+        }else{
+            led_sys_ok_time = 0;
+        }
+    }else{
+        HAL_GPIO_WritePin(LED_SYS_G_PORT, LED_SYS_G_PIN, GPIO_PIN_RESET);
+    }
+
+    // Handle System ERROR LED (RED)
+    if(debug_led_err_on_time){
+        HAL_GPIO_WritePin(LED_SYS_R_PORT, LED_SYS_R_PIN, GPIO_PIN_SET);
+        if(debug_led_err_on_time > call_period){
+            debug_led_err_on_time -= call_period;
+        }else{
+            debug_led_err_on_time = 0;
+        }
+    }else{
+        HAL_GPIO_WritePin(LED_SYS_R_PORT, LED_SYS_R_PIN, GPIO_PIN_RESET);
+    }
+
+    // Handle interfaces OK LED (GREEN)
+#if MDB_EN
+    if(modbus_led_ok_on_time){
+        HAL_GPIO_WritePin(LED_CON_G_PORT, LED_CON_G_PIN, GPIO_PIN_SET);
+        if(modbus_led_ok_on_time > call_period){
+            modbus_led_ok_on_time -= call_period;
+        }else{
+            modbus_led_ok_on_time = 0;
+        }
+    }else{
+        HAL_GPIO_WritePin(LED_CON_G_PORT, LED_CON_G_PIN, GPIO_PIN_RESET);
+    }
+#endif // MDB_EN
+#if CAN_EN
+    if(can_led_ok_on_time){
+        HAL_GPIO_WritePin(LED_CON_G_PORT, LED_CON_G_PIN, GPIO_PIN_SET);
+        if(can_led_ok_on_time > call_period){
+            can_led_ok_on_time -= call_period;
+        }else{
+            can_led_ok_on_time = 0;
+        }
+    }else{
+        HAL_GPIO_WritePin(LED_CON_G_PORT, LED_CON_G_PIN, GPIO_PIN_RESET);
+    }
+#endif // CAN_EN
+
+    // Handle interfaces ERROR LED (RED)
+#if MDB_EN
+    if(modbus_led_err_on_time){
+        HAL_GPIO_WritePin(LED_CON_R_PORT, LED_CON_R_PIN, GPIO_PIN_SET);
+        if(modbus_led_err_on_time > call_period){
+            modbus_led_err_on_time -= call_period;
+        }else{
+            modbus_led_err_on_time = 0;
+        }
+    }else{
+        HAL_GPIO_WritePin(LED_CON_R_PORT, LED_CON_R_PIN, GPIO_PIN_RESET);
+    }
+#endif // MDB_EN
+#if CAN_EN
+    if(can_led_err_on_time){
+        HAL_GPIO_WritePin(LED_CON_R_PORT, LED_CON_R_PIN, GPIO_PIN_SET);
+        if(can_led_err_on_time > call_period){
+            can_led_err_on_time -= call_period;
+        }else{
+            can_led_err_on_time = 0;
+        }
+    }else{
+        HAL_GPIO_WritePin(LED_CON_R_PORT, LED_CON_R_PIN, GPIO_PIN_RESET);
+    }
+#endif // CAN_EN
+    return result;
+}

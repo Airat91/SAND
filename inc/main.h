@@ -55,12 +55,22 @@
 #include "stm32f1xx_hal.h"
 #include "stdlib.h"
 #include "cmsis_os.h"
-#include "type_def.h"
 #include "stm32f1xx_hal.h"
 #include "stdlib.h"
 #include "cmsis_os.h"
 #include "stm32f1xx_hal_gpio.h"
 #include "stm32f1xx_hal_iwdg.h"
+#include "type_def.h"
+#include "main_config.h"
+#include "pin_map.h"
+#include "debug.h"
+#include "sofi_reg.h"
+
+#if MDB_EN
+    #include "modbus_sand.h"
+#endif // MDB_EN
+
+
 #include "dcts.h"
 #include "dcts_config.h"
 #include "pin_map.h"
@@ -76,6 +86,7 @@
 //#include "st7735.h"
 #include <string.h>
 #include "ds18b20.h"
+#include "regs.h"
 
 /*add includes before */
 
@@ -84,18 +95,21 @@
 #endif
 
 /**
- * @defgroup MAIN
+ * @defgroup main
  * @brief Functions for work ZTS frames
  */
 
 //--------Defines--------
+
+#define MAIN_TASK_PERIOD        100
+#define MAIN_TASK_TICK_MAX      3600000/MAIN_TASK_PERIOD    // 1 Hour
 
 #define TIME_YIELD_THRESHOLD    100
 //#define MEAS_NUM                6
 #define SAVED_PARAMS_SIZE       7
 #define SKIN_NMB                6
 
-#define RELEASE 1
+//#define RELEASE 1
 #define RESET_HOLD 3000
 
 //--------Macro--------
@@ -197,12 +211,14 @@ typedef enum{
 
 //-------External variables------
 
+extern IWDG_HandleTypeDef hiwdg;
+extern osThreadId main_task_handle;
+
 void _Error_Handler(char *, int);
 extern uint32_t us_cnt_H;
 extern RTC_HandleTypeDef hrtc;
 extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim3;
-extern IWDG_HandleTypeDef hiwdg;
 extern osThreadId defaultTaskHandle;
 extern osThreadId buttonsTaskHandle;
 extern osThreadId displayTaskHandle;
@@ -216,6 +232,20 @@ extern uint8_t irq_state;
 extern saved_to_flash_t config;
 
 //-------Function prototypes----------
+
+/**
+ * @brief Main task for high control of other tasks and
+ * @param argument - unused
+ * @ingroup main
+ *
+ * 1. Blink System OK LED every 1 cecond
+ * 2. Update os.vars.runtime counter every 1 second
+ * 3. Call adc_service_meas() every 1 second
+ * 4. Blinks LEDs control
+ * 5. Refresh IWDG
+ * 6. Checks other tasks state and restart them if error or suspend
+ */
+void main_task(void const * argument);
 
 void display_task(void const * argument);
 void am2302_task(void const * argument);

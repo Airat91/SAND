@@ -4,6 +4,12 @@
 #include "stm32f1xx_hal.h"
 #include "stm32f1xx_hal_gpio.h"
 
+#if(DEVICE_TYPE == DEFPCB)
+    #include "pin_map_defpcb.h"
+#elif(DEVICE_TYPE == SAND_AI)
+    #include "pin_map_sand_ai.h"
+#endif // DEVICE_TYPE
+
 #define PWR_PORT        GPIOA
 #define PWR_PIN         GPIO_PIN_0
 #define TMPR_PORT    	GPIOA

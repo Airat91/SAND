@@ -20,3 +20,9 @@ set(CMAKE_SIZE ${COMPILER_DIRECT}/arm-none-eabi-size.exe CACHE INTERNAL "GCC TOO
 set(CMAKE_CXX_FLAGS "${COMMON_FLAGS} -std=c++11")
 set(CMAKE_C_FLAGS "${COMMON_FLAGS} -std=gnu99")
 #set(CMAKE_EXE_LINKER_FLAGS "-Wl,-gc-sections -T${MCU_LINKER_SCRIPT}")
+
+#DEVICE_TYPE enumeration
+set(DEFPCB 0)
+set(SAND_AI 10)
+add_definitions(-DDEFPCB=0)
+add_definitions(-DSAND_AI=10)

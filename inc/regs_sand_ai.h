@@ -26,12 +26,11 @@
 //#generator_message{"msg":"sofi_struct_define", "action":"insert_start"}
 // This part of file generated automatically, don't change it
 #define OS_STRUCT_SIZE           	75
-#define TIME_STRUCT_SIZE         	13
 #define DEVICE_STRUCT_SIZE       	98
 #define MODBUS_STRUCT_SIZE       	1
 
-#define SOFI_PROP_BASE_REG_NUM   	28
-#define SOFI_PROP_MDB_REG_NUM    	28
+#define SOFI_PROP_BASE_REG_NUM   	19
+#define SOFI_PROP_MDB_REG_NUM    	19
 #define SOFI_PROP_RANGE_REG_NUM  	0
 #define SOFI_PROP_SAVE_REG_NUM   	9
 #define SOFI_PROP_ACCESS_REG_NUM 	1
@@ -61,21 +60,6 @@ typedef union{
 
 typedef union{
 	struct MCU_PACK{
-		u16   year;                     // "None"
-		u8    month;                    // "None"
-		u8    day;                      // "None"
-		u8    hour;                     // "None"
-		u8    minute;                   // "None"
-		u8    sec;                      // "None"
-		u8    msec;                     // "None"
-		u32   unix;                     // "None"
-		s8    utc;                      // "None"
-	}vars;
-	u8 bytes[TIME_STRUCT_SIZE];
-}time_struct;
-
-typedef union{
-	struct MCU_PACK{
 		u8    device_type;              // "None"
 		char  device_name[40];          // "None"
 		u8    board_ver;                // "None"
@@ -102,7 +86,6 @@ typedef union{
 //#generator_message{"msg":"sofi_struct_external", "action":"insert_start"}
 // This part of file generated automatically, don't change it
 extern os_struct                	os;
-extern time_struct              	time;
 extern device_struct            	device;
 extern modbus_struct            	modbus;
 

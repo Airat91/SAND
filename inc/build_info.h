@@ -14,12 +14,12 @@ extern "C" {
 #endif /* __cplusplus */
     
 // String like "<brach name>_<commit counter>_<commit hash>"
-#define BUILD_INFO "main-20-c088c058"
+#define BUILD_INFO "main-22-7803ee33"
 #define BUILD_INFO_MAX_LEN  20      // Max length of BUILD_INFO string
 // Array of software version numbers
 #define BUILD_VERSION {0, 0, 0}
 // Build time string like "<day>-<month>-<year>_<hour>:<min>"
-#define BUILD_DATE "19-04-2025_22:08"
+#define BUILD_DATE "04-05-2025_22:11"
 #define BUILD_DATE_MAX_LEN  20      // Max length of BUILD_DATE string
     
 #ifdef	__cplusplus
