@@ -32,7 +32,7 @@ GENERATOR = {
 }
 DEVICE = {
     "sand_ai"   : {
-        "device_type"   : 3,
+        "device_type"   : 10,
         "device_name"   : "SAND_AI",
     }
 }
@@ -166,9 +166,28 @@ def main():
                         dest='module',
                         default=False,
                         help='type of module')
+    parser.add_argument('-d', '--device_type',
+                        required=True,
+                        dest='device_type',
+                        default=False,
+                        help='device_type code')
     args = parser.parse_args()
 
-    if args.module not in DEVICE:
+    if args.device_type != False:
+        module_found = False
+        for module in DEVICE:
+            if args.device_type == str(DEVICE[module]["device_type"]):
+                args.module = module
+                module_found = True
+        if module_found == False:
+            device_type_list = []
+            for module in DEVICE:
+                device_type_list.append(DEVICE[module]["device_type"])
+            quit(Fore.RED + Style.BRIGHT + "Device_type \"{}\" is unknown.\nPlease select device_type from list: {}".format(
+                args.device_type, device_type_list))
+    if args.module == False:
+        quit(Fore.RED + Style.BRIGHT + "Expected -m MODULE_NAME or -d DEVICE_TYPE")
+    elif args.module not in DEVICE:
         quit(Fore.RED + Style.BRIGHT + "Module \"{}\" is unknown.\nPlease select module from list: {}".format(args.module, list(DEVICE)))
 
     #2. Read repo information

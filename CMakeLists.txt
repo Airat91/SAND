@@ -29,7 +29,7 @@ else()
 endif()
 
 
-#1.freertos source and headers files start
+#1.FreeRTOS source and headers files start
 #check freertos
 set(SOURCES "")
 set(SOURCES_PREFIX ${CMAKE_SOURCE_DIR}/freertos)
@@ -41,7 +41,7 @@ file(GLOB FREERTOS_HEADERS  ${FREERTOS_HEADERS} freertos/inc/portable/*.h)
 file(GLOB FREERTOS_HEADERS  ${FREERTOS_HEADERS} freertos/cmsis_os/*.h)
 #freertos source and headers files END
 
-#2.check stm_hal
+#2.STM_hal
 file(GLOB HAL_SOURCES Drivers/${MCU_FAMILY}_HAL_DRIVER/Src/*.c)
 file(GLOB STM32F1_SYSTEM Drivers/CMSIS/Device/ST/${MCU_FAMILY}/Source/Templates/system_${MCU_FAMILY}.c)
 file(GLOB STM32F1_STARTUP Drivers/CMSIS/Device/ST/${MCU_FAMILY}/Source/Templates/gcc/startup_stm32f103x6.s)
@@ -138,12 +138,18 @@ set(HEX_FILE ${PROJECT_SOURCE_DIR}/build/${PROJECT_NAME}.hex)
 set(BIN_FILE ${PROJECT_SOURCE_DIR}/build/${PROJECT_NAME}.bin)
 set(LIST_FILE ${PROJECT_SOURCE_DIR}/build/${PROJECT_NAME}.lst)
 set(ELF_FILE ${PROJECT_SOURCE_DIR}/build/${PROJECT_NAME}.elf)
+add_dependencies(${BUILD_TARGET} generator_pre_compilation)
+add_custom_target(generator_pre_compilation
+    COMMAND python ${PROJECT_SOURCE_DIR}/generator/project_generator.py --pre --force -m "default" -d ${DEVICE_TYPE}
+    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/generator/
+    COMMENT "Running project generator...")
 add_custom_command(TARGET ${PROJECT_NAME}.elf POST_BUILD
         COMMAND ${CMAKE_OBJCOPY} -Oihex $<TARGET_FILE:${PROJECT_NAME}.elf> ${HEX_FILE}
         COMMAND ${CMAKE_OBJCOPY} -Obinary $<TARGET_FILE:${PROJECT_NAME}.elf> ${BIN_FILE}
         COMMAND ${CMAKE_SIZE} --format=berkeley ${PROJECT_NAME}.elf
         COMMENT "Building ${HEX_FILE} \nBuilding ${BIN_FILE}")
-add_custom_command(TARGET ${PROJECT_NAME}.elf POST_BUILD
-                COMMAND    ${CMAKE_COMMAND}
-                ARGS       -E copy $<TARGET_FILE:${PROJECT_NAME}.elf> ${ELF_FILE}
-            )
+
+#add_custom_command(TARGET ${BUILD_TARGET} POST_BUILD
+#        COMMAND python ${PROJECT_SOURCE_DIR}/generator/project_generator.py --post -m "default" -d ${DEVICE_TYPE}
+#        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/generator/
+#        COMMENT "Running add crc header...")
