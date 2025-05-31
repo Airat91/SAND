@@ -10,8 +10,8 @@
 #define AO_EN   0
 #define DO_EN   0
 #define RELE_EN 0
-#define RTC_EN  0
 #define USB_EN  0
 #define WEB_EN  0
+#define RTC_EN  1
 
 #endif // MAIN_CONFIG_H

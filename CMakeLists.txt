@@ -140,7 +140,7 @@ set(LIST_FILE ${PROJECT_SOURCE_DIR}/build/${PROJECT_NAME}.lst)
 set(ELF_FILE ${PROJECT_SOURCE_DIR}/build/${PROJECT_NAME}.elf)
 add_dependencies(${BUILD_TARGET} generator_pre_compilation)
 add_custom_target(generator_pre_compilation
-    COMMAND python ${PROJECT_SOURCE_DIR}/generator/project_generator.py --pre --force -m "default" -d ${DEVICE_TYPE}
+    COMMAND python ${PROJECT_SOURCE_DIR}/generator/project_generator.py --pre -m "default" -d ${DEVICE_TYPE}
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/generator/
     COMMENT "Running project generator...")
 add_custom_command(TARGET ${PROJECT_NAME}.elf POST_BUILD

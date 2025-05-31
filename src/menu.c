@@ -31,7 +31,7 @@ menuItem edit_value = {
 };
 
 menuItem* selectedMenuItem;
-
+/*
 //                  NAME           NEXT            PREV            PARENT          CHILD        GHILD_NUM   PAGE                    TEXT
 MAKE_MENU       (main_page,     main_menu,      main_menu,      NULL_ENTRY,     main_menu,      0,          MAIN_PAGE,          "DISPLAY");
 MAKE_MENU       (main_menu,     main_page,      main_page,      main_page,      common_info,    4,          MAIN_MENU,          "MENU");
@@ -72,7 +72,7 @@ MAKE_MENU       (main_menu,     main_page,      main_page,      main_page,      
     MAKE_MENU   (date_year,     date_day,       date_month,     date,           EDITED_VAL,     0,          DATE_YEAR,          "year");
   MAKE_MENU     (save_changes,  common_info,    date,           main_menu,      saving,         1,          SAVE_CHANGES,       "SAUE");
     MAKE_MENU   (saving,        NULL_ENTRY,     NULL_ENTRY,     save_changes,   EDITED_VAL,     0,          SAVING,             "Sauing");
-
+*/
 
 /*========== FUNCTIONS ==========*/
 

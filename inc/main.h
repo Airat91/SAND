@@ -52,16 +52,13 @@
 /*add includes below */
 
 #include "stdint.h"
-#include "stm32f1xx_hal.h"
 #include "stdlib.h"
 #include "cmsis_os.h"
-#include "stm32f1xx_hal.h"
-#include "stdlib.h"
-#include "cmsis_os.h"
-#include "stm32f1xx_hal_gpio.h"
-#include "stm32f1xx_hal_iwdg.h"
 #include "type_def.h"
 #include "main_config.h"
+#include "stm32f1xx_hal.h"
+#include "stm32f1xx_hal_gpio.h"
+#include "stm32f1xx_hal_iwdg.h"
 #include "pin_map.h"
 #include "debug.h"
 #include "sofi_reg.h"
@@ -69,6 +66,9 @@
 #if MDB_EN
     #include "modbus_sand.h"
 #endif // MDB_EN
+#if RTC_EN
+    #include "rtc.h"
+#endif // RTC_EN
 
 
 #include "dcts.h"
