@@ -32,6 +32,7 @@ extern "C" {
 //--------Defines--------
 
 #define RTC_TASK_PERIOD     1000
+#define RTC_INIT_TIMEOUT_MS 2000
     
 //--------Macro--------
 

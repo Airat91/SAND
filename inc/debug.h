@@ -18,6 +18,7 @@
 #include "pin_map.h"
 #include "main_config.h"
 #include "regs.h"
+#include "service.h"
 /*add includes before */
 
 #ifdef __cplusplus
@@ -67,7 +68,8 @@ int debug_init(void);
  * @param msg - message
  * @ingroup debug
  * @return  0 - ok,\n
- *          negative value - error
+ *          -1 - Debug service is not ok,\n
+ *          -2 - Message is too long,\n
  *
  * @example debug_msg(__func__, DBG_MSG_INFO, "Hello world!")
  */

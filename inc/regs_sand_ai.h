@@ -29,9 +29,10 @@
 #define TIME_STRUCT_SIZE         	14
 #define DEVICE_STRUCT_SIZE       	98
 #define MODBUS_STRUCT_SIZE       	1
+#define SERVICE_STRUCT_SIZE      	16
 
-#define SOFI_PROP_BASE_REG_NUM   	28
-#define SOFI_PROP_MDB_REG_NUM    	28
+#define SOFI_PROP_BASE_REG_NUM   	32
+#define SOFI_PROP_MDB_REG_NUM    	32
 #define SOFI_PROP_RANGE_REG_NUM  	0
 #define SOFI_PROP_SAVE_REG_NUM   	9
 #define SOFI_PROP_ACCESS_REG_NUM 	1
@@ -95,6 +96,16 @@ typedef union{
 	u8 bytes[MODBUS_STRUCT_SIZE];
 }modbus_struct;
 
+typedef union{
+	struct MCU_PACK{
+		u32   rtc_state;         // "RTC service status"
+		u32   adc_state;         // "ADC service status"
+		u32   mdb_state;         // "ModBUS service status"
+		u32   dbg_state;         // "Debug service status"
+	}vars;
+	u8 bytes[SERVICE_STRUCT_SIZE];
+}service_struct;
+
 //#generator_message{"msg":"sofi_struct", "action":"insert_end"}
 
 //-------External variables------
@@ -105,6 +116,7 @@ extern os_struct                	os;
 extern time_struct              	time;
 extern device_struct            	device;
 extern modbus_struct            	modbus;
+extern service_struct           	service;
 
 extern const sofi_prop_base_t   	sofi_prop_base_list[];
 extern const sofi_prop_mdb_t    	sofi_prop_mdb_list[];

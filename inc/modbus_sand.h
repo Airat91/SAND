@@ -26,7 +26,8 @@ extern "C" {
 
 //--------Defines--------
 
-#define MODBUS_TASK_PERIOD  10
+#define MODBUS_TASK_PERIOD      10
+#define MODBUS_INIT_TIMEOUT_MS  2000
 
 //--------Macro--------
 

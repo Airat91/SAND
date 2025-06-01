@@ -9,10 +9,11 @@
 
 //#generator_message{"msg":"sofi_properties", "action":"insert_start"}
 // This part of file generated automatically, don't change it
-os_struct     	os;
-time_struct   	time;
-device_struct 	device;
-modbus_struct 	modbus;
+os_struct      	os;
+time_struct    	time;
+device_struct  	device;
+modbus_struct  	modbus;
+service_struct 	service;
 
 const sofi_prop_base_t sofi_prop_base_list[SOFI_PROP_BASE_REG_NUM]={
 //prop           	header_next                    	header_base                     	prop_num 	p_value                         	name            	description                     	type           	array_len 	ind 	read_only 	
@@ -44,6 +45,10 @@ const sofi_prop_base_t sofi_prop_base_list[SOFI_PROP_BASE_REG_NUM]={
 {{SOFI_PROP_BASE,	(void*)&sofi_prop_mdb_list[25],	(void*)&sofi_prop_base_list[25]},	2,       	(u8*)&device.vars.v_bat,        	"v_bat",        	"Battery voltage (V)",          	VAR_TYPE_FLOAT,	1,        	25, 	0},
 {{SOFI_PROP_BASE,	(void*)&sofi_prop_mdb_list[26],	(void*)&sofi_prop_base_list[26]},	2,       	(u8*)&device.vars.v_pwr,        	"v_pwr",        	"Power voltage (V)",            	VAR_TYPE_FLOAT,	1,        	26, 	0},
 {{SOFI_PROP_BASE,	(void*)&sofi_prop_mdb_list[27],	(void*)&sofi_prop_base_list[27]},	3,       	(u8*)&modbus.vars.addr,         	"addr",         	"Device ModBUS address",        	VAR_TYPE_U8,   	1,        	27, 	0},
+{{SOFI_PROP_BASE,	(void*)&sofi_prop_mdb_list[28],	(void*)&sofi_prop_base_list[28]},	2,       	(u8*)&service.vars.rtc_state,   	"rtc_state",    	"RTC service status",           	VAR_TYPE_U32,  	1,        	28, 	1},
+{{SOFI_PROP_BASE,	(void*)&sofi_prop_mdb_list[29],	(void*)&sofi_prop_base_list[29]},	2,       	(u8*)&service.vars.adc_state,   	"adc_state",    	"ADC service status",           	VAR_TYPE_U32,  	1,        	29, 	1},
+{{SOFI_PROP_BASE,	(void*)&sofi_prop_mdb_list[30],	(void*)&sofi_prop_base_list[30]},	2,       	(u8*)&service.vars.mdb_state,   	"mdb_state",    	"ModBUS service status",        	VAR_TYPE_U32,  	1,        	30, 	1},
+{{SOFI_PROP_BASE,	(void*)&sofi_prop_mdb_list[31],	(void*)&sofi_prop_base_list[31]},	2,       	(u8*)&service.vars.dbg_state,   	"dbg_state",    	"Debug service status",         	VAR_TYPE_U32,  	1,        	31, 	1},
 };
 
 const sofi_prop_mdb_t sofi_prop_mdb_list[SOFI_PROP_MDB_REG_NUM]={
@@ -76,6 +81,10 @@ const sofi_prop_mdb_t sofi_prop_mdb_list[SOFI_PROP_MDB_REG_NUM]={
 {{SOFI_PROP_MDB,	NULL,                          	(void*)&sofi_prop_base_list[25]},	94},
 {{SOFI_PROP_MDB,	NULL,                          	(void*)&sofi_prop_base_list[26]},	96},
 {{SOFI_PROP_MDB,	(void*)&sofi_prop_save_list[2],	(void*)&sofi_prop_base_list[27]},	98},
+{{SOFI_PROP_MDB,	NULL,                          	(void*)&sofi_prop_base_list[28]},	99},
+{{SOFI_PROP_MDB,	NULL,                          	(void*)&sofi_prop_base_list[29]},	101},
+{{SOFI_PROP_MDB,	NULL,                          	(void*)&sofi_prop_base_list[30]},	103},
+{{SOFI_PROP_MDB,	NULL,                          	(void*)&sofi_prop_base_list[31]},	105},
 };
 
 const sofi_prop_range_t sofi_prop_range_list[SOFI_PROP_RANGE_REG_NUM]={

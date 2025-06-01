@@ -153,6 +153,9 @@ int main(void){
     modbus_task_handle = osThreadCreate(osThread(modbus_task), NULL);
     if(modbus_task_handle == NULL){
         debug_msg(__func__, DBG_MSG_ERR, "Can't create modbus_task");
+    }else{
+        service.vars.mdb_state = MODBUS_INIT_TIMEOUT_MS;
+        service.vars.mdb_state |= SRV_ST_CREATED;
     }
 #endif // MDB_EN
 
@@ -161,6 +164,9 @@ int main(void){
     rtc_task_handle = osThreadCreate(osThread(rtc_task), NULL);
     if(rtc_task_handle == NULL){
         debug_msg(__func__, DBG_MSG_ERR, "Can't create rtc_task");
+    }else{
+        service.vars.mdb_state = RTC_INIT_TIMEOUT_MS;
+        service.vars.rtc_state |= SRV_ST_CREATED;
     }
 #endif // RTC_EN
 
