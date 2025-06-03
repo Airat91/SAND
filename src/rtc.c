@@ -106,6 +106,22 @@ static int rtc_init(void){
     __HAL_RCC_BKP_CLK_ENABLE();
     __HAL_RCC_PWR_CLK_ENABLE();
     __HAL_RCC_RTC_ENABLE();
+
+
+
+    // Initializes RCC extended clocks structure definition
+    // @todo: Move to rtc_init()
+    /*RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
+
+    PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_RTC|RCC_PERIPHCLK_ADC;
+    PeriphClkInit.RTCClockSelection = RCC_RTCCLKSOURCE_HSE_DIV128;
+    PeriphClkInit.AdcClockSelection = RCC_ADCPCLK2_DIV6;
+    if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
+    {
+        _Error_Handler(__FILE__, __LINE__);
+    }*/
+
+
     hrtc.Instance = RTC;
     hrtc.Init.AsynchPrediv = RTC_AUTO_1_SECOND;
     stat = HAL_RTC_Init(&hrtc);
@@ -133,6 +149,8 @@ static int rtc_init(void){
 
 static int rtc_deinit(void){
     int result = 0;
+    __HAL_RCC_RTC_DISABLE();
+    __HAL_RCC_LSE_CONFIG(RCC_LSE_OFF);
 
     return result;
 }

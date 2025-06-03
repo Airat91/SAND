@@ -1354,60 +1354,63 @@ void assert_failed(uint8_t* file, uint32_t line)
   * @brief System Clock Configuration
   * @ingroup main
   */
-static void SystemClock_Config(void)
-{
+static void SystemClock_Config(void){
+    int result = 0;
+    HAL_StatusTypeDef stat = HAL_OK;
 
-    RCC_OscInitTypeDef RCC_OscInitStruct;
-    RCC_ClkInitTypeDef RCC_ClkInitStruct;
-    RCC_PeriphCLKInitTypeDef PeriphClkInit;
+    // Initializes RCC Internal/External Oscillator (HSE, HSI, LSE and LSI) configuration structure definition
+    RCC_OscInitTypeDef RCC_OscInitStruct = {0};
+    RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;  // Use Ext 8MHz Osc
 
-    /**Initializes the CPU, AHB and APB busses clocks
-    */
-    RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE|RCC_OSCILLATORTYPE_LSI;
-    RCC_OscInitStruct.HSEState = RCC_HSE_ON;
-    RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
-    RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-    RCC_OscInitStruct.LSIState = RCC_LSI_ON;
-    //RCC_OscInitStruct.LSEState = RCC_LSE_ON;
-    RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-    RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-    RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL9;
-    if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
-    {
-        _Error_Handler(__FILE__, __LINE__);
+#if RTC_EN
+    RCC_OscInitStruct.OscillatorType |= RTC_OSC_TYPE;           // Use RTC Osc
+    #if(RTC_OSC_TYPE == RCC_OSCILLATORTYPE_LSE)
+    RCC_OscInitStruct.LSEState = RCC_LSE_ON;                    // Enable Ext 32.768kHz RTC Osc
+    #elif(RTC_OSC_TYPE == RCC_OSCILLATORTYPE_LSI)
+    RCC_OscInitStruct.LSIState = RCC_LSI_ON;                    // Enable Int 40kHz RTC RC
+    #endif // RTC_OSC_TYPE
+#endif // RTC_EN
+
+    RCC_OscInitStruct.HSEState = RCC_HSE_ON;                    // Enable Ext 8MHz Osc
+    RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;     // Set Ext Osc divider
+    RCC_OscInitStruct.HSIState = RCC_HSI_ON;                    // Enable Int 8MHz RC
+    RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+
+    RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;                // Enable PLL
+    RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;        // Set PLL source = Ext 8MHz Osc
+    RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL9;                // Set PLLCLK = 8 * 9 = 72MHz
+
+    stat = HAL_RCC_OscConfig(&RCC_OscInitStruct);
+    if(stat != HAL_OK){
+        result = -1;
+        debug_msg(__func__, DBG_MSG_ERR, "HAL_RCC_OscConfig() %S", hal_status[stat]);
     }
 
-    /**Initializes the CPU, AHB and APB busses clocks
-    */
-    RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-            |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-    RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-    RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-    RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
-    RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+    // Initializes RCC System, AHB and APB busses clock configuration structure definition
+    RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+    RCC_ClkInitStruct.ClockType |= RCC_CLOCKTYPE_HCLK;          // Config HCLK
+    RCC_ClkInitStruct.ClockType |= RCC_CLOCKTYPE_SYSCLK;        // Config SYSCLK
+    RCC_ClkInitStruct.ClockType |= RCC_CLOCKTYPE_PCLK1;         // Config PCLK1
+    RCC_ClkInitStruct.ClockType |= RCC_CLOCKTYPE_PCLK2;         // Config PCLK2
 
-    if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
-    {
-        _Error_Handler(__FILE__, __LINE__);
+    RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;   // Set SYSCLK = PLLCLK = 72MHz
+    RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;          // Set HCLK = SYSCLK = 72MHz
+    RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;           // Set APB1CLK = HCLK/2 = 36MHz
+    RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;           // Set APB1CLK = HCLK = 72MHz
+
+    stat = HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2);
+    if (stat != HAL_OK){
+        result = -2;
+        debug_msg(__func__, DBG_MSG_ERR, "HAL_RCC_ClockConfig() %S", hal_status[stat]);
     }
 
-    PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_RTC|RCC_PERIPHCLK_ADC;
-    PeriphClkInit.RTCClockSelection = RCC_RTCCLKSOURCE_HSE_DIV128;
-    PeriphClkInit.AdcClockSelection = RCC_ADCPCLK2_DIV6;
-    if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
-    {
-        _Error_Handler(__FILE__, __LINE__);
-    }
-
-    /**Configure the Systick interrupt time
-    */
+    // Configure the Systick interrupt time 1ms
     HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq()/1000);
 
-    /**Configure the Systick
-    */
+    // Configure the Systick source
     HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
 
-    /* SysTick_IRQn interrupt configuration */
+    // Set SysTick_IRQn interrupt configuration
     HAL_NVIC_SetPriority(SysTick_IRQn, 15, 0);
 }
 

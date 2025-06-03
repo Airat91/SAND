@@ -33,6 +33,8 @@ extern "C" {
 
 #define RTC_TASK_PERIOD     1000
 #define RTC_INIT_TIMEOUT_MS 2000
+#define RTC_OSC_TYPE        RCC_OSCILLATORTYPE_LSI  // Use RCC_OSCILLATORTYPE_LSE for external 32.768 kHz quartz
+                                                    // or RCC_OSCILLATORTYPE_LSI for internal 40 kHz RC
     
 //--------Macro--------
 
