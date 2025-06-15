@@ -53,7 +53,6 @@
 IWDG_HandleTypeDef hiwdg = {0};
 osThreadId main_task_handle = {0};
 
-TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
 osThreadId defaultTaskHandle;
 osThreadId displayTaskHandle;
@@ -63,7 +62,6 @@ osThreadId buttonsTaskHandle;
 osThreadId navigationTaskHandle;
 osThreadId uartTaskHandle;
 uint8_t irq_state = IRQ_NONE;
-uint32_t us_cnt_H = 0;
 
 //-------Static variables------
 
@@ -105,8 +103,8 @@ static const char data_pin_description[3][20] = {
 
 //-------Static functions declaration-----------
 
-static void SystemClock_Config(void);
-static void MX_IWDG_Init(void);
+static int SystemClock_Config(void);
+static void main_IWDG_Init(void);
 static void main_gpio_init(void);
 static void main_IWDG_refresh(void);
 static int  main_leds_handle(u32 call_period);
@@ -132,7 +130,7 @@ int main(void){
 
     HAL_Init();
     SystemClock_Config();
-    //tim2_init();
+    us_tim_init();
     //dcts_init();
     //restore_params();
     main_gpio_init();
@@ -165,7 +163,7 @@ int main(void){
     if(rtc_task_handle == NULL){
         debug_msg(__func__, DBG_MSG_ERR, "Can't create rtc_task");
     }else{
-        service.vars.mdb_state = RTC_INIT_TIMEOUT_MS;
+        service.vars.rtc_state = RTC_INIT_TIMEOUT_MS;
         service.vars.rtc_state |= SRV_ST_CREATED;
     }
 #endif // RTC_EN
@@ -282,21 +280,21 @@ void display_task(void const * argument){
     u8 tick = 0;
     //uint16_t color = 1;
     menu_page_t last_page = selectedMenuItem->Page;
-    refresh_watchdog();
+    //refresh_watchdog();
     max7219_init();
     //st7735_init();
     sprintf(string, "       dcts%s", dcts.dcts_ver);
     while(*p_string != '\0'){
         max7219_print_string(p_string);
         if(*p_string == 'd'){
-            refresh_watchdog();
+            //refresh_watchdog();
             osDelay(2000);
         }else{
-            refresh_watchdog();
+            //refresh_watchdog();
             osDelay(100);
         }
         p_string++;
-        refresh_watchdog();
+        //refresh_watchdog();
     }
     max7219_clr();
     osDelay(500);
@@ -310,7 +308,7 @@ void display_task(void const * argument){
         st7735_xy(51,55);
         st7735_print(string, &Font_7x10, ST7735_WHITE);*/
 
-        refresh_watchdog();
+        //refresh_watchdog();
         if(last_page != selectedMenuItem->Page){
             tick = 0;
             last_page = selectedMenuItem->Page;
@@ -333,14 +331,14 @@ void display_task(void const * argument){
             while(*p_string != '\0'){
                 max7219_print_string(p_string);
                 if(*p_string == 'r'){
-                    refresh_watchdog();
+                    //refresh_watchdog();
                     osDelay(1000);
                 }else{
-                    refresh_watchdog();
+                    //refresh_watchdog();
                     osDelay(100);
                 }
                 p_string++;
-                refresh_watchdog();
+                //refresh_watchdog();
             }
             NVIC_SystemReset();
         }
@@ -699,12 +697,12 @@ void am2302_task (void const * argument){
     uint32_t data_pin_lost = 0;
     data_pin_irq_init();
     am2302_data_t data = {0};
-    refresh_watchdog();
+    //refresh_watchdog();
     osDelay(1000);
-    refresh_watchdog();
+    //refresh_watchdog();
     uint32_t last_wake_time = osKernelSysTick();
     while(1){
-        refresh_watchdog();
+        //refresh_watchdog();
         switch (config.params.data_pin_config){
         case DATA_PIN_EXT_AM2302:
             data_pin = am2302_get(0);
@@ -1042,37 +1040,6 @@ static void data_pin_irq_init(void){
 }
 
 
-/**
- * @brief Init us timer
- * @ingroup MAIN
- */
-static void tim2_init(void){
-    TIM_ClockConfigTypeDef sClockSourceConfig;
-    TIM_MasterConfigTypeDef sMasterConfig;
-    __HAL_RCC_TIM2_CLK_ENABLE();
-    htim2.Instance = TIM2;
-    htim2.Init.Prescaler = 71;
-    htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-    htim2.Init.Period = 0xFFFF;
-    htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-    htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-    if (HAL_TIM_Base_Init(&htim2) != HAL_OK)  {
-        _Error_Handler(__FILE__, __LINE__);
-    }
-    sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
-    if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)  {
-        _Error_Handler(__FILE__, __LINE__);
-    }
-    sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-    sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-    if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)  {
-        _Error_Handler(__FILE__, __LINE__);
-    }
-    HAL_NVIC_EnableIRQ(TIM2_IRQn);
-    if (HAL_TIM_Base_Start_IT(&htim2) != HAL_OK){
-        _Error_Handler(__FILE__, __LINE__);
-    }
-}
 
 /**
  * @brief Get number of symbols in string
@@ -1094,35 +1061,6 @@ u16 str_smb_num(char* string, char symbol){
     }
 
     return result;
-}
-
-/**
- * @brief Get value from global us timer
- * @return global us timer value
- * @ingroup MAIN
- */
-uint32_t us_tim_get_value(void){
-    uint32_t value = us_cnt_H + TIM2->CNT;
-    return value;
-}
-/**
- * @brief Us delayy
- * @param us - delau value
- * @ingroup MAIN
- */
-void us_tim_delay(uint32_t us){
-    uint32_t current;
-    uint8_t with_yield;
-    current = TIM2->CNT;
-    with_yield = 0;
-    if(us > TIME_YIELD_THRESHOLD){
-        with_yield =1;
-    }
-    while ((TIM2->CNT - current)<us){
-        if(with_yield){
-            osThreadYield();
-        }
-    }
 }
 
 /**
@@ -1314,12 +1252,12 @@ static float read_float_bkp(u8 bkp_num, u8 sign){
     }
     return atoff(buf);
 }
-
+/*
 void refresh_watchdog(void){
 #if RELEASE
         HAL_IWDG_Refresh(&hiwdg);
 #endif //RELEASE
-}
+}*/
 
 
 uint32_t uint32_pow(uint16_t x, uint8_t pow){
@@ -1331,30 +1269,17 @@ uint32_t uint32_pow(uint16_t x, uint8_t pow){
     return result;
 }
 
-#ifdef  USE_FULL_ASSERT
-/**
-  * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
-  * @param  file: pointer to the source file name
-  * @param  line: assert_param error line source number
-  * @retval None
-  */
-void assert_failed(uint8_t* file, uint32_t line)
-{
-    /* USER CODE BEGIN 6 */
-    /* User can add his own implementation to report the file name and line number,
-     tex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
-    /* USER CODE END 6 */
-}
-#endif /* USE_FULL_ASSERT */
-
 //-------Static functions----------
 
 /**
   * @brief System Clock Configuration
   * @ingroup main
+  * @return 0 - ok,\n
+  *         -1 - HAL_RCC_OscConfig() error,\n
+  *         -2 - HAL_RCC_ClockConfig() error,\n
+  *         -3 - HAL_SYSTICK_Config() error,\n
   */
-static void SystemClock_Config(void){
+static int SystemClock_Config(void){
     int result = 0;
     HAL_StatusTypeDef stat = HAL_OK;
 
@@ -1405,26 +1330,32 @@ static void SystemClock_Config(void){
     }
 
     // Configure the Systick interrupt time 1ms
-    HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq()/1000);
+    stat = HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq()/1000);
+    if (stat != HAL_OK){
+        result = -3;
+        debug_msg(__func__, DBG_MSG_ERR, "HAL_SYSTICK_Config() %S", hal_status[stat]);
+    }
 
     // Configure the Systick source
     HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
 
     // Set SysTick_IRQn interrupt configuration
     HAL_NVIC_SetPriority(SysTick_IRQn, 15, 0);
+
+    return result;
 }
 
 /**
  * @brief Watchdig timer initialisation
  * @ingroup main
  */
-static void MX_IWDG_Init(void){
+static void main_IWDG_Init(void){
     hiwdg.Instance = IWDG;
     hiwdg.Init.Prescaler = IWDG_PRESCALER_128;
-    hiwdg.Init.Reload = 3124;   //10sec
-    if (HAL_IWDG_Init(&hiwdg) != HAL_OK)
-    {
-      Error_Handler();
+    hiwdg.Init.Reload = MAIN_IWDG_PERIOD;
+    u32 stat = HAL_IWDG_Init(&hiwdg);
+    if (stat != HAL_OK){
+        debug_msg(__func__, DBG_MSG_ERR, "HAL_IWDG_Init() %S", hal_status[stat]);
     }
 }
 

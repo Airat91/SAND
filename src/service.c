@@ -17,7 +17,7 @@
 
 int service_is_ok(u32* p_service_state){
     int result = 0;
-    if(*p_service_state != SRV_ST_CREATED){
+    if((*p_service_state & SRV_ST_CREATED) == 0){
         // Service doesn't created
         result = -1;
     }else if(*p_service_state & SRV_ST_ERROR){

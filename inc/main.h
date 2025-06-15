@@ -62,6 +62,7 @@
 #include "pin_map.h"
 #include "debug.h"
 #include "sofi_reg.h"
+#include "us_tim.h"
 
 #if MDB_EN
     #include "modbus_sand.h"
@@ -103,8 +104,8 @@
 
 #define MAIN_TASK_PERIOD        100
 #define MAIN_TASK_TICK_MAX      3600000/MAIN_TASK_PERIOD    // 1 Hour
+#define MAIN_IWDG_PERIOD        3124    // 10 second
 
-#define TIME_YIELD_THRESHOLD    100
 //#define MEAS_NUM                6
 #define SAVED_PARAMS_SIZE       7
 #define SKIN_NMB                6
