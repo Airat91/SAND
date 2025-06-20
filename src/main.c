@@ -131,10 +131,10 @@ int main(void){
     HAL_Init();
     SystemClock_Config();
     us_tim_init();
+    debug_init();
     //dcts_init();
     //restore_params();
     main_gpio_init();
-    //debug_init();
     //menu_init();
 #if RELEASE_FLAG
     MX_IWDG_Init();

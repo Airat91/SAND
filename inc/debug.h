@@ -19,6 +19,7 @@
 #include "main_config.h"
 #include "regs.h"
 #include "service.h"
+#include "us_tim.h"
 /*add includes before */
 
 #ifdef __cplusplus
@@ -34,6 +35,8 @@ extern "C" {
 
 #define DEBUG_HEADER_LEN    100
 #define DEBUG_MSG_LEN       255
+#define DEBUG_MSG_BUF_LEN   1024
+#define DEBUG_BUF_WRITE_TIMEOUT_US  1000
 
 //--------Macro--------
 
@@ -46,6 +49,22 @@ typedef enum{
     DBG_MSG_ERR,        // Error message with error LED blink
     DBG_MSG_LOG,        // Save message to log-file
 }debug_msg_t;
+
+typedef enum{
+    DBG_BUF_NONE        = 0,
+    DBG_BUF_READY       = 1<<0,
+    DBG_BUF_WRITING     = 1<<1,
+    DBG_BUF_READING     = 1<<2,
+}debug_buff_state_t;
+
+typedef struct{
+    char buff[DEBUG_MSG_BUF_LEN];       // buffer for logs
+    u16 ptr;                            // first empty symbol for new message
+    u16 start_for_read;                 // first symbol for read
+    u16 end_for_read;                   // end symbol for read including this
+    u64 msg_cnt;                        // counter of log messages
+    debug_buff_state_t state;           // state flags
+}debug_dynamic_buff_t;
 
 //-------External variables------
 
