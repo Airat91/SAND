@@ -14,6 +14,13 @@ u32 debug_led_err_on_time = 0;
 //-------Static variables------
 
 static debug_dynamic_buff_t debug_buf = {0};
+static const char debug_msg_list[DBG_MSG_LIST_LEN][DEBUG_MSG_TYPE_LEN] = {
+    "NON",
+    "INF",      // Information message
+    "WAR",      // Warning message
+    "ERR",      // Error message with error LED blink
+    "LOG",      // Save message to log-file
+};
 
 //-------Static functions declaration-----------
 
@@ -38,21 +45,21 @@ int debug_init(void){
     // Init external interface
 
     // Set dbg_service flags
-    service.vars.rtc_state |= SRV_ST_CREATED;
-    service.vars.rtc_state |= SRV_ST_RUN;
-    service.vars.rtc_state &= ~(u32)SRV_ST_ERROR;
+    service.vars.dbg_state |= SRV_ST_CREATED;
+    service.vars.dbg_state |= SRV_ST_RUN;
+    service.vars.dbg_state &= ~(u32)SRV_ST_ERROR;
 
     return result;
 }
 
 int debug_msg(const char* func_name, debug_msg_t msg_type, const char * msg, ...){
     int result = 0;
-    char message[DEBUG_MSG_LEN] = {0};      // Formatted message
-    char header[DEBUG_HEADER_LEN] = {0};    // Header of message
+    char message[DEBUG_MSG_LEN];      // Formatted message
+    char header[DEBUG_HEADER_LEN];    // Header of message
     if(service_is_ok(&service.vars.dbg_state) == 0){
         va_list args;
         va_start(args, msg);
-        u16 len = (u16)vsnprintf((char*)message, DEBUG_MSG_LEN, msg, args);
+        u16 len = (u16)vsprintf((char*)message, msg, args);
         va_end(args);
         if(len >= DEBUG_MSG_LEN - 1){
             // Message is too long
@@ -64,29 +71,27 @@ int debug_msg(const char* func_name, debug_msg_t msg_type, const char * msg, ...
 #if RTC_EN
             if(service_is_ok(&service.vars.rtc_state) == 0){
                 // Add datetime to header
-                sprintf(header, "%02d.%02d.%04d/%02d:%02d:%02d\t%s(): ", time.vars.day, time.vars.month, time.vars.year,
-                   time.vars.hour, time.vars.minute, time.vars.sec, func_name);
+                sprintf(header, "%02d.%02d.%04d/%02d:%02d:%02d\t%s\t%s(): ", time.vars.day, time.vars.month, time.vars.year,
+                   time.vars.hour, time.vars.minute, time.vars.sec, debug_msg_list[msg_type], func_name);
             }else{
                 // Add msec value to header
-                sprintf(header, "%dms\t%s(): ", HAL_GetTick(), func_name);
+                sprintf(header, "%dms\t%s\t%s(): ", HAL_GetTick(), debug_msg_list[msg_type], func_name);
             }
 #else
             // Add runtime to header
-            sprintf(header, "%ds\t%s(): ", (int)os.vars.runtime, func_name);
+            sprintf(header, "%ds\t%s\t%s(): ", (int)os.vars.runtime, debug_msg_list[msg_type], func_name);
 #endif // RTC_EN
-            // Add message type to header
             switch(msg_type){
             case DBG_MSG_INFO:
-                strcat(header, "(INF)");
                 break;
             case DBG_MSG_LOG:
-                strcat(header, "(LOG)");
+                // Save message to FLASH
                 break;
             case DBG_MSG_WARN:
-                strcat(header, "(WAR)");
                 break;
             case DBG_MSG_ERR:
-                strcat(header, "(ERR)");
+                // Blink LED error
+                debug_led_err_on_time = DEBUG_LED_ERR_ON_TIME;
                 break;
             default:
                 break;
@@ -103,6 +108,10 @@ int debug_msg(const char* func_name, debug_msg_t msg_type, const char * msg, ...
         }
     }else{
         // Debug service is not ok
+        if(msg_type == DBG_MSG_ERR){
+            // Blink LED error
+            debug_led_err_on_time = DEBUG_LED_ERR_ON_TIME;
+        }
         result = -1;
     }
 

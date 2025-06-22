@@ -12,8 +12,8 @@
 
 //-------Static variables------
 
-static uint32_t us_cnt_H = 0;
-static TIM_HandleTypeDef htim_us;
+static uint32_t us_time = 0;
+static TIM_HandleTypeDef htim_us = {0};
 
 //-------Static functions declaration-----------
 
@@ -25,7 +25,7 @@ int us_tim_init(void){
 
     __TM_US_CLK_ENABLE();                                               // Enable TIM CLK
     htim_us.Instance = TIM_US;                                          // Select TIM
-    stat = HAL_RCC_GetPCLK1Freq()/US_TIM_FREQ - 1;
+    stat = HAL_RCC_GetPCLK2Freq()/US_TIM_FREQ - 1;
     htim_us.Init.Prescaler = stat;                                      // Set TI frequency = 1 MHz
     htim_us.Init.CounterMode = TIM_COUNTERMODE_UP;                      // Select up-ounter mode
     htim_us.Init.Period = 0xFFFF;                                       // Set max period
@@ -58,6 +58,9 @@ int us_tim_init(void){
         debug_msg(__func__, DBG_MSG_ERR, "HAL_TIMEx_MasterConfigSynchronization() %S", hal_status[stat]);
     }
 
+    // Set IRQ priority
+    HAL_NVIC_SetPriority(TIM_US_IRQn, US_TIM_PRIO, US_TIM_SUBPRIO);
+
     // Enable IRQ for US_TIM
     HAL_NVIC_EnableIRQ(TIM_US_IRQn);
 
@@ -78,7 +81,7 @@ void us_tim_deinit(void){
 }
 
 u32 us_tim_get_value(void){
-    u32 value = us_cnt_H + htim_us.Instance->CNT;
+    u32 value = us_time + htim_us.Instance->CNT;
     return value;
 }
 
@@ -99,7 +102,8 @@ void us_tim_delay(u32 us){
 
 void us_tim_irq_handler(void){
     HAL_TIM_IRQHandler(&htim_us);
-    us_cnt_H += 0x10000;
+    //__HAL_TIM_CLEAR_IT(&htim_us, TIM_IT_UPDATE);
+    us_time += 0x10000;
 }
 
 //-------Static functions----------

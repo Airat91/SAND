@@ -27,7 +27,7 @@ extern "C" {
     
 //--------Defines--------
 
-#define US_TIM_YIELD_THRESHOLD      100
+#define US_TIM_YIELD_THRESHOLD      1000
 #define US_TIM_FREQ                 1000000     // 1 MHz
 
 //--------Macro--------

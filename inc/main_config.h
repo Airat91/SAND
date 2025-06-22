@@ -1,7 +1,8 @@
 #ifndef MAIN_CONFIG_H
 #define MAIN_CONFIG_H
 
-#define MDB_EN  1
+// Enable/disable services
+#define MDB_EN  0
 #define CAN_EN  0
 #define I2C_EN  0
 #define SPI_EN  0
@@ -13,5 +14,10 @@
 #define USB_EN  0
 #define WEB_EN  0
 #define RTC_EN  1
+
+// IRQ priorities
+
+#define US_TIM_PRIO     10
+#define US_TIM_SUBPRIO  0
 
 #endif // MAIN_CONFIG_H

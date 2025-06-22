@@ -8,8 +8,9 @@
 #ifndef DEBUG_H
 #define DEBUG_H
 /*add includes below */
-#include <stdarg.h>
-#include <string.h>
+#include "stdarg.h"
+#include "string.h"
+#include "stdio.h"
 #include "cmsis_os.h"
 #include "stm32f1xx_hal.h"
 #include "stm32f1xx_hal_gpio.h"
@@ -33,10 +34,12 @@ extern "C" {
 
 //--------Defines--------
 
-#define DEBUG_HEADER_LEN    100
-#define DEBUG_MSG_LEN       255
-#define DEBUG_MSG_BUF_LEN   1024
+#define DEBUG_HEADER_LEN            100
+#define DEBUG_MSG_LEN               200
+#define DEBUG_MSG_BUF_LEN           1024
 #define DEBUG_BUF_WRITE_TIMEOUT_US  1000
+#define DEBUG_MSG_TYPE_LEN          5
+#define DEBUG_LED_ERR_ON_TIME       100
 
 //--------Macro--------
 
@@ -48,6 +51,7 @@ typedef enum{
     DBG_MSG_WARN,       // Warning message
     DBG_MSG_ERR,        // Error message with error LED blink
     DBG_MSG_LOG,        // Save message to log-file
+    DBG_MSG_LIST_LEN,   // Number of debug message types
 }debug_msg_t;
 
 typedef enum{

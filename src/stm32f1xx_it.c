@@ -72,31 +72,22 @@ void NMI_Handler(void)
 /**
 * @brief This function handles Hard fault interrupt.
 */
-void HardFault_Handler(void)
-{
-  /* USER CODE BEGIN HardFault_IRQn 0 */
-
+void HardFault_Handler(void){
     uint32_t time = us_tim_get_value();
     uint32_t cur = time;
     uint16_t tick = 0;
-  /* USER CODE END HardFault_IRQn 0 */
-  while (1)
-  {
-    /* USER CODE BEGIN W1_HardFault_IRQn 0 */
-      HAL_GPIO_TogglePin(LED_PORT,LED_PIN);
-      tick++;
-      time = us_tim_get_value();
-      while((cur - time) < 250000){
-        cur = us_tim_get_value();
-      }
-      if(tick > 240){
-          NVIC_SystemReset();
-      }
-    /* USER CODE END W1_HardFault_IRQn 0 */
-  }
-  /* USER CODE BEGIN HardFault_IRQn 1 */
-
-  /* USER CODE END HardFault_IRQn 1 */
+    while (1){
+        HAL_GPIO_TogglePin(LED_SYS_R_PORT,LED_SYS_R_PIN);
+        tick++;
+        while((cur - time) < 250000){   // 250ms - 2Hz blink frequency
+            cur = us_tim_get_value();
+        }
+        time = us_tim_get_value();
+        cur = time;
+        if(tick > 240){ // 1 minute
+            NVIC_SystemReset();
+        }
+    }
 }
 
 /**

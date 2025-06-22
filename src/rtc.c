@@ -29,6 +29,8 @@ void rtc_task(void const * argument){
     RTC_DateTypeDef date = {0};
     if(rtc_init() < 0){
         debug_msg(__func__, DBG_MSG_ERR, "Cannot init RTC");
+    }else{
+        service.vars.rtc_state |= SRV_ST_RUN;
     }
     uint32_t last_wake_time = osKernelSysTick();
     while(1){

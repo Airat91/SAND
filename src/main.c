@@ -137,7 +137,7 @@ int main(void){
     main_gpio_init();
     //menu_init();
 #if RELEASE_FLAG
-    MX_IWDG_Init();
+    main_IWDG_Init();
 #endif //RELEASE
 
     osThreadDef(main_task, main_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
@@ -214,6 +214,12 @@ void main_task(void const * argument){
 
             // Call adc_service_meas()
             //adc_service_meas();
+        }
+        // For debug only
+        if(tick == 50){
+            debug_msg(__func__, DBG_MSG_ERR, "Test error message, tick = %d", tick);
+        }else if(tick == 100){
+            debug_msg(__func__, DBG_MSG_INFO, "Test info message");
         }
         // Blinks LEDs control
         main_leds_handle(MAIN_TASK_PERIOD);
@@ -1355,7 +1361,7 @@ static void main_IWDG_Init(void){
     hiwdg.Init.Reload = MAIN_IWDG_PERIOD;
     u32 stat = HAL_IWDG_Init(&hiwdg);
     if (stat != HAL_OK){
-        debug_msg(__func__, DBG_MSG_ERR, "HAL_IWDG_Init() %S", hal_status[stat]);
+        //debug_msg(__func__, DBG_MSG_ERR, "HAL_IWDG_Init() %S", hal_status[stat]);
     }
 }
 
