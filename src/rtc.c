@@ -30,6 +30,7 @@ void rtc_task(void const * argument){
     if(rtc_init() < 0){
         debug_msg(__func__, DBG_MSG_ERR, "Cannot init RTC");
     }else{
+        debug_msg(__func__, DBG_MSG_INFO, "RTC_task started");
         service.vars.rtc_state |= SRV_ST_RUN;
     }
     uint32_t last_wake_time = osKernelSysTick();
@@ -90,16 +91,18 @@ int rtc_irq_handler(HAL_RTCStateTypeDef* hrtc){
     return result;
 }
 
-
-/**
- * @brief default_task
- * @param argument - None
- * @todo add group
- */
-
-
 //-------Static functions----------
 
+/**
+ * @brief Init RTC peripherial
+ * @ingroup rtc
+ * @return  0 - Ok,\n
+ *          -1 - HAL_RCC_OscConfig() error,\n
+ *          -2 - HAL_RCCEx_PeriphCLKConfig() error,\n
+ *          -3 - HAL_RTC_Init() error,\n
+ *          -4 - HAL_RTC_SetTime() error,\n
+ *          -5 - HAL_RTC_SetDate() error,\n
+ */
 static int rtc_init(void){
     int result = 0;
     RTC_TimeTypeDef sTime = {0};
@@ -109,39 +112,56 @@ static int rtc_init(void){
     __HAL_RCC_PWR_CLK_ENABLE();
     __HAL_RCC_RTC_ENABLE();
 
+    // Initializes RCC Internal/External Oscillator (LSE, LSI) configuration structure definition
+    RCC_OscInitTypeDef RCC_OscInitStruct = {0};
 
+    RCC_OscInitStruct.OscillatorType |= RTC_OSC_TYPE;           // Use RTC Osc
+#if(RTC_OSC_TYPE == RCC_OSCILLATORTYPE_LSE)
+    RCC_OscInitStruct.LSEState = RCC_LSE_ON;                    // Enable Ext 32.768kHz RTC Osc
+#elif(RTC_OSC_TYPE == RCC_OSCILLATORTYPE_LSI)
+    RCC_OscInitStruct.LSIState = RCC_LSI_ON;                    // Enable Int 40kHz RTC RC
+#endif // RTC_OSC_TYPE
+
+    stat = HAL_RCC_OscConfig(&RCC_OscInitStruct);
+    if(stat != HAL_OK){
+        result = -1;
+        debug_msg(__func__, DBG_MSG_ERR, "HAL_RCC_OscConfig() %S", hal_status[stat]);
+    }
 
     // Initializes RCC extended clocks structure definition
-    // @todo: Move to rtc_init()
-    /*RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
+    RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
 
-    PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_RTC|RCC_PERIPHCLK_ADC;
-    PeriphClkInit.RTCClockSelection = RCC_RTCCLKSOURCE_HSE_DIV128;
-    PeriphClkInit.AdcClockSelection = RCC_ADCPCLK2_DIV6;
-    if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
-    {
-        _Error_Handler(__FILE__, __LINE__);
-    }*/
+    PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_RTC;
+#if(RTC_OSC_TYPE == RCC_OSCILLATORTYPE_LSE)
+    PeriphClkInit.RTCClockSelection = RCC_RTCCLKSOURCE_LSE;
+#elif(RTC_OSC_TYPE == RCC_OSCILLATORTYPE_LSI)
+    PeriphClkInit.RTCClockSelection = RCC_RTCCLKSOURCE_LSI;
+#endif // RTC_OSC_TYPE
+    stat = HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit);
+    if (stat != HAL_OK){
+        result = -2;
+        debug_msg(__func__, DBG_MSG_ERR, "HAL_RCC_OscConfig() %S", hal_status[stat]);
+    }
 
 
     hrtc.Instance = RTC;
     hrtc.Init.AsynchPrediv = RTC_AUTO_1_SECOND;
     stat = HAL_RTC_Init(&hrtc);
     if (stat != HAL_OK){
-        result = -1;
+        result = -3;
         debug_msg(__func__, DBG_MSG_ERR, "HAL_RTC_Init() %S", hal_status[stat]);
     }
     if(result == 0){
         stat = HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
         if(stat != HAL_OK){
-            result = -2;
+            result = -4;
             debug_msg(__func__, DBG_MSG_ERR, "HAL_RTC_SetTime() %S", hal_status[stat]);
         }
     }
     if(result == 0){
         stat = HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
         if(stat != HAL_OK){
-            result = -3;
+            result = -5;
             debug_msg(__func__, DBG_MSG_ERR, "HAL_RTC_SetDate() %S", hal_status[stat]);
         }
     }

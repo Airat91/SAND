@@ -203,6 +203,7 @@ void main_task(void const * argument){
     (void)argument;
     uint32_t last_wake_time = osKernelSysTick();
     u32 tick = 0;
+    debug_msg(__func__, DBG_MSG_INFO, "MAIN_task started");
     while(1){
         // Every 1 second
         if(((tick)%(1000/MAIN_TASK_PERIOD))==0u){
@@ -214,12 +215,6 @@ void main_task(void const * argument){
 
             // Call adc_service_meas()
             //adc_service_meas();
-        }
-        // For debug only
-        if(tick == 50){
-            debug_msg(__func__, DBG_MSG_ERR, "Test error message, tick = %d", tick);
-        }else if(tick == 100){
-            debug_msg(__func__, DBG_MSG_INFO, "Test info message");
         }
         // Blinks LEDs control
         main_leds_handle(MAIN_TASK_PERIOD);
@@ -1292,7 +1287,7 @@ static int SystemClock_Config(void){
     // Initializes RCC Internal/External Oscillator (HSE, HSI, LSE and LSI) configuration structure definition
     RCC_OscInitTypeDef RCC_OscInitStruct = {0};
     RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;  // Use Ext 8MHz Osc
-
+/*
 #if RTC_EN
     RCC_OscInitStruct.OscillatorType |= RTC_OSC_TYPE;           // Use RTC Osc
     #if(RTC_OSC_TYPE == RCC_OSCILLATORTYPE_LSE)
@@ -1301,7 +1296,7 @@ static int SystemClock_Config(void){
     RCC_OscInitStruct.LSIState = RCC_LSI_ON;                    // Enable Int 40kHz RTC RC
     #endif // RTC_OSC_TYPE
 #endif // RTC_EN
-
+*/
     RCC_OscInitStruct.HSEState = RCC_HSE_ON;                    // Enable Ext 8MHz Osc
     RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;     // Set Ext Osc divider
     RCC_OscInitStruct.HSIState = RCC_HSI_ON;                    // Enable Int 8MHz RC
