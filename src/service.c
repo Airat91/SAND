@@ -26,7 +26,10 @@ int service_is_ok(u32* p_service_state){
     }else if((*p_service_state & SRV_ST_RUN) == 0){
         // Service doesn't run, wait timeout
         u32 timeout = *p_service_state & SRV_ST_TIMEOUT_MASK;
-        osDelay(timeout);
+        while(((*p_service_state & SRV_ST_RUN) == 0)&(timeout)){
+            osDelay(1);
+            timeout--;
+        }
         if((*p_service_state & SRV_ST_RUN) == 0){
             // Service don't start, set ERROR state
             result = -3;
