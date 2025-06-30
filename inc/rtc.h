@@ -32,8 +32,8 @@ extern "C" {
 //--------Defines--------
 
 #define RTC_TASK_PERIOD     1000
-#define RTC_INIT_TIMEOUT_MS 2000
-#define RTC_OSC_TYPE        RCC_OSCILLATORTYPE_LSI  // Use RCC_OSCILLATORTYPE_LSE for external 32.768 kHz quartz
+#define RTC_INIT_TIMEOUT_MS 6000
+#define RTC_OSC_TYPE        RCC_OSCILLATORTYPE_LSE  // Use RCC_OSCILLATORTYPE_LSE for external 32.768 kHz quartz
                                                     // or RCC_OSCILLATORTYPE_LSI for internal 40 kHz RC
     
 //--------Macro--------
@@ -56,6 +56,11 @@ typedef struct{
 typedef enum{
     RTC_CTRL_UPD_EN     = (1<<0),   // Enable RTC update every 1 second
 }rtc_ctrl_t;
+
+typedef enum{
+    RTC_OSC_LSI,    // Internal RC 40 kHz
+    RTC_OSC_LSE,    // External quartz 32.768 kHz
+}rtc_osc_t;
 
 //-------External variables------
 

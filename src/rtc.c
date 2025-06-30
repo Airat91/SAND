@@ -25,13 +25,11 @@ static int rtc_update(void);
 
 void rtc_task(void const * argument){
     (void)argument;
-    RTC_TimeTypeDef time = {0};
-    RTC_DateTypeDef date = {0};
     if(rtc_init() < 0){
         debug_msg(__func__, DBG_MSG_ERR, "Cannot init RTC");
     }else{
-        debug_msg(__func__, DBG_MSG_INFO, "RTC_task started");
         service.vars.rtc_state |= SRV_ST_RUN;
+        debug_msg(__func__, DBG_MSG_INFO, "RTC_task started");
     }
     uint32_t last_wake_time = osKernelSysTick();
     while(1){
@@ -82,6 +80,7 @@ int rtc_set_time(rtc_time_t time){
 int rtc_set_unix(u32 unix_timestamp){
     int result = 0;
 
+
     return result;
 }
 
@@ -105,6 +104,7 @@ int rtc_irq_handler(HAL_RTCStateTypeDef* hrtc){
  */
 static int rtc_init(void){
     int result = 0;
+    rtc_osc_t rtc_osc;
     RTC_TimeTypeDef sTime = {0};
     RTC_DateTypeDef sDate = {0};
     HAL_StatusTypeDef stat = HAL_OK;
@@ -115,28 +115,49 @@ static int rtc_init(void){
     // Initializes RCC Internal/External Oscillator (LSE, LSI) configuration structure definition
     RCC_OscInitTypeDef RCC_OscInitStruct = {0};
 
-    RCC_OscInitStruct.OscillatorType |= RTC_OSC_TYPE;           // Use RTC Osc
+    RCC_OscInitStruct.OscillatorType = RTC_OSC_TYPE;            // Use RTC Osc
 #if(RTC_OSC_TYPE == RCC_OSCILLATORTYPE_LSE)
     RCC_OscInitStruct.LSEState = RCC_LSE_ON;                    // Enable Ext 32.768kHz RTC Osc
+    rtc_osc = RTC_OSC_LSE;
 #elif(RTC_OSC_TYPE == RCC_OSCILLATORTYPE_LSI)
     RCC_OscInitStruct.LSIState = RCC_LSI_ON;                    // Enable Int 40kHz RTC RC
+    rtc_osc = RTC_OSC_LSI;
 #endif // RTC_OSC_TYPE
 
     stat = HAL_RCC_OscConfig(&RCC_OscInitStruct);
+#if(RTC_OSC_TYPE == RCC_OSCILLATORTYPE_LSE)
+    if(stat == HAL_TIMEOUT){
+        // Reinit RTC_OSC by LSI
+        RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSI;
+        RCC_OscInitStruct.LSIState = RCC_LSI_ON;
+        stat = HAL_RCC_OscConfig(&RCC_OscInitStruct);
+        if(stat == HAL_OK){
+            rtc_osc = RTC_OSC_LSI;
+            debug_msg(__func__, DBG_MSG_WARN, "RTC Inited with LSI instead LSE");
+        }else{
+            result = -1;
+            debug_msg(__func__, DBG_MSG_ERR, "HAL_RCC_OscConfig() %S", hal_status[stat]);
+        }
+    }
+#elif(RTC_OSC_TYPE == RCC_OSCILLATORTYPE_LSI)
     if(stat != HAL_OK){
         result = -1;
         debug_msg(__func__, DBG_MSG_ERR, "HAL_RCC_OscConfig() %S", hal_status[stat]);
     }
+#endif // RTC_OSC_TYPE
 
     // Initializes RCC extended clocks structure definition
     RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
 
     PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_RTC;
-#if(RTC_OSC_TYPE == RCC_OSCILLATORTYPE_LSE)
-    PeriphClkInit.RTCClockSelection = RCC_RTCCLKSOURCE_LSE;
-#elif(RTC_OSC_TYPE == RCC_OSCILLATORTYPE_LSI)
-    PeriphClkInit.RTCClockSelection = RCC_RTCCLKSOURCE_LSI;
-#endif // RTC_OSC_TYPE
+    switch(rtc_osc){
+    case RTC_OSC_LSE:
+        PeriphClkInit.RTCClockSelection = RCC_RTCCLKSOURCE_LSE;
+        break;
+    case RTC_OSC_LSI:
+        PeriphClkInit.RTCClockSelection = RCC_RTCCLKSOURCE_LSI;
+        break;
+    }
     stat = HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit);
     if (stat != HAL_OK){
         result = -2;
@@ -151,6 +172,8 @@ static int rtc_init(void){
         result = -3;
         debug_msg(__func__, DBG_MSG_ERR, "HAL_RTC_Init() %S", hal_status[stat]);
     }
+
+    // If RTC isn't inited before set default time
     if(result == 0){
         stat = HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
         if(stat != HAL_OK){
@@ -158,6 +181,8 @@ static int rtc_init(void){
             debug_msg(__func__, DBG_MSG_ERR, "HAL_RTC_SetTime() %S", hal_status[stat]);
         }
     }
+
+    // If RTC isn't inited before set default date
     if(result == 0){
         stat = HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
         if(stat != HAL_OK){
