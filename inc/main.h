@@ -70,6 +70,9 @@
 #if RTC_EN
     #include "rtc.h"
 #endif // RTC_EN
+#if USB_EN
+    #include "usb_device.h"
+#endif // USB_EN
 
 
 #include "dcts.h"

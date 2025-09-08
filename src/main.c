@@ -167,6 +167,10 @@ int main(void){
         service.vars.rtc_state |= SRV_ST_CREATED;
     }
 #endif // RTC_EN
+    MX_USB_DEVICE_Init();
+#if USB_EN
+
+#endif // USB_EN
 
 /*
     osThreadDef(display_task, display_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE*2);
