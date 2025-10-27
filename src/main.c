@@ -70,7 +70,7 @@ static u32 led_sys_ok_time = 0;
 static edit_val_t edit_val = {0};
 static navigation_t navigation_style = MENU_NAVIGATION;
 saved_to_flash_t config;
-static const uart_bitrate_t bitrate_array[14] = {
+/*static const uart_bitrate_t bitrate_array[14] = {
     BITRATE_600,
     BITRATE_1200,
     BITRATE_2400,
@@ -85,8 +85,8 @@ static const uart_bitrate_t bitrate_array[14] = {
     BITRATE_115200,
     BITRATE_128000,
     BITRATE_256000,
-};
-static uint16_t bitrate_array_pointer = 0;
+};*/
+//static uint16_t bitrate_array_pointer = 0;
 static const char skin_description[SKIN_NMB][20] = {
     "T TIME",
     "HIGH_T",
@@ -146,17 +146,6 @@ int main(void){
         debug_msg(__func__, DBG_MSG_ERR, "Can't create main_task");
     }
 
-#if MDB_EN
-    osThreadDef(modbus_task, modbus_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
-    modbus_task_handle = osThreadCreate(osThread(modbus_task), NULL);
-    if(modbus_task_handle == NULL){
-        debug_msg(__func__, DBG_MSG_ERR, "Can't create modbus_task");
-    }else{
-        service.vars.mdb_state = MODBUS_INIT_TIMEOUT_MS;
-        service.vars.mdb_state |= SRV_ST_CREATED;
-    }
-#endif // MDB_EN
-
 #if RTC_EN
     osThreadDef(rtc_task, rtc_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
     rtc_task_handle = osThreadCreate(osThread(rtc_task), NULL);
@@ -167,6 +156,28 @@ int main(void){
         service.vars.rtc_state |= SRV_ST_CREATED;
     }
 #endif // RTC_EN
+
+#if RS485_EN
+    osThreadDef(rs485_task, rs485_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
+    rs485_task_handle = osThreadCreate(osThread(rs485_task), NULL);
+    if(rs485_task_handle == NULL){
+        debug_msg(__func__, DBG_MSG_ERR, "Can't create rtc_task");
+    }else{
+        service.vars.rs485_state = RS485_INIT_TIMEOUT_MS;
+        service.vars.rs485_state |= SRV_ST_CREATED;
+    }
+#endif // RS485_EN
+
+#if MDB_EN
+    osThreadDef(modbus_task, modbus_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
+    modbus_task_handle = osThreadCreate(osThread(modbus_task), NULL);
+    if(modbus_task_handle == NULL){
+        debug_msg(__func__, DBG_MSG_ERR, "Can't create modbus_task");
+    }else{
+        service.vars.mdb_state = MODBUS_INIT_TIMEOUT_MS;
+        service.vars.mdb_state |= SRV_ST_CREATED;
+    }
+#endif // MDB_EN
 
 /*
     osThreadDef(display_task, display_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE*2);
@@ -426,7 +437,7 @@ static void print_menu(void){
     sprintf(string, selectedMenuItem->Text);
     max7219_print_string(string);
 }
-
+/*
 static void print_value(u8 position){
     char string[50] = {0};
     char * p_string = string;
@@ -683,7 +694,7 @@ static void print_value(u8 position){
         }
     }
     max7219_print_string(p_string);
-}
+}*/
 
 /**
  * @brief am2302_task
@@ -980,7 +991,7 @@ void navigation_task (void const * argument){
         osDelayUntil(&last_wake_time, navigation_task_period);
     }
 }
-
+/*
 #define uart_task_period 5
 void uart_task(void const * argument){
     (void)argument;
@@ -1029,7 +1040,7 @@ void uart_task(void const * argument){
         osDelayUntil(&last_wake_time, uart_task_period);
     }
 }
-
+*/
 static void data_pin_irq_init(void){
     irq_state = IRQ_NONE;
     GPIO_InitTypeDef GPIO_InitStruct = {0};
@@ -1117,8 +1128,8 @@ static void save_params(void){
     }
     // rewrite new params
     dcts.dcts_address = (uint8_t)config.params.mdb_address;
-    uart_deinit();
-    uart_init(config.params.mdb_bitrate, 8, 1, PARITY_NONE, 10000, UART_CONN_LOST_TIMEOUT);
+    //uart_deinit();
+    //uart_init(config.params.mdb_bitrate, 8, 1, PARITY_NONE, 10000, UART_CONN_LOST_TIMEOUT);
     //delay for show message
     osDelay(2000);
 }
@@ -1142,18 +1153,18 @@ static void restore_params(void){
     }else{
         //init default values if saved params not found
         config.params.mdb_address = dcts.dcts_address;
-        config.params.mdb_bitrate = BITRATE_115200;
+        config.params.mdb_bitrate = RS485_BTR_115200;
         config.params.light_lvl = 20;
         config.params.skin = HIGH_T_AND_TIME;
         config.params.data_pin_config = DATA_PIN_DISABLE;
         config.params.tmpr_coef_a = 100;
         config.params.tmpr_coef_b = 0;
     }
-    for(bitrate_array_pointer = 0; bitrate_array_pointer < 14; bitrate_array_pointer++){
+    /*for(bitrate_array_pointer = 0; bitrate_array_pointer < 14; bitrate_array_pointer++){
         if(bitrate_array[bitrate_array_pointer] == config.params.mdb_bitrate){
             break;
         }
-    }
+    }*/
 }
 
 

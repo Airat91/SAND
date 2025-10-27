@@ -82,7 +82,7 @@
 #include "buttons.h"
 #include "menu.h"
 #include "flash.h"
-#include "uart.h"
+#include "rs485.h"
 #include "modbus.h"
 //#include "st7735.h"
 #include <string.h>

@@ -38,7 +38,7 @@
 #include "dcts.h"
 #include "pin_map.h"
 #include "main.h"
-#include "uart.h"
+#include "rs485.h"
 
 /* USER CODE BEGIN 0 */
 
@@ -48,7 +48,6 @@
 extern PCD_HandleTypeDef hpcd_USB_FS;
 extern RTC_HandleTypeDef hrtc;
 extern TIM_HandleTypeDef htim3;
-extern UART_HandleTypeDef huart1;
 extern TIM_HandleTypeDef htim1;
 extern TIM_HandleTypeDef htim4;
 
@@ -237,19 +236,11 @@ void TIM2_IRQHandler(void){
 }
 
 /**
-* @brief This function handles USART1 global interrupt.
+* @brief This function handles RS-485-UART global interrupt.
 */
-void USART2_IRQHandler(void)
-{
-  /* USER CODE BEGIN USART1_IRQn 0 */
-
-  /* USER CODE END USART1_IRQn 0 */
-  HAL_UART_IRQHandler(&huart2);
-  /* USER CODE BEGIN USART1_IRQn 1 */
-
-  uart_handle();
-
-  /* USER CODE END USART1_IRQn 1 */
+void USART2_IRQHandler(void){
+  HAL_UART_IRQHandler(&rs485_pcb.huart);
+  rs485_irq_callback(&rs485_pcb);
 }
 
 /* USER CODE BEGIN 1 */

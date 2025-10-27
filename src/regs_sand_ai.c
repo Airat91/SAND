@@ -47,7 +47,7 @@ const sofi_prop_base_t sofi_prop_base_list[SOFI_PROP_BASE_REG_NUM]={
 {{SOFI_PROP_BASE,	(void*)&sofi_prop_mdb_list[27],	(void*)&sofi_prop_base_list[27]},	3,       	(u8*)&modbus.vars.addr,         	"addr",         	"Device ModBUS address",        	VAR_TYPE_U8,   	1,        	27, 	0},
 {{SOFI_PROP_BASE,	(void*)&sofi_prop_mdb_list[28],	(void*)&sofi_prop_base_list[28]},	2,       	(u8*)&service.vars.rtc_state,   	"rtc_state",    	"RTC service status",           	VAR_TYPE_U32,  	1,        	28, 	1},
 {{SOFI_PROP_BASE,	(void*)&sofi_prop_mdb_list[29],	(void*)&sofi_prop_base_list[29]},	2,       	(u8*)&service.vars.adc_state,   	"adc_state",    	"ADC service status",           	VAR_TYPE_U32,  	1,        	29, 	1},
-{{SOFI_PROP_BASE,	(void*)&sofi_prop_mdb_list[30],	(void*)&sofi_prop_base_list[30]},	2,       	(u8*)&service.vars.mdb_state,   	"mdb_state",    	"ModBUS service status",        	VAR_TYPE_U32,  	1,        	30, 	1},
+{{SOFI_PROP_BASE,	(void*)&sofi_prop_mdb_list[30],	(void*)&sofi_prop_base_list[30]},	2,       	(u8*)&service.vars.rs485_state, 	"rs485_state",  	"RS485 service status",         	VAR_TYPE_U32,  	1,        	30, 	1},
 {{SOFI_PROP_BASE,	(void*)&sofi_prop_mdb_list[31],	(void*)&sofi_prop_base_list[31]},	2,       	(u8*)&service.vars.dbg_state,   	"dbg_state",    	"Debug service status",         	VAR_TYPE_U32,  	1,        	31, 	1},
 };
 

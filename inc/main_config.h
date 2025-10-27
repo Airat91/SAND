@@ -14,10 +14,13 @@
 #define USB_EN  0
 #define WEB_EN  0
 #define RTC_EN  1
+#define RS485_EN 1
 
 // IRQ priorities
 
 #define US_TIM_PRIO     10
 #define US_TIM_SUBPRIO  0
+#define RS485_PRIO     10
+#define RS485_SUBPRIO  0
 
 #endif // MAIN_CONFIG_H
