@@ -239,7 +239,7 @@ void TIM2_IRQHandler(void){
 * @brief This function handles RS-485-UART global interrupt.
 */
 void USART2_IRQHandler(void){
-  HAL_UART_IRQHandler(&rs485_pcb.huart);
+  //HAL_UART_IRQHandler(&rs485_pcb.huart);
   rs485_irq_callback(&rs485_pcb);
 }
 

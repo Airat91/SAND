@@ -37,8 +37,10 @@ extern "C" {
 #define RS485_INIT_TIMEOUT_MS           2000    // 2 sec
 #define RS485_BUF_LEN                   300
 #define RS485_CONN_LOST_TIMEOUT         2500    // 2,5 sec
-#define RS485_SENDING_TIMEOUT           2000    // 2sec
+#define RS485_SENDING_TIMEOUT           2000    // 2 sec
+#define RS485_RECEIVING_TIMEOUT         2000    // 2 sec
 #define RS485_MAX_ERR_NMB               50
+#define RS485_LED_BLINK_MS              200     // 200 ms
 
 //========Default config========
 #define RS485_DEFAULT_BITRATE           RS485_BTR_115200;
@@ -53,6 +55,8 @@ extern "C" {
 #define _RS485_UART_CLK_EN      __HAL_RCC_USART2_CLK_ENABLE
 #define _RS485_UART_CLK_DIS     __HAL_RCC_USART2_CLK_DISABLE
 #define _RS485_UART_IRQn        USART2_IRQn
+#define _RS485_DE_EN()          HAL_GPIO_WritePin(RS_485_DE_PORT, RS_485_DE_PIN, GPIO_PIN_SET)
+#define _RS485_DE_DIS()         HAL_GPIO_WritePin(RS_485_DE_PORT, RS_485_DE_PIN, GPIO_PIN_RESET)
 
 //========Check GPIO's definitions========
 #ifndef RS_485_TX_PORT
@@ -221,6 +225,8 @@ int rs485_deinit(rs485_pcb_t* rs485_pcb);
  * @return  0 - ok,\n
  *          -1 - out of len,\n
  *          -2 - sending timeout error,\n
+ *          -3 - receiving timeout error,\n
+ *          -4 - HAL_UART_Transmit_IT() error,\n
  */
 int rs485_send(rs485_pcb_t * rs485_pcb, const uint8_t * buff,uint16_t len);
 

@@ -59,9 +59,9 @@ void rs485_task(void const * argument){
         }else{
             rs485_rcv_timeout_check(&rs485_pcb);
         }
-        if(tick == 5000){
+        if(tick == 500){
             static char msg[100] = {0};
-            sprintf(msg, "Hello world!\n");
+            sprintf(msg, "%dms\tHello world!\n", HAL_GetTick());
             rs485_send(&rs485_pcb, (u8*)msg, strlen(msg));
             tick = 0;
         }
@@ -133,22 +133,31 @@ int rs485_send(rs485_pcb_t * rs485_pcb, const uint8_t * buff, uint16_t len){
             result = -2;
         }
     }
+    time = us_tim_get_value();
+    wait = us_tim_get_value() - time;
+    if(result == 0){
+        while((rs485_pcb->state & RS485_ST_IN_RECEIVE)&&(wait < RS485_RECEIVING_TIMEOUT)){
+              wait = (us_tim_get_value() - time);
+              osDelay(1);
+        }
+        if(wait >= RS485_RECEIVING_TIMEOUT){
+            result = -3;
+        }
+    }
     if(result == 0){
         rs485_pcb->state |= RS485_ST_IN_SENDING;
-        HAL_GPIO_WritePin(RS_485_DE_PORT, RS_485_DE_PIN, GPIO_PIN_SET);
+        _RS485_DE_EN();
         taskENTER_CRITICAL();
         memcpy(rs485_pcb->buf_out, buff, len);
         rs485_pcb->out_ptr = 0;
         rs485_pcb->out_len = len;
         taskEXIT_CRITICAL();
-        stat = HAL_UART_Transmit_IT(&rs485_pcb->huart, rs485_pcb->buf_out, rs485_pcb->out_len);
-        if(stat != HAL_OK){
-            result = -3;
-            debug_msg(__func__, DBG_MSG_ERR, "HAL_UART_Transmit_IT() %S", hal_status[stat]);
-            rs485_led_err_on_time = 200;
-        }else{
-            rs485_led_ok_on_time = 200;
-        }
+        __HAL_UART_ENABLE_IT(&rs485_pcb->huart, UART_IT_TXE);
+        __HAL_UART_ENABLE_IT(&rs485_pcb->huart, UART_IT_TC);
+
+    }
+    if(result < 0){
+        rs485_led_err_on_time = RS485_LED_BLINK_MS;
     }
     return result;
 }
@@ -193,7 +202,27 @@ int rs485_irq_callback(rs485_pcb_t* rs485_pcb){
 
     // Transmit data
     if(status & USART_SR_TXE){
+        // Clear interrupt flags
+        rs485_pcb->huart.Instance->CR1  &= ~(u32)USART_CR1_TXEIE;
+        rs485_pcb->huart.Instance->SR   &= ~(u32)USART_SR_TC;
+
         if(rs485_pcb->state & RS485_ST_IN_SENDING){
+            if(rs485_pcb->state & RS485_ST_SEND_LAST_BYTE){
+                // End of transmit
+                _RS485_DE_DIS();
+                __HAL_UART_DISABLE_IT(&rs485_pcb->huart, UART_IT_TXE);
+                __HAL_UART_DISABLE_IT(&rs485_pcb->huart, UART_IT_TC);
+                rs485_pcb->state &= ~(u32)RS485_ST_IN_SENDING;
+                rs485_pcb->state &= ~(u32)RS485_ST_SEND_LAST_BYTE;
+            }else{
+                if(rs485_pcb->out_ptr == rs485_pcb->out_len-1){
+                    // Last byte sending
+                    rs485_pcb->state |= RS485_ST_SEND_LAST_BYTE;
+                }
+                // Next byte sending
+                rs485_pcb->huart.Instance->DR=rs485_pcb->buf_out[rs485_pcb->out_ptr];
+                rs485_pcb->out_ptr++;
+            }
 
         }else{
             // Error of interrupt source
@@ -249,14 +278,6 @@ int rs485_irq_callback(rs485_pcb_t* rs485_pcb){
     return result;
 }
 
-void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart){
-    if(huart == &rs485_pcb.huart){
-        HAL_GPIO_WritePin(RS_485_DE_PORT, RS_485_DE_PIN, GPIO_PIN_RESET);
-        rs485_pcb.state &= ~(u32)RS485_ST_IN_SENDING;
-    }
-}
-
-
 //-------Static functions----------
 
 /**
@@ -283,7 +304,6 @@ static int rs485_gpio_init(void){
     GPIO_InitStruct.Mode = GPIO_MODE_AF_INPUT;
     GPIO_InitStruct.Pin = RS_485_RX_PIN;
     HAL_GPIO_Init(RS_485_RX_PORT, &GPIO_InitStruct);
-
 
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
     GPIO_InitStruct.Pull = GPIO_PULLDOWN;
