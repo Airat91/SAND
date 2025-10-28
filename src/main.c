@@ -1402,6 +1402,17 @@ static void main_gpio_init(void){
     GPIO_InitStruct.Pin = LED_CON_G_PIN;
     HAL_GPIO_WritePin(LED_CON_G_PORT, LED_CON_G_PIN, GPIO_PIN_RESET);
     HAL_GPIO_Init (LED_CON_G_PORT, &GPIO_InitStruct);
+
+
+    HAL_GPIO_WritePin(LED_CON_G_PORT, LED_CON_G_PIN, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(LED_CON_G_PORT, LED_CON_G_PIN, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(LED_CON_G_PORT, LED_CON_G_PIN, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(LED_CON_G_PORT, LED_CON_G_PIN, GPIO_PIN_RESET);
+
+    HAL_GPIO_WritePin(LED_CON_R_PORT, LED_CON_R_PIN, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(LED_CON_R_PORT, LED_CON_R_PIN, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(LED_CON_R_PORT, LED_CON_R_PIN, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(LED_CON_R_PORT, LED_CON_R_PIN, GPIO_PIN_RESET);
 }
 
 /**
@@ -1465,6 +1476,18 @@ static int main_leds_handle(u32 call_period){
         HAL_GPIO_WritePin(LED_CON_G_PORT, LED_CON_G_PIN, GPIO_PIN_RESET);
     }
 #endif // MDB_EN
+#if RS485_EN
+    if(rs485_led_ok_on_time){
+        HAL_GPIO_WritePin(LED_CON_G_PORT, LED_CON_G_PIN, GPIO_PIN_SET);
+        if(rs485_led_ok_on_time > call_period){
+            rs485_led_ok_on_time -= call_period;
+        }else{
+            rs485_led_ok_on_time = 0;
+        }
+    }else{
+        HAL_GPIO_WritePin(LED_CON_G_PORT, LED_CON_G_PIN, GPIO_PIN_RESET);
+    }
+#endif // RS485_EN
 #if CAN_EN
     if(can_led_ok_on_time){
         HAL_GPIO_WritePin(LED_CON_G_PORT, LED_CON_G_PIN, GPIO_PIN_SET);
@@ -1491,6 +1514,18 @@ static int main_leds_handle(u32 call_period){
         HAL_GPIO_WritePin(LED_CON_R_PORT, LED_CON_R_PIN, GPIO_PIN_RESET);
     }
 #endif // MDB_EN
+#if RS485_EN
+    if(rs485_led_err_on_time){
+        HAL_GPIO_WritePin(LED_CON_R_PORT, LED_CON_R_PIN, GPIO_PIN_SET);
+        if(rs485_led_err_on_time > call_period){
+            rs485_led_err_on_time -= call_period;
+        }else{
+            rs485_led_err_on_time = 0;
+        }
+    }else{
+        HAL_GPIO_WritePin(LED_CON_R_PORT, LED_CON_R_PIN, GPIO_PIN_RESET);
+    }
+#endif // RS485_EN
 #if CAN_EN
     if(can_led_err_on_time){
         HAL_GPIO_WritePin(LED_CON_R_PORT, LED_CON_R_PIN, GPIO_PIN_SET);

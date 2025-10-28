@@ -170,6 +170,8 @@ typedef struct {
 extern rs485_pcb_t rs485_pcb;
 extern UART_HandleTypeDef hrs485_uart;
 extern osThreadId rs485_task_handle;
+extern u32 rs485_led_ok_on_time;
+extern u32 rs485_led_err_on_time;
 
 //-------Function prototypes----------
 

@@ -11,6 +11,8 @@
 
 rs485_pcb_t rs485_pcb = {0};
 osThreadId rs485_task_handle = {0};
+u32 rs485_led_ok_on_time = 0;
+u32 rs485_led_err_on_time = 0;
 
 //-------Static variables------
 
@@ -39,8 +41,10 @@ void rs485_task(void const * argument){
     rs485_config.rx_timeout_ms  = RS485_DEFAULT_RX_TIMEOUT_MS;
     if(rs485_init(rs485_config, &rs485_pcb) == 0){
         service.vars.rs485_state |= SRV_ST_RUN;
+        debug_msg(__func__, DBG_MSG_INFO, "RS485_task started");
     }
 
+    uint32_t tick = 0;
     uint32_t last_wake_time = osKernelSysTick();
     while(1){
         if(rs485_pcb.state & RS485_ST_ERROR){
@@ -55,8 +59,15 @@ void rs485_task(void const * argument){
         }else{
             rs485_rcv_timeout_check(&rs485_pcb);
         }
+        if(tick == 5000){
+            static char msg[100] = {0};
+            sprintf(msg, "Hello world!\n");
+            rs485_send(&rs485_pcb, (u8*)msg, strlen(msg));
+            tick = 0;
+        }
 
         osDelayUntil(&last_wake_time, RS485_TASK_PERIOD);
+        tick++;
     }
 }
 
@@ -124,7 +135,7 @@ int rs485_send(rs485_pcb_t * rs485_pcb, const uint8_t * buff, uint16_t len){
     }
     if(result == 0){
         rs485_pcb->state |= RS485_ST_IN_SENDING;
-        HAL_GPIO_WritePin(RS_485_DE_PORT, RS_485_DE_PIN,GPIO_PIN_SET);
+        HAL_GPIO_WritePin(RS_485_DE_PORT, RS_485_DE_PIN, GPIO_PIN_SET);
         taskENTER_CRITICAL();
         memcpy(rs485_pcb->buf_out, buff, len);
         rs485_pcb->out_ptr = 0;
@@ -134,6 +145,9 @@ int rs485_send(rs485_pcb_t * rs485_pcb, const uint8_t * buff, uint16_t len){
         if(stat != HAL_OK){
             result = -3;
             debug_msg(__func__, DBG_MSG_ERR, "HAL_UART_Transmit_IT() %S", hal_status[stat]);
+            rs485_led_err_on_time = 200;
+        }else{
+            rs485_led_ok_on_time = 200;
         }
     }
     return result;
@@ -233,6 +247,13 @@ int rs485_irq_callback(rs485_pcb_t* rs485_pcb){
         dd=huart2.Instance->DR;
     }*/
     return result;
+}
+
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart){
+    if(huart == &rs485_pcb.huart){
+        HAL_GPIO_WritePin(RS_485_DE_PORT, RS_485_DE_PIN, GPIO_PIN_RESET);
+        rs485_pcb.state &= ~(u32)RS485_ST_IN_SENDING;
+    }
 }
 
 
