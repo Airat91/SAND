@@ -83,11 +83,10 @@ void rs485_task(void const * argument){
             // Normal work process
             rs485_rcv_timeout_check(&rs485_pcb, RS485_TASK_PERIOD);
             rs485_bitrate_check(&rs485_config, &rs485_pcb, RS485_TASK_PERIOD);
-            if(tick == 500){
-                static char msg[100] = {0};
-                sprintf(msg, "%dms\tHello world!\n", HAL_GetTick());
-                //rs485_send(&rs485_pcb, (u8*)msg, strlen(msg));
-                tick = 0;
+            if(rs485_pcb.state & RS485_ST_WAIT_HANDLING){
+                // Send echo
+                rs485_pcb.state &= ~(u32)RS485_ST_WAIT_HANDLING;
+                rs485_send(&rs485_pcb, rs485_pcb.buf_rcv, rs485_pcb.rcv_len);
             }
 
 #if RS485_DEBUG_PRINT_EN
@@ -178,12 +177,14 @@ int rs485_send(rs485_pcb_t * rs485_pcb, const uint8_t * buff, uint16_t len){
     }
     if(result == 0){
         rs485_pcb->state |= RS485_ST_IN_SENDING;
+        rs485_pcb->state &= ~(u32)RS485_ST_READY_RX;
         _RS485_DE_EN();
         taskENTER_CRITICAL();
         memcpy(rs485_pcb->buf_out, buff, len);
         rs485_pcb->out_ptr = 0;
         rs485_pcb->out_len = len;
         taskEXIT_CRITICAL();
+        __HAL_UART_DISABLE_IT(&rs485_pcb->huart, UART_IT_RXNE);
         __HAL_UART_ENABLE_IT(&rs485_pcb->huart, UART_IT_TXE);
 
     }
@@ -257,8 +258,10 @@ int rs485_irq_callback(rs485_pcb_t* rs485_pcb){
                 _RS485_DE_DIS();
                 __HAL_UART_DISABLE_IT(&rs485_pcb->huart, UART_IT_TXE);
                 __HAL_UART_DISABLE_IT(&rs485_pcb->huart, UART_IT_TC);
+                __HAL_UART_ENABLE_IT(&rs485_pcb->huart, UART_IT_RXNE);
                 rs485_pcb->state &= ~(u32)RS485_ST_IN_SENDING;
                 rs485_pcb->state &= ~(u32)RS485_ST_SEND_LAST_BYTE;
+                rs485_pcb->state |= RS485_ST_READY_RX;
             }
         }else{
             // Error of interrupt source

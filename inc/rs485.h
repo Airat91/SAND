@@ -51,7 +51,7 @@ extern "C" {
 #define RS485_DEFAULT_DATA_LEN          RS485_DATA_8_BIT;
 #define RS485_DEFAULT_PARITY            RS485_PAR_NONE;
 #define RS485_DEFAULT_STOP_BIT          RS485_STOP_1;
-#define RS485_DEFAULT_RX_TIMEOUT_MS     5
+#define RS485_DEFAULT_RX_TIMEOUT_MS     50
 
 //--------Macro--------
 
