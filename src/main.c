@@ -140,7 +140,7 @@ int main(void){
     main_IWDG_Init();
 #endif //RELEASE
 
-    osThreadDef(main_task, main_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
+    osThreadDef(main_task, main_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE*2);
     main_task_handle = osThreadCreate(osThread(main_task), NULL);
     if(main_task_handle == NULL){
         debug_msg(__func__, DBG_MSG_ERR, "Can't create main_task");

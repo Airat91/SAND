@@ -34,8 +34,8 @@
 #define DEBUG_TMS_PIN       GPIO_PIN_13
 #define DEBUG_TCK_PORT      GPIOA
 #define DEBUG_TCK_PIN       GPIO_PIN_14
-#define MDB_RATE_0_PORT     GPIOA
-#define MDB_RATE_0_PIN      GPIO_PIN_15
+#define RS_485_RATE_0_PORT  GPIOA
+#define RS_485_RATE_0_PIN   GPIO_PIN_15
 
 // Port B
 #define MDB_ADDR_6_PORT     GPIOB
@@ -44,10 +44,10 @@
 #define MDB_ADDR_5_PIN      GPIO_PIN_1
 #define BOOT_1_PORT         GPIOB
 #define BOOT_1_PIN          GPIO_PIN_2
-#define MDB_RATE_1_PORT     GPIOB
-#define MDB_RATE_1_PIN      GPIO_PIN_3
-#define MDB_RATE_2_PORT     GPIOB
-#define MDB_RATE_2_PIN      GPIO_PIN_4
+#define RS_485_RATE_1_PORT  GPIOB
+#define RS_485_RATE_1_PIN   GPIO_PIN_3
+#define RS_485_RATE_2_PORT  GPIOB
+#define RS_485_RATE_2_PIN   GPIO_PIN_4
 #define LED_SYS_R_PORT      GPIOB
 #define LED_SYS_R_PIN       GPIO_PIN_5
 #define I2C_SCL_PORT        GPIOB
@@ -62,8 +62,8 @@
 #define MDB_ADDR_4_PIN      GPIO_PIN_10
 #define MDB_ADDR_3_PORT     GPIOB
 #define MDB_ADDR_3_PIN      GPIO_PIN_11
-#define MDB_RATE_3_PORT     GPIOB
-#define MDB_RATE_3_PIN      GPIO_PIN_12
+#define RS_485_RATE_3_PORT  GPIOB
+#define RS_485_RATE_3_PIN   GPIO_PIN_12
 #define SPI_SCK_PORT        GPIOB
 #define SPI_SCK_PIN         GPIO_PIN_13
 #define SPI_MISO_PORT       GPIOB

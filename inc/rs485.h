@@ -34,14 +34,17 @@ extern "C" {
 //--------Defines--------
 
 #define RS485_TASK_PERIOD               2
+#define RS485_BAUDRATE_CHECK_PERIOD     1000    // 1 sec
 #define RS485_INIT_TIMEOUT_MS           2000    // 2 sec
-#define RS485_BUF_LEN                   300
+#define RS485_BUF_LEN                   300     // RS-485 buffers size
 #define RS485_CONN_LOST_TIMEOUT         2500    // 2,5 sec
 #define RS485_SENDING_TIMEOUT           2000    // 2 sec
 #define RS485_RECEIVING_TIMEOUT         2000    // 2 sec
-#define RS485_MAX_ERR_NMB               50
+#define RS485_MAX_ERR_NMB               10
 #define RS485_LED_BLINK_MS              200     // 200 ms
+#define RS485_BTR_VAR_NMB               16      // Number of bitrate variants (see rs485_bitrate_t enum)
 #define RS485_DEBUG_PRINT_EN            1       // Print debug data buffer via RS-485
+#define RS485_DEBUG_BUF_LEN             RS485_BUF_LEN   //
 
 //========Default config========
 #define RS485_DEFAULT_BITRATE           RS485_BTR_115200;
@@ -78,6 +81,30 @@ extern "C" {
 #ifndef RS_485_DE_PIN
     #error "RS-485: Please define RS_485_DE_PIN"
 #endif
+#ifndef RS_485_RATE_0_PIN
+    #error "RS-485: Please define RS_485_RATE_0_PIN"
+#endif
+#ifndef RS_485_RATE_0_PORT
+    #error "RS-485: Please define RS_485_RATE_0_PORT"
+#endif
+#ifndef RS_485_RATE_1_PIN
+    #error "RS-485: Please define RS_485_RATE_1_PIN"
+#endif
+#ifndef RS_485_RATE_1_PORT
+    #error "RS-485: Please define RS_485_RATE_1_PORT"
+#endif
+#ifndef RS_485_RATE_2_PIN
+    #error "RS-485: Please define RS_485_RATE_2_PIN"
+#endif
+#ifndef RS_485_RATE_2_PORT
+    #error "RS-485: Please define RS_485_RATE_2_PORT"
+#endif
+#ifndef RS_485_RATE_3_PIN
+    #error "RS-485: Please define RS_485_RATE_3_PIN"
+#endif
+#ifndef RS_485_RATE_3_PORT
+    #error "RS-485: Please define RS_485_RATE_3_PORT"
+#endif
 
 //--------Typedefs-------
 
@@ -98,21 +125,23 @@ typedef enum {
     RS485_ST_WAIT_RESPONSE  = (1<<6),   // Port busy for wait response
 }rs485_state_t;
 
-typedef enum {
-    RS485_BTR_600    = 6,       // 600 bit/sec
-    RS485_BTR_1200   = 12,      // 1200 bit/sec
-    RS485_BTR_2400   = 24,      // 2400 bit/sec
-    RS485_BTR_4800   = 48,      // 4800 bit/sec
-    RS485_BTR_9600   = 96,      // 9600 bit/sec
-    RS485_BTR_14400  = 144,     // 14400 bit/sec
-    RS485_BTR_19200  = 192,     // 19200 bit/sec
-    RS485_BTR_28800  = 288,     // 28800 bit/sec
-    RS485_BTR_38400  = 384,     // 38400 bit/sec
-    RS485_BTR_56000  = 560,     // 56000 bit/sec
-    RS485_BTR_57600  = 576,     // 57600 bit/sec
-    RS485_BTR_115200 = 1152,    // 115200 bit/sec
-    RS485_BTR_128000 = 1280,    // 128000 bit/sec
-    RS485_BTR_256000 = 2560,    // 256000 bit/sec
+typedef enum {                  // Baudrate switches state   1   2   3   4
+    RS485_BTR_600    = 6,       // 600 bit/sec              OFF OFF OFF OFF
+    RS485_BTR_1200   = 12,      // 1200 bit/sec             OFF OFF OFF ON
+    RS485_BTR_2400   = 24,      // 2400 bit/sec             OFF OFF ON  OFF
+    RS485_BTR_4800   = 48,      // 4800 bit/sec             OFF OFF ON  ON
+    RS485_BTR_9600   = 96,      // 9600 bit/sec             OFF ON  OFF OFF
+    RS485_BTR_14400  = 144,     // 14400 bit/sec            OFF ON  OFF ON
+    RS485_BTR_19200  = 192,     // 19200 bit/sec            OFF ON  ON  OFF
+    RS485_BTR_28800  = 288,     // 28800 bit/sec            OFF ON  ON  ON
+    RS485_BTR_38400  = 384,     // 38400 bit/sec            ON  OFF OFF OFF
+    RS485_BTR_56000  = 560,     // 56000 bit/sec            ON  OFF OFF ON
+    RS485_BTR_57600  = 576,     // 57600 bit/sec            ON  OFF ON  OFF
+    RS485_BTR_115200 = 1152,    // 115200 bit/sec           ON  OFF ON  ON
+    RS485_BTR_128000 = 1280,    // 128000 bit/sec           ON  ON  OFF OFF
+    RS485_BTR_256000 = 2560,    // 256000 bit/sec           ON  ON  OFF ON
+    RS485_BTR_512000 = 5120,    // 512000 bit/sec           ON  ON  ON  OFF
+    RS485_BTR_1000000 = 10000,  // 1000000 bit/sec          ON  ON  ON  ON
 }rs485_bitrate_t;
 
 typedef enum {
@@ -189,7 +218,7 @@ void rs485_task(void const * argument);
 
 /**
  * @brief Init RS-485 proccess control block
- * @param rs485_config - port configuration for init
+ * @param rs485_config - pointer to port configuration for init
  * @param rs485_pcb - pointer to RS-485 proccess control block
  * @ingroup rs485
  * @return  0 - ok, \n
@@ -202,7 +231,7 @@ void rs485_task(void const * argument);
  * 4. Enable IRQ
  * 5. Set service_run flag
  */
-int rs485_init(rs485_config_t rs485_config, rs485_pcb_t* rs485_pcb);
+int rs485_init(rs485_config_t* rs485_config, rs485_pcb_t* rs485_pcb);
 
 /**
  * @brief Deinit RS-485 proccess control block

@@ -66,18 +66,4 @@ static void modbus_gpio_init(void){
     HAL_GPIO_Init (MDB_ADDR_6_PORT, &GPIO_InitStruct);
     GPIO_InitStruct.Pin = MDB_ADDR_7_PIN;
     HAL_GPIO_Init (MDB_ADDR_7_PORT, &GPIO_InitStruct);
-
-    // Init MDB_RATE switch pins
-    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-    GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-
-    GPIO_InitStruct.Pin = MDB_RATE_0_PIN;
-    HAL_GPIO_Init (MDB_RATE_0_PORT, &GPIO_InitStruct);
-    GPIO_InitStruct.Pin = MDB_RATE_1_PIN;
-    HAL_GPIO_Init (MDB_RATE_1_PORT, &GPIO_InitStruct);
-    GPIO_InitStruct.Pin = MDB_RATE_2_PIN;
-    HAL_GPIO_Init (MDB_RATE_2_PORT, &GPIO_InitStruct);
-    GPIO_InitStruct.Pin = MDB_RATE_3_PIN;
-    HAL_GPIO_Init (MDB_RATE_3_PORT, &GPIO_InitStruct);
 }
