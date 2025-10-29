@@ -70,23 +70,6 @@ static u32 led_sys_ok_time = 0;
 static edit_val_t edit_val = {0};
 static navigation_t navigation_style = MENU_NAVIGATION;
 saved_to_flash_t config;
-/*static const uart_bitrate_t bitrate_array[14] = {
-    BITRATE_600,
-    BITRATE_1200,
-    BITRATE_2400,
-    BITRATE_4800,
-    BITRATE_9600,
-    BITRATE_14400,
-    BITRATE_19200,
-    BITRATE_28800,
-    BITRATE_38400,
-    BITRATE_56000,
-    BITRATE_57600,
-    BITRATE_115200,
-    BITRATE_128000,
-    BITRATE_256000,
-};*/
-//static uint16_t bitrate_array_pointer = 0;
 static const char skin_description[SKIN_NMB][20] = {
     "T TIME",
     "HIGH_T",
@@ -242,40 +225,6 @@ void main_task(void const * argument){
         }
     }
 }
-
-//void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
-/*
-void dcts_init (void) {
-    dcts.dcts_id = DCTS_ID_MEASURE;
-    strcpy (dcts.dcts_ver, "1.2.0");
-    strcpy (dcts.dcts_name, "Parilka");
-    strcpy (dcts.dcts_name_cyr, "???????");
-    dcts.dcts_address = 0x0C;
-    dcts.dcts_rtc.day = 1;
-    dcts.dcts_rtc.month = 1;
-    dcts.dcts_rtc.year = 2000;
-    dcts.dcts_rtc.weekday = 6;
-    dcts.dcts_rtc.hour = 12;
-    dcts.dcts_rtc.minute = 0;
-    dcts.dcts_rtc.second = 0;
-    dcts.dcts_pwr = 0.0f;
-    dcts.dcts_meas_num = MEAS_NUM;
-    dcts.dcts_rele_num = RELE_NUM;
-    dcts.dcts_act_num  = ACT_NUM;
-    dcts.dcts_alrm_num = ALRM_NUM;
-
-    //meas_channels
-
-    dcts_meas_channel_init(TMPR, "Temperature", "???????????", "?C", "?C");
-    dcts_meas_channel_init(TMPR_ADC, "Temperature_adc", "??????????? ???", "adc", "adc");
-    dcts_meas_channel_init(TMPR_V, "Temperature_v", "??????????? ?", "V", "?");
-    dcts_meas_channel_init(VREFINT_ADC, "Vref_adc", "??? ???", "adc", "adc");
-    dcts_meas_channel_init(AM2302_T, "AM2302_T", "??????????? AM2302", "?C", "?C");
-    dcts_meas_channel_init(VREFINT_ADC, "AM2302_H", "????????? AM2302", "%", "%");
-}
-*/
-
-
 
 /**
  * @brief display_task
@@ -991,56 +940,7 @@ void navigation_task (void const * argument){
         osDelayUntil(&last_wake_time, navigation_task_period);
     }
 }
-/*
-#define uart_task_period 5
-void uart_task(void const * argument){
-    (void)argument;
-    uart_init(config.params.mdb_bitrate, 8, 1, PARITY_NONE, 1000, UART_CONN_LOST_TIMEOUT);
-    uint16_t tick = 0;
-    char string[100];
-    uint32_t last_wake_time = osKernelSysTick();
-    while(1){
-        if((uart_2.state & UART_STATE_RECIEVE)&&\
-                ((uint16_t)(us_tim_get_value() - uart_2.timeout_last) > uart_2.timeout)){
-            memcpy(uart_2.buff_received, uart_2.buff_in, uart_2.in_ptr);
-            uart_2.received_len = uart_2.in_ptr;
-            uart_2.in_ptr = 0;
-            uart_2.state &= ~UART_STATE_RECIEVE;
-            uart_2.state &= ~UART_STATE_ERROR;
-            uart_2.state |= UART_STATE_IN_HANDING;
-            uart_2.conn_last = 0;
-            uart_2.recieved_cnt ++;
 
-            if(modbus_packet_for_me(uart_2.buff_received, uart_2.received_len)){
-                memcpy(uart_2.buff_out, uart_2.buff_received, uart_2.received_len);
-                uint16_t new_len = modbus_rtu_packet(uart_2.buff_out, uart_2.received_len);
-                uart_send(uart_2.buff_out, new_len);
-            }
-            uart_2.state &= ~UART_STATE_IN_HANDING;
-        }
-        if(uart_2.conn_last > uart_2.conn_lost_timeout){
-            uart_deinit();
-            uart_init(config.params.mdb_bitrate, 8, 1, PARITY_NONE, 1000, UART_CONN_LOST_TIMEOUT);
-        }
-        if(tick == 1000/uart_task_period){
-            tick = 0;
-            HAL_GPIO_TogglePin(LED_PORT,LED_PIN);
-            for(uint8_t i = 0; i < MEAS_NUM; i++){
-                sprintf(string, "%s:\t%.1f(%s)\n",dcts_meas[i].name,(double)dcts_meas[i].value,dcts_meas[i].unit);
-                if(i == MEAS_NUM - 1){
-                    strncat(string,"\n",1);
-                }
-                //uart_send(string,(uint16_t)strlen(string));
-            }
-        }else{
-            tick++;
-            uart_2.conn_last += uart_task_period;
-        }
-
-        osDelayUntil(&last_wake_time, uart_task_period);
-    }
-}
-*/
 static void data_pin_irq_init(void){
     irq_state = IRQ_NONE;
     GPIO_InitTypeDef GPIO_InitStruct = {0};
@@ -1264,12 +1164,7 @@ static float read_float_bkp(u8 bkp_num, u8 sign){
     }
     return atoff(buf);
 }
-/*
-void refresh_watchdog(void){
-#if RELEASE
-        HAL_IWDG_Refresh(&hiwdg);
-#endif //RELEASE
-}*/
+
 
 
 uint32_t uint32_pow(uint16_t x, uint8_t pow){
@@ -1298,16 +1193,7 @@ static int SystemClock_Config(void){
     // Initializes RCC Internal/External Oscillator (HSE, HSI, LSE and LSI) configuration structure definition
     RCC_OscInitTypeDef RCC_OscInitStruct = {0};
     RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;  // Use Ext 8MHz Osc
-/*
-#if RTC_EN
-    RCC_OscInitStruct.OscillatorType |= RTC_OSC_TYPE;           // Use RTC Osc
-    #if(RTC_OSC_TYPE == RCC_OSCILLATORTYPE_LSE)
-    RCC_OscInitStruct.LSEState = RCC_LSE_ON;                    // Enable Ext 32.768kHz RTC Osc
-    #elif(RTC_OSC_TYPE == RCC_OSCILLATORTYPE_LSI)
-    RCC_OscInitStruct.LSIState = RCC_LSI_ON;                    // Enable Int 40kHz RTC RC
-    #endif // RTC_OSC_TYPE
-#endif // RTC_EN
-*/
+
     RCC_OscInitStruct.HSEState = RCC_HSE_ON;                    // Enable Ext 8MHz Osc
     RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;     // Set Ext Osc divider
     RCC_OscInitStruct.HSIState = RCC_HSI_ON;                    // Enable Int 8MHz RC
@@ -1367,7 +1253,7 @@ static void main_IWDG_Init(void){
     hiwdg.Init.Reload = MAIN_IWDG_PERIOD;
     u32 stat = HAL_IWDG_Init(&hiwdg);
     if (stat != HAL_OK){
-        //debug_msg(__func__, DBG_MSG_ERR, "HAL_IWDG_Init() %S", hal_status[stat]);
+        debug_msg(__func__, DBG_MSG_ERR, "HAL_IWDG_Init() %S", hal_status[stat]);
     }
 }
 
