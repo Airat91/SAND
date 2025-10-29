@@ -86,7 +86,7 @@ void rs485_task(void const * argument){
             if(tick == 500){
                 static char msg[100] = {0};
                 sprintf(msg, "%dms\tHello world!\n", HAL_GetTick());
-                rs485_send(&rs485_pcb, (u8*)msg, strlen(msg));
+                //rs485_send(&rs485_pcb, (u8*)msg, strlen(msg));
                 tick = 0;
             }
 
@@ -192,6 +192,7 @@ int rs485_send(rs485_pcb_t * rs485_pcb, const uint8_t * buff, uint16_t len){
         rs485_led_err_on_time = RS485_LED_BLINK_MS;
     }else{
         rs485_pcb->err_total_cnt = 0;
+        rs485_led_ok_on_time = RS485_LED_BLINK_MS;
     }
 
     return result;
@@ -201,8 +202,8 @@ int rs485_irq_callback(rs485_pcb_t* rs485_pcb){
     int result = 0;
     int error = 0;
 
-    u32 data_byte = rs485_pcb->huart.Instance->DR; // Read input data byte
     u32 status = rs485_pcb->huart.Instance->SR;    // For interrupt source determination
+    u32 data_byte = rs485_pcb->huart.Instance->DR; // Read input data byte
 
     // Receive data
     if(status & USART_SR_RXNE){
@@ -241,7 +242,7 @@ int rs485_irq_callback(rs485_pcb_t* rs485_pcb){
         }else{
             // Error of interrupt source
             __HAL_UART_DISABLE_IT(&rs485_pcb->huart, UART_IT_TXE);
-            result = -1;
+            // result = -1; // TXE flag is setted ever, so it isn't error
         }
     }
 
@@ -448,6 +449,7 @@ static int rs485_uart_init(rs485_config_t* rs485_config, UART_HandleTypeDef* hua
         __HAL_UART_CLEAR_FLAG(huart, UART_FLAG_RXNE);
         __HAL_UART_ENABLE_IT(huart, UART_IT_RXNE);
         __HAL_UART_ENABLE_IT(huart, UART_IT_PE);
+        __HAL_UART_ENABLE_IT(huart, UART_IT_ERR);
     }
 
     return result;
@@ -488,6 +490,17 @@ static int rs485_rcv_timeout_check(rs485_pcb_t* rs485_pcb, u32 check_time_period
         rs485_pcb->timeout_rx_ms_cnt += check_time_period;
         if(rs485_pcb->timeout_rx_ms_cnt > RS485_DEFAULT_RX_TIMEOUT_MS){
             // Copy packet from buf_in to buf_rcv and set RS485_ST_WAIT_HANDLING flag
+            if(rs485_pcb->state & RS485_ST_WAIT_HANDLING){
+                debug_msg(__func__, DBG_MSG_WARN, "Received packet wasn't handle so lost");
+                rs485_led_err_on_time = RS485_LED_BLINK_MS;
+            }else{
+                rs485_led_ok_on_time = RS485_LED_BLINK_MS;
+            }
+            rs485_pcb->rcv_len = rs485_pcb->in_ptr;
+            memcpy(rs485_pcb->buf_rcv, rs485_pcb->buf_in, rs485_pcb->rcv_len);
+            rs485_pcb->in_ptr = 0;
+            rs485_pcb->state |= RS485_ST_WAIT_HANDLING;
+            rs485_pcb->state &= ~(u32)RS485_ST_IN_RECEIVE;
         }
     }
 
