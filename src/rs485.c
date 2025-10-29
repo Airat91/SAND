@@ -539,11 +539,12 @@ static int rs485_bitrate_check(rs485_config_t* rs485_config, rs485_pcb_t* rs485_
             // Reinit uart with new baudrate
             rs485_config->bitrate = bitrate_new;
             rs485_uart_deinit(&rs485_pcb->huart);
-            rs485_pcb->state = 0;
+            rs485_pcb->state = RS485_ST_DISABLE;
             if(rs485_uart_init(rs485_config, &rs485_pcb->huart) != 0){
                 result = -1;
                 debug_msg(__func__, DBG_MSG_ERR, "rs485_uart_init() error");
             }else{
+                rs485_pcb->state = RS485_ST_READY_RX;
                 debug_msg(__func__, DBG_MSG_INFO, "Bitrate changed to %d bit/s", bitrate_new * 100);
             }
             tick = 0;
@@ -630,7 +631,6 @@ static int rs485_state_is_busy(rs485_pcb_t* rs485_pcb){
     result |= (rs485_pcb->state & RS485_ST_IN_SENDING);
     result |= (rs485_pcb->state & RS485_ST_WAIT_RESPONSE);
     result |= (rs485_pcb->state & RS485_ST_ERROR);
-    result |= (rs485_pcb->state & RS485_ST_DISABLE);
 
     return result;
 }
