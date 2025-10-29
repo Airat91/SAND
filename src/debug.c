@@ -26,8 +26,6 @@ static const char debug_msg_list[DBG_MSG_LIST_LEN][DEBUG_MSG_TYPE_LEN] = {
 
 static int debug_send(char* p_msg, u16 len);
 static int debug_buf_write(char *string, u16 len, u32 us_timeout);
-static int debug_buf_read(char *string, u16 read_len, u32 us_timeout);
-static int debug_buf_get_len(void);
 
 //-------Functions----------
 
@@ -118,6 +116,76 @@ int debug_msg(const char* func_name, debug_msg_t msg_type, const char * msg, ...
     return result;
 }
 
+int debug_buf_read(char *string, u16 read_len, u32 ms_timeout){
+    int result = 0;
+
+    u16 end_for_read = 0;
+    if(debug_buf.end_for_read == debug_buf.start_for_read){
+        // Buffer is empty
+        result = 0;
+    }else{
+        while((debug_buf.state & DBG_BUF_READING)&&(ms_timeout)){
+            osDelay(1);
+            ms_timeout--;
+        }
+        if(ms_timeout == 0){
+            // Time is out
+            result = -1;
+        }else{
+            // Set debug_buf reading flag
+            debug_buf.state |= DBG_BUF_READING;
+            if(read_len > debug_buf_get_len()){
+                // If debug_buf consist data less than read_len
+                end_for_read = debug_buf.end_for_read;
+            }else{
+                // If debug_buf consist data more than read_len
+                end_for_read = debug_buf.start_for_read + read_len;
+                // If read data consist of 2 peaces
+                if(end_for_read > DEBUG_MSG_BUF_LEN){
+                    end_for_read -= DEBUG_MSG_BUF_LEN;
+                }
+            }
+            if(end_for_read > debug_buf.start_for_read){
+                // [######## Read debug message ######]
+                //           ^start            ^end
+                result = end_for_read - debug_buf.start_for_read;
+                memcpy(string, &debug_buf.buff[debug_buf.start_for_read],(u16)result);
+            }else{
+                // [message ############## Read debug ]
+                //         ^end            ^start
+                u16 piece_1 = DEBUG_MSG_BUF_LEN - debug_buf.start_for_read;
+                u16 piece_2 = end_for_read;
+                result = piece_1 + piece_2;
+                memcpy(string, &debug_buf.buff[debug_buf.start_for_read],(u16)piece_1);
+                memcpy((string + piece_1), &debug_buf.buff[0],(u16)piece_2);
+            }
+            // move start_for_read pointer
+            debug_buf.start_for_read = end_for_read;
+            if(debug_buf.start_for_read == DEBUG_MSG_BUF_LEN){
+                debug_buf.start_for_read = 0;
+            }
+            // Clear debug_buf reading flag
+            debug_buf.state &= ~DBG_BUF_READING;
+        }
+    }
+    return result;
+}
+
+int debug_buf_get_len(void){
+    int result = 0;
+    if(debug_buf.end_for_read == debug_buf.start_for_read){
+        //buffer is empty
+        result = 0;
+    }else if(debug_buf.end_for_read > debug_buf.start_for_read){
+        result = debug_buf.end_for_read - debug_buf.start_for_read;
+    }else{
+        u16 piece_1 = DEBUG_MSG_BUF_LEN - debug_buf.start_for_read;
+        u16 piece_2 = debug_buf.end_for_read;
+        result = piece_1 + piece_2;
+    }
+    return result;
+}
+
 //-------Static functions----------
 
 /**
@@ -130,6 +198,7 @@ int debug_msg(const char* func_name, debug_msg_t msg_type, const char * msg, ...
  */
 static int debug_send(char* p_msg, u16 len){
     int result = 0;
+    // Add sendig data to debug interface
 
     return result;
 }
@@ -203,90 +272,6 @@ static int debug_buf_write(char *string, u16 len, u32 ms_timeout){
             //debug_buf.msg_cnt++;                    // Increment message counter
             debug_buf.state &= ~DBG_BUF_WRITING;   // Clear debug_buf writing flag
         }
-    }
-    return result;
-}
-/**
- * @brief Read messages from debug_buf (FIFO)
- * @param string - pointer to copy log_message
- * @param read_len - len for reading
- * @param ms_timeout - timeout for waiting if buffer busy
- * @return  read_len,\n
- *          0 - buffer is epty,\n
- *          -1 - timeout error
- * @ingroup debug
- */
-static int debug_buf_read(char *string, u16 read_len, u32 ms_timeout){
-    int result = 0;
-
-    u16 end_for_read = 0;
-    if(debug_buf.end_for_read == debug_buf.start_for_read){
-        // Buffer is empty
-        result = 0;
-    }else{
-        while((debug_buf.state & DBG_BUF_READING)&&(ms_timeout)){
-            osDelay(1);
-            ms_timeout--;
-        }
-        if(ms_timeout == 0){
-            // Time is out
-            result = -1;
-        }else{
-            // Set debug_buf reading flag
-            debug_buf.state |= DBG_BUF_READING;
-            if(read_len > debug_buf_get_len()){
-                // If debug_buf consist data less than read_len
-                end_for_read = debug_buf.end_for_read;
-            }else{
-                // If debug_buf consist data more than read_len
-                end_for_read = debug_buf.start_for_read + read_len;
-                // If read data consist of 2 peaces
-                if(end_for_read > DEBUG_MSG_BUF_LEN){
-                    end_for_read -= DEBUG_MSG_BUF_LEN;
-                }
-            }
-            if(end_for_read > debug_buf.start_for_read){
-                // [######## Read debug message ######]
-                //           ^start            ^end
-                result = end_for_read - debug_buf.start_for_read;
-                memcpy(string, &debug_buf.buff[debug_buf.start_for_read],(u16)result);
-            }else{
-                // [message ############## Read debug ]
-                //         ^end            ^start
-                u16 piece_1 = DEBUG_MSG_BUF_LEN - debug_buf.start_for_read;
-                u16 piece_2 = end_for_read;
-                result = piece_1 + piece_2;
-                memcpy(string, &debug_buf.buff[debug_buf.start_for_read],(u16)piece_1);
-                memcpy((string + piece_1), &debug_buf.buff[0],(u16)piece_2);
-            }
-            // move start_for_read pointer
-            debug_buf.start_for_read = end_for_read;
-            if(debug_buf.start_for_read == DEBUG_MSG_BUF_LEN){
-                debug_buf.start_for_read = 0;
-            }
-            // Clear debug_buf reading flag
-            debug_buf.state &= ~DBG_BUF_READING;
-        }
-    }
-    return result;
-}
-
-/**
- * @brief Get len between start and end for read pointers
- * @return lenght of log_message
- * @ingroup debug
- */
-static int debug_buf_get_len(void){
-    int result = 0;
-    if(debug_buf.end_for_read == debug_buf.start_for_read){
-        //buffer is empty
-        result = 0;
-    }else if(debug_buf.end_for_read > debug_buf.start_for_read){
-        result = debug_buf.end_for_read - debug_buf.start_for_read;
-    }else{
-        u16 piece_1 = DEBUG_MSG_BUF_LEN - debug_buf.start_for_read;
-        u16 piece_2 = debug_buf.end_for_read;
-        result = piece_1 + piece_2;
     }
     return result;
 }

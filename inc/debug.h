@@ -38,6 +38,7 @@ extern "C" {
 #define DEBUG_MSG_LEN               200
 #define DEBUG_MSG_BUF_LEN           1024
 #define DEBUG_BUF_WRITE_TIMEOUT_US  1000
+#define DEBUG_BUF_READ_TIMEOUT_US   1000
 #define DEBUG_MSG_TYPE_LEN          5
 #define DEBUG_LED_ERR_ON_TIME       100
 
@@ -98,6 +99,24 @@ int debug_init(void);
  */
 int debug_msg(const char* func_name, debug_msg_t msg_type, const char * msg, ...);
 
+/**
+ * @brief Read messages from debug_buf (FIFO)
+ * @param string - pointer to copy log_message
+ * @param read_len - len for reading
+ * @param ms_timeout - timeout for waiting if buffer busy
+ * @return  read_len,\n
+ *          0 - buffer is epty,\n
+ *          -1 - timeout error
+ * @ingroup debug
+ */
+int debug_buf_read(char *string, u16 read_len, u32 ms_timeout);
+
+/**
+ * @brief Get len between start and end for read pointers
+ * @return lenght of log_message
+ * @ingroup debug
+ */
+int debug_buf_get_len(void);
 #ifdef __cplusplus
 }
 #endif // __cplusplus

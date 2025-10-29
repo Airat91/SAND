@@ -41,6 +41,7 @@ extern "C" {
 #define RS485_RECEIVING_TIMEOUT         2000    // 2 sec
 #define RS485_MAX_ERR_NMB               50
 #define RS485_LED_BLINK_MS              200     // 200 ms
+#define RS485_DEBUG_PRINT_EN            1       // Print debug data buffer via RS-485
 
 //========Default config========
 #define RS485_DEFAULT_BITRATE           RS485_BTR_115200;
@@ -94,7 +95,7 @@ typedef enum {
     RS485_ST_WAIT_HANDLING  = (1<<5),   // Set by rx_timeout_ms: buf_in copy to buf_rcv, rcv_len = in_ptr,
                                         // reset in_ptr, set RS485_ST_READY_RX flag and indicate for upper
                                         // layer to parse data in buf_rcv. buf_in ready for new data
-    RS485_ST_WAIT_RESPONE   = (1<<6),   // Port busy for wait response
+    RS485_ST_WAIT_RESPONSE  = (1<<6),   // Port busy for wait response
 }rs485_state_t;
 
 typedef enum {
@@ -165,8 +166,8 @@ typedef struct {
     u16 err_frame_cnt;          // UART frame errors
     u16 err_noise_cnt;          // UART noise errors
     // Timeouts
-    u16 timeout_rx_ms_cnt;      //
-    u16 timeout_resp_ms_cnt;    //
+    u16 timeout_rx_ms_cnt;      // Increase counter in receivening process after last received data
+    u16 timeout_resp_ms_cnt;    // Increase counter in response waiting
 }rs485_pcb_t;
 
 //-------External variables------

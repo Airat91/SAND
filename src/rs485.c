@@ -26,7 +26,8 @@ static int rs485_gpio_init(void);
 static int rs485_gpio_deinit(void);
 static int rs485_uart_init(rs485_config_t rs485_config, UART_HandleTypeDef* huart);
 static int rs485_uart_deinit(UART_HandleTypeDef* huart);
-static int rs485_rcv_timeout_check(rs485_pcb_t* rs485_pcb);
+static int rs485_rcv_timeout_check(rs485_pcb_t* rs485_pcb, u32 check_time_period);
+static int rs485_debug_print(void);
 
 //-------Functions----------
 
@@ -57,7 +58,7 @@ void rs485_task(void const * argument){
                 service.vars.rs485_state &= ~(u32)SRV_ST_ERROR;
             }
         }else{
-            rs485_rcv_timeout_check(&rs485_pcb);
+            rs485_rcv_timeout_check(&rs485_pcb, RS485_TASK_PERIOD);
         }
         if(tick == 500){
             static char msg[100] = {0};
@@ -65,6 +66,10 @@ void rs485_task(void const * argument){
             rs485_send(&rs485_pcb, (u8*)msg, strlen(msg));
             tick = 0;
         }
+
+#if RS485_DEBUG_PRINT_EN
+        rs485_debug_print();
+#endif// RS485_DEBUG_PRINT_EN
 
         osDelayUntil(&last_wake_time, RS485_TASK_PERIOD);
         tick++;
@@ -95,6 +100,15 @@ int rs485_init(rs485_config_t rs485_config, rs485_pcb_t* rs485_pcb){
         HAL_NVIC_SetPriority(_RS485_UART_IRQn, RS485_PRIO, RS485_SUBPRIO);
         HAL_NVIC_ClearPendingIRQ(_RS485_UART_IRQn);
         HAL_NVIC_EnableIRQ(_RS485_UART_IRQn);
+
+        __HAL_UART_CLEAR_FLAG(&rs485_pcb->huart, UART_FLAG_CTS);
+        __HAL_UART_CLEAR_FLAG(&rs485_pcb->huart, UART_FLAG_LBD);
+        __HAL_UART_CLEAR_FLAG(&rs485_pcb->huart, UART_FLAG_TC);
+        //__HAL_UART_CLEAR_FLAG(&rs485_pcb->huart, UART_FLAG_TXE);
+        __HAL_UART_CLEAR_FLAG(&rs485_pcb->huart, UART_FLAG_RXNE);
+        //rs485_pcb->huart.Instance->CR1 = 0;
+        __HAL_UART_ENABLE_IT(&rs485_pcb->huart, UART_IT_RXNE);
+        __HAL_UART_ENABLE_IT(&rs485_pcb->huart, UART_IT_PE);
     }else{
         rs485_pcb->state |= RS485_ST_ERROR;
     }
@@ -165,8 +179,8 @@ int rs485_send(rs485_pcb_t * rs485_pcb, const uint8_t * buff, uint16_t len){
 int rs485_irq_callback(rs485_pcb_t* rs485_pcb){
     int result = 0;
 
-    uint32_t data_byte = rs485_pcb->huart.Instance->DR; // Read input data byte
-    uint32_t status = rs485_pcb->huart.Instance->SR;    // For interrupt source determination
+    u32 data_byte = rs485_pcb->huart.Instance->DR; // Read input data byte
+    u32 status = rs485_pcb->huart.Instance->SR;    // For interrupt source determination
 
     // Receive data
     if(status & USART_SR_RXNE){
@@ -182,19 +196,6 @@ int rs485_irq_callback(rs485_pcb_t* rs485_pcb){
                 // Input buffer overload
             }
 
-            // Check errors
-            if(status & USART_SR_PE){                   // Parity error detected
-                rs485_pcb->err_parity_cnt++;
-                rs485_pcb->err_total_cnt++;
-            }
-            if(status & USART_SR_FE){                   // Frame error detected
-                rs485_pcb->err_frame_cnt++;
-                rs485_pcb->err_total_cnt++;
-            }
-            if(status & USART_SR_NE){                   // Noise error detected
-                rs485_pcb->err_noise_cnt++;
-                rs485_pcb->err_total_cnt++;
-            }
         }else{
             // Ignore data
         }
@@ -202,19 +203,12 @@ int rs485_irq_callback(rs485_pcb_t* rs485_pcb){
 
     // Transmit data
     if(status & USART_SR_TXE){
-        // Clear interrupt flags
-        rs485_pcb->huart.Instance->CR1  &= ~(u32)USART_CR1_TXEIE;
-        rs485_pcb->huart.Instance->SR   &= ~(u32)USART_SR_TC;
+        // Clear interrupt flag
+        //__HAL_UART_CLEAR_FLAG(&rs485_pcb->huart, UART_FLAG_TXE);
+        //rs485_pcb->huart.Instance->CR1  &= ~(u32)USART_CR1_TXEIE;
 
         if(rs485_pcb->state & RS485_ST_IN_SENDING){
-            if(rs485_pcb->state & RS485_ST_SEND_LAST_BYTE){
-                // End of transmit
-                _RS485_DE_DIS();
-                __HAL_UART_DISABLE_IT(&rs485_pcb->huart, UART_IT_TXE);
-                __HAL_UART_DISABLE_IT(&rs485_pcb->huart, UART_IT_TC);
-                rs485_pcb->state &= ~(u32)RS485_ST_IN_SENDING;
-                rs485_pcb->state &= ~(u32)RS485_ST_SEND_LAST_BYTE;
-            }else{
+            if((rs485_pcb->state & RS485_ST_SEND_LAST_BYTE) == 0){
                 if(rs485_pcb->out_ptr == rs485_pcb->out_len-1){
                     // Last byte sending
                     rs485_pcb->state |= RS485_ST_SEND_LAST_BYTE;
@@ -230,51 +224,48 @@ int rs485_irq_callback(rs485_pcb_t* rs485_pcb){
         }
     }
 
+    // Transmit done
+    if(status & USART_SR_TC){
+        // Clear interrupt flag
+        __HAL_UART_CLEAR_FLAG(&rs485_pcb->huart, UART_FLAG_TC);
 
-    // transmit mode
-    /*if((status & USART_SR_TXE) ){
-        if(!(uart_2.state & UART_STATE_IS_LAST_BYTE)){
-            if(uart_2.out_ptr>=uart_2.max_len){
-                uart_2.out_ptr = uart_2.max_len-1;
+        if(rs485_pcb->state & RS485_ST_IN_SENDING){
+            if(rs485_pcb->state & RS485_ST_SEND_LAST_BYTE){
+                // End of transmit
+                _RS485_DE_DIS();
+                __HAL_UART_DISABLE_IT(&rs485_pcb->huart, UART_IT_TXE);
+                __HAL_UART_DISABLE_IT(&rs485_pcb->huart, UART_IT_TC);
+                rs485_pcb->state &= ~(u32)RS485_ST_IN_SENDING;
+                rs485_pcb->state &= ~(u32)RS485_ST_SEND_LAST_BYTE;
             }
-            if(uart_2.out_ptr == uart_2.out_len-1){
-                huart2.Instance->CR1 &= ~USART_CR1_TXEIE;
-                huart2.Instance->CR1 |= USART_CR1_TCIE;
-                huart2.Instance->SR &=~USART_SR_TC;
-                uart_2.state |= UART_STATE_IS_LAST_BYTE;
-                huart2.Instance->DR=uart_2.buff_out[uart_2.out_ptr];
-            }else {
-                huart2.Instance->DR=uart_2.buff_out[uart_2.out_ptr];
-            }
-            uart_2.out_ptr++;*/
-            /*if(uart_2.out_ptr > uart_2.out_len){
-                uart_2.err_cnt++;
-            }*/
-        /*}else{
-            if((status & USART_SR_TC) != USART_SR_TC){
-                ; // error
-            }
-            // end of transmit
-            huart2.Instance->CR1 &= ~USART_CR1_TXEIE;
-            huart2.Instance->CR1 &= ~USART_CR1_TCIE;
-            huart2.Instance->SR &=~USART_SR_TC;
-            uart_2.in_ptr = 0;
-            uart_2.out_ptr = 0;
-            huart2.Instance->CR1 |= USART_CR1_RXNEIE;   // ready to input messages
-            huart2.Instance->SR &= ~(USART_SR_RXNE);
-            HAL_GPIO_WritePin(RS_485_DE_PORT, RS_485_DE_PIN, GPIO_PIN_RESET);
-            uart_2.state |= UART_STATE_SENDED;
-            uart_2.state &=~UART_STATE_IS_LAST_BYTE;
-            uart_2.state &=~UART_STATE_SENDING;
+        }else{
+            // Error of interrupt source
+            rs485_pcb->err_total_cnt++;
         }
     }
-    // overrun error without RXNE flag
-    if(status & USART_SR_ORE){
-        uart_2.state |= UART_STATE_ERROR;
-        uart_2.overrun_err_cnt++;
-        dd=huart2.Instance->SR;
-        dd=huart2.Instance->DR;
-    }*/
+
+    // Check errors
+    if(status & USART_SR_PE){                   // Parity error detected
+        status &= ~(u32)USART_SR_PE;
+        rs485_pcb->err_parity_cnt++;
+        rs485_pcb->err_total_cnt++;
+    }
+    if(status & USART_SR_FE){                   // Frame error detected
+        status &= ~(u32)USART_SR_FE;
+        rs485_pcb->err_frame_cnt++;
+        rs485_pcb->err_total_cnt++;
+    }
+    if(status & USART_SR_NE){                   // Noise error detected
+        status &= ~(u32)USART_SR_NE;
+        rs485_pcb->err_noise_cnt++;
+        rs485_pcb->err_total_cnt++;
+    }
+    if(status & USART_SR_ORE){                  // Overrun error detected
+        status &= ~(u32)USART_SR_ORE;
+        rs485_pcb->err_overrun_cnt++;
+        rs485_pcb->err_total_cnt++;
+    }
+
     return result;
 }
 
@@ -426,10 +417,58 @@ static int rs485_uart_deinit(UART_HandleTypeDef* huart){
 /**
  * @brief Check end of packet timeout
  * @param rs485_pcb
+ * @param check_time_period
  * @return
  */
-static int rs485_rcv_timeout_check(rs485_pcb_t* rs485_pcb){
+static int rs485_rcv_timeout_check(rs485_pcb_t* rs485_pcb, u32 check_time_period){
     int result = 0;
+
+    if(rs485_pcb->state & RS485_ST_IN_RECEIVE){
+        rs485_pcb->timeout_rx_ms_cnt += check_time_period;
+        if(rs485_pcb->timeout_rx_ms_cnt > RS485_DEFAULT_RX_TIMEOUT_MS){
+            // Handle received packet
+        }
+    }
+
+    if(rs485_pcb->state & RS485_ST_WAIT_RESPONSE){
+        rs485_pcb->timeout_resp_ms_cnt += check_time_period;
+        if(rs485_pcb->timeout_resp_ms_cnt > RS485_CONN_LOST_TIMEOUT){
+            // Response time is out
+        }
+    }
+
+    return result;
+}
+
+/**
+ * @brief Print debug buffer via RS-485 interface
+ * @return 0
+ *
+ * 1. Read debug buffer and check its lenght
+ * 2. Check RS-485 interface state
+ * 3. Send data to RS-485 interface
+ * 4. If debug buffer data larger than RS-485 out buffer, send only RS-485 out len max
+ */
+static int rs485_debug_print(void){
+    int result = 0;
+    static char temp_buf[RS485_BUF_LEN] = {0};
+
+    // Read debug buffer data lenght
+     u16 data_len = debug_buf_get_len();
+     if(data_len > 0){
+         // Check out of RS-485 max len
+         if(data_len > RS485_BUF_LEN){
+             data_len = RS485_BUF_LEN;
+         }
+         // Check RS-485 state
+         if((rs485_pcb.state & RS485_ST_IN_RECEIVE & RS485_ST_IN_SENDING & RS485_ST_WAIT_RESPONSE
+             & RS485_ST_ERROR & RS485_ST_DISABLE)==0){
+             debug_buf_read(temp_buf, data_len, DEBUG_BUF_READ_TIMEOUT_US);
+             rs485_send(&rs485_pcb, (u8*)temp_buf, data_len);
+         }else{
+             result = -1;
+         }
+     }
 
     return result;
 }
