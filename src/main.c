@@ -1339,18 +1339,6 @@ static int main_leds_handle(u32 call_period){
     }
 
     // Handle interfaces OK LED (GREEN)
-#if MDB_EN
-    if(modbus_led_ok_on_time){
-        HAL_GPIO_WritePin(LED_CON_G_PORT, LED_CON_G_PIN, GPIO_PIN_SET);
-        if(modbus_led_ok_on_time > call_period){
-            modbus_led_ok_on_time -= call_period;
-        }else{
-            modbus_led_ok_on_time = 0;
-        }
-    }else{
-        HAL_GPIO_WritePin(LED_CON_G_PORT, LED_CON_G_PIN, GPIO_PIN_RESET);
-    }
-#endif // MDB_EN
 #if RS485_EN
     if(rs485_led_ok_on_time){
         HAL_GPIO_WritePin(LED_CON_G_PORT, LED_CON_G_PIN, GPIO_PIN_SET);
@@ -1377,18 +1365,6 @@ static int main_leds_handle(u32 call_period){
 #endif // CAN_EN
 
     // Handle interfaces ERROR LED (RED)
-#if MDB_EN
-    if(modbus_led_err_on_time){
-        HAL_GPIO_WritePin(LED_CON_R_PORT, LED_CON_R_PIN, GPIO_PIN_SET);
-        if(modbus_led_err_on_time > call_period){
-            modbus_led_err_on_time -= call_period;
-        }else{
-            modbus_led_err_on_time = 0;
-        }
-    }else{
-        HAL_GPIO_WritePin(LED_CON_R_PORT, LED_CON_R_PIN, GPIO_PIN_RESET);
-    }
-#endif // MDB_EN
 #if RS485_EN
     if(rs485_led_err_on_time){
         HAL_GPIO_WritePin(LED_CON_R_PORT, LED_CON_R_PIN, GPIO_PIN_SET);
