@@ -65,7 +65,7 @@
 #include "us_tim.h"
 
 #if MDB_EN
-    #include "modbus_sand.h"
+    #include "mdb_sand.h"
 #endif // MDB_EN
 #if RTC_EN
     #include "rtc.h"

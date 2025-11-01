@@ -152,14 +152,15 @@ int main(void){
 #endif // RS485_EN
 
 #if MDB_EN
-    osThreadDef(modbus_task, modbus_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
-    modbus_task_handle = osThreadCreate(osThread(modbus_task), NULL);
-    if(modbus_task_handle == NULL){
+    mdb_sand_init(&mdb_sand_pcb);
+    /*osThreadDef(modbus_task, mdb_sand_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
+    mdb_sand_task_handle = osThreadCreate(osThread(modbus_task), NULL);
+    if(mdb_sand_task_handle == NULL){
         debug_msg(__func__, DBG_MSG_ERR, "Can't create modbus_task");
     }else{
         service.vars.mdb_state = MODBUS_INIT_TIMEOUT_MS;
         service.vars.mdb_state |= SRV_ST_CREATED;
-    }
+    }*/
 #endif // MDB_EN
 
 /*

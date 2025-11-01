@@ -45,6 +45,7 @@ int mdb_sand_init(mdb_sand_pcb_t* mdb_sand_pcb){
 
     mdb_sand_gpio_init();
     mdb_sand_pcb->state |= MDB_ST_READY;
+    debug_msg(__func__, DBG_MSG_INFO, "ModBUS deinited");
 
     return result;
 }
@@ -54,6 +55,7 @@ int mdb_deinit(mdb_sand_pcb_t* mdb_sand_pcb){
 
     mdb_sand_gpio_deinit();
     mdb_sand_pcb->state = MDB_ST_DISABLE;
+    debug_msg(__func__, DBG_MSG_INFO, "ModBUS inited");
 
     return result;
 }
@@ -92,7 +94,6 @@ int mdb_sand_read_addr(void){
 int mdb_sand_packet_handle(mdb_sand_pcb_t* mdb_sand_pcb, mdb_packet_t* packet){
     int result = 0;
     u8 self_addr = mdb_sand_read_addr();
-    u8 function_support = 0;
     static u8 resp_data[MDB_BUF_MAX_LEN] = {0};
     u16 resp_len = 0;
 
@@ -181,8 +182,26 @@ static void mdb_sand_gpio_deinit(void){
 
 //=======ModBUS functions realisation=======
 
+/**
+ * @brief Read registers value
+ * @param packet - pointer to input packet
+ * @param out_buf - pointer to response data buffer
+ * @param out_len - pointer to response data lenght
+ * @ingroup mdb
+ * @return 0
+ */
 static int mdb_sand_read_reg(mdb_packet_t* packet, u8* out_buf, u16* out_len){
     int result = 0;
+
+    // For debug only
+    u16 i = 0;
+    u16 data = 100;
+    for(i = 0; i < packet->reg_nmb; i++){
+        out_buf[i*2] = (u8)(data >> 8);
+        out_buf[i*2+1] = (u8)data;
+        data++;
+    }
+    *out_len = i*2;
 
     return result;
 }

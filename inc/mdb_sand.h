@@ -15,6 +15,7 @@
 #include "mdb.h"
 #include "pin_map.h"
 #include "regs.h"
+#include "debug.h"
 /*add includes before */
 
 #ifdef __cplusplus
@@ -94,7 +95,7 @@ typedef struct{
 
 //-------External variables------
 
-extern osThreadId mdb_task_handle;
+extern osThreadId mdb_sand_task_handle;
 extern mdb_sand_pcb_t mdb_sand_pcb;
 
 //-------Function prototypes----------

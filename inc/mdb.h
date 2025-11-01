@@ -9,6 +9,7 @@
 #define MDB_H
 /*add includes below */
 #include "type_def.h"
+#include "debug.h"
 /*add includes before */
 
 #ifdef __cplusplus
@@ -75,7 +76,7 @@ typedef struct{
     u16 reg_addr;                   // ModBUS register start address
     u16 reg_nmb;                    // Number of registers
     u16 crc;                        // ModBUS packet CRC16
-    u16* data;                      // Pointer to data in packet
+    u8* data;                       // Pointer to data in packet
     u8 data_len;                    // Lenght of data
 }mdb_packet_t;
 

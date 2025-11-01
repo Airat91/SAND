@@ -2,7 +2,7 @@
 #define MAIN_CONFIG_H
 
 // Enable/disable services
-#define MDB_EN  0
+#define MDB_EN  1
 #define CAN_EN  0
 #define I2C_EN  0
 #define SPI_EN  0

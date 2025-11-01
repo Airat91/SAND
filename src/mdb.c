@@ -39,12 +39,16 @@ mdb_packet_t mdb_packet_recognise(u8* buf, u16 len){
 
     // Check for ModBUS-RTU
     if(packet.protocol == MDB_PROT_UNKNOWN){
+        mismatch = 0;
         packet.slave_addr = buf[0];
         packet.function = buf[1];
         packet.reg_addr = ((u16)buf[2] << 8);
         packet.reg_addr += (u16)buf[3];
-        packet.crc = ((u16)buf[len - 2] << 8);
-        packet.crc += (u16)buf[len - 1];
+        packet.reg_nmb = ((u16)buf[4] << 8);
+        packet.reg_nmb += (u16)buf[5];
+        packet.data = &buf[6];
+        packet.crc = ((u16)buf[len - 1] << 8);
+        packet.crc += (u16)buf[len - 2];
 
         if(mdb_function_correct(packet.function) == 0){
             mismatch++;
@@ -66,6 +70,25 @@ mdb_packet_t mdb_packet_recognise(u8* buf, u16 len){
 
 int mdb_make_response(mdb_packet_t* packet, u8* data, u16* data_len, u8* out_buf, u16* out_len){
     int result = 0;
+    u16 ptr = 0;
+    u16 crc16 = 0;
+
+    // Make packet for ModBUS-RTU
+    if(packet->protocol == MDB_PROT_RTU){
+        out_buf[ptr++] = packet->slave_addr;
+        out_buf[ptr++] = packet->function;
+        out_buf[ptr++] = (u8)*data_len;
+        memcpy(&out_buf[ptr], data, *data_len);
+        ptr += *data_len;
+        crc16 = mdb_crc16_calc(out_buf, ptr);
+        memcpy(&out_buf[ptr], &crc16, sizeof(crc16));
+        ptr += sizeof(crc16);
+        *out_len = ptr;
+    }
+
+    if(packet->protocol == MDB_PROT_ASCII){
+
+    }
 
     return result;
 }
