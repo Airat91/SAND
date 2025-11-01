@@ -504,6 +504,19 @@ static int rs485_rcv_timeout_check(rs485_pcb_t* rs485_pcb, u32 check_time_period
             rs485_pcb->in_ptr = 0;
             rs485_pcb->state |= RS485_ST_WAIT_HANDLING;
             rs485_pcb->state &= ~(u32)RS485_ST_IN_RECEIVE;
+
+            // Check for ModBUS
+            mdb_packet_t mdb_in_packet = mdb_packet_recognise(rs485_pcb->buf_rcv, rs485_pcb->rcv_len);
+            if(mdb_in_packet.protocol != MDB_PROT_UNKNOWN){
+                if(mdb_sand_packet_handle(&mdb_sand_pcb, &mdb_in_packet) == 0){
+                    rs485_pcb->state &= ~(u32)RS485_ST_WAIT_HANDLING;
+                    if(mdb_sand_pcb.resp_len > 0){
+                        rs485_send(rs485_pcb, mdb_sand_pcb.resp_buf, mdb_sand_pcb.resp_len);
+                    }
+                }else{
+                    // mdb_sand_packet_handle() error
+                }
+            }
         }
     }
 

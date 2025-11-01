@@ -25,6 +25,9 @@ static const mdb_function_t mdb_sand_suprt_fnct_list[MDB_SUPRT_FNCT_NMB] = {
 
 static void mdb_sand_gpio_init(void);
 static void mdb_sand_gpio_deinit(void);
+static int mdb_sand_read_reg(mdb_packet_t* packet, u8* out_buf, u16 out_len);
+static int mdb_sand_write_reg(mdb_packet_t* packet, u8* out_buf, u16 out_len);
+static int mdb_sand_unsupport_funct(mdb_packet_t* packet, u8* out_buf, u16 out_len);
 
 //-------Functions----------
 
@@ -86,6 +89,46 @@ int mdb_sand_read_addr(void){
     return result;
 }
 
+int mdb_sand_packet_handle(mdb_sand_pcb_t* mdb_sand_pcb, mdb_packet_t* packet){
+    int result = 0;
+    u8 self_addr = mdb_sand_read_addr();
+    u8 function_support = 0;
+    static u8 resp_data[MDB_BUF_MAX_LEN] = {0};
+    u16 resp_len = 0;
+
+    // Reset response buf len
+    mdb_sand_pcb->resp_len = 0;
+
+    // Check address
+    if(packet->slave_addr != self_addr){
+        result = -1;
+    }else{
+        switch(packet->function){
+        case MDB_FNCT_RD_MUL_HOLD:
+        case MDB_FNCT_RD_MUL_INPUT:
+            result = mdb_sand_read_reg(packet, resp_data, resp_len);
+            break;
+        case MDB_FNCT_WR_MUL_COIL:
+        case MDB_FNCT_WR_MUL_HOLD:
+            result = mdb_sand_write_reg(packet, resp_data, resp_len);
+            break;
+        default:
+            result = mdb_sand_unsupport_funct(packet, resp_data, resp_len);
+        }
+        if(result == 0){
+            resp_len = mdb_make_response(packet, resp_data, resp_len, mdb_sand_pcb->resp_buf);
+            if(resp_len > 0){
+                mdb_sand_pcb->resp_len = resp_len;
+            }else{
+                result = -2;
+            }
+        }
+    }
+
+
+    return result;
+}
+
 //-------Static functions----------
 
 /**
@@ -139,4 +182,25 @@ static void mdb_sand_gpio_deinit(void){
     HAL_GPIO_DeInit(MDB_ADDR_6_PORT, MDB_ADDR_6_PIN);
     HAL_GPIO_DeInit(MDB_ADDR_7_PORT, MDB_ADDR_7_PIN);
 }
+
+//=======ModBUS functions realisation=======
+
+static int mdb_sand_read_reg(mdb_packet_t* packet, u8* out_buf, u16 out_len){
+    int result = 0;
+
+    return result;
+}
+
+static int mdb_sand_write_reg(mdb_packet_t* packet, u8* out_buf, u16 out_len){
+    int result = 0;
+
+    return result;
+}
+
+static int mdb_sand_unsupport_funct(mdb_packet_t* packet, u8* out_buf, u16 out_len){
+    int result = 0;
+
+    return result;
+}
+
 

@@ -87,19 +87,9 @@ typedef enum{
 
 typedef struct{
     mdb_sand_state_t state;
-    u8 out_buf[MDB_BUF_MAX_LEN];
-    u16 out_len;
+    u8 resp_buf[MDB_BUF_MAX_LEN];
+    u16 resp_len;
 }mdb_sand_pcb_t;
-
-typedef struct{
-    u8 slave_addr;  // Slave address [0..255]
-    u8 function;    // ModBUS function code
-    u16 reg_addr;   // ModBUS register start address
-    u16 reg_nmb;    // Number of registers
-    u16 crc;        // ModBUS packet CRC16
-    u16* data;      // Pointer to data in packet
-    u8 data_len;    // Lenght of data
-}mdb_packet_t;
 
 //-------External variables------
 
@@ -117,8 +107,8 @@ void mdb_sand_task(void const * argument);
 
 /**
  * @brief Init ModBUS process control block
- * @ingroup modbus
  * @param mdb_sand_pcb - pointer to ModBUS proccess control block
+ * @ingroup modbus
  * @return  0 - ok,\n
  *          negative value if error
  */
@@ -126,8 +116,8 @@ int mdb_sand_init(mdb_sand_pcb_t* mdb_sand_pcb);
 
 /**
  * @brief Deinit ModBUS process control block
- * @ingroup modbus
  * @param mdb_sand_pcb - pointer to ModBUS proccess control block
+ * @ingroup modbus
  * @return  0 - ok,\n
  *          negative value if error
  */
@@ -135,21 +125,20 @@ int mdb_sand_deinit(mdb_sand_pcb_t* mdb_sand_pcb);
 
 /**
  * @brief Read ModBUs address switches state
- * @ingroup modbus
  * @return self modbus address
+ * @ingroup modbus
  */
 int mdb_sand_read_addr(void);
 
 /**
  * @brief Handle input ModBUS packet
  * @param mdb_sand_pcb - pointer to ModBUS proccess control block
- * @param buf - pointer to packet buffer
- * @param len - lenght of buffer
- * @return  0 - packet handled, no need response,\n
- *          1 - packet handled, send response from mdb_pcb.out_buf
- *          -1 - unavailable registers address
+ * @param packet - pointer to packet struct
+ * @ingroup modbus
+ * @return  0 - ok,\n
+ *          negative value - error,\n
  */
-int mdb_packet_handle(mdb_sand_pcb_t* mdb_sand_pcb, u8* buf, u16 len);
+int mdb_sand_packet_handle(mdb_sand_pcb_t* mdb_sand_pcb, mdb_packet_t* packet);
 
 
 #ifdef __cplusplus
