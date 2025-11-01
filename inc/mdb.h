@@ -23,6 +23,7 @@ extern "C" {
 //--------Defines--------
 
 #define MDB_BUF_MAX_LEN     300     // ModBUS packet max lenght
+#define MDB_ASCII_START     0x3A    //
 
 //--------Macro--------
 
@@ -44,6 +45,7 @@ typedef enum{
 
     MDB_FNCT_WR_MUL_COIL    = 15,   // Force Multiple Coils
     MDB_FNCT_WR_MUL_HOLD    = 16,   // Preset Multiple Registers
+    MDB_FNCT_RD_SLAVE_ID    = 17,   // Report Slave ID
 
     MDB_FNCT_RD_FILE        = 20,   // Read File Record
     MDB_FNCT_WR_FILE        = 21,   // Write File Record

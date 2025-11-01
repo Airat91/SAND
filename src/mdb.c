@@ -13,10 +13,53 @@
 
 //-------Static functions declaration-----------
 
+static int mdb_function_correct(u8 code);
+static u16 mdb_crc16_calc(u8* buf, u16 len);
+
 //-------Functions----------
 
 mdb_packet_t mdb_packet_recognise(u8* buf, u16 len){
     mdb_packet_t packet = {0};
+    u8 mismatch = 0;
+
+    // Check for ModBUS-ASCII
+    if(packet.protocol == MDB_PROT_UNKNOWN){
+        mismatch = 0;
+        if(buf[0] != MDB_ASCII_START){
+            mismatch++;
+        }
+
+        if(mismatch == 0){
+            packet.protocol = MDB_PROT_ASCII;
+        }else{
+            // reset packet struct
+            memset(&packet, 0, sizeof(mdb_packet_t));
+        }
+    }
+
+    // Check for ModBUS-RTU
+    if(packet.protocol == MDB_PROT_UNKNOWN){
+        packet.slave_addr = buf[0];
+        packet.function = buf[1];
+        packet.reg_addr = ((u16)buf[2] << 8);
+        packet.reg_addr += (u16)buf[3];
+        packet.crc = ((u16)buf[len - 2] << 8);
+        packet.crc += (u16)buf[len - 1];
+
+        if(mdb_function_correct(packet.function) == 0){
+            mismatch++;
+        }
+        if(mdb_crc16_calc(buf, len-2) != packet.crc){
+            mismatch++;
+        }
+
+        if(mismatch == 0){
+            packet.protocol = MDB_PROT_RTU;
+        }else{
+            // reset packet struct
+            memset(&packet, 0, sizeof(mdb_packet_t));
+        }
+    }
 
     return packet;
 }
@@ -28,3 +71,67 @@ int mdb_make_response(mdb_packet_t* packet, u8* data, u16* data_len, u8* out_buf
 }
 
 //-------Static functions----------
+
+/**
+ * @brief Check function code in mdb_function_t enumeration
+ * @param code - function code for checking
+ * @ingroup mdb
+ * @return  0 - incorrect,\n
+ *          1 - correct,\n
+ */
+static int mdb_function_correct(u8 code){
+    int result = 0;
+
+    switch(code){
+    case MDB_FNCT_RD_MUL_COIL:
+    case MDB_FNCT_RD_MUL_DISCR:
+    case MDB_FNCT_RD_MUL_HOLD:
+    case MDB_FNCT_RD_MUL_INPUT:
+    case MDB_FNCT_WR_SIN_COIL:
+    case MDB_FNCT_WR_SIN_HOLD:
+    case MDB_FNCT_RD_EXCP_STAT:
+    case MDB_FNCT_DIAGNOSTIC:
+    case MDB_FNCT_RD_EVENT_CNT:
+    case MDB_FNCT_RD_EVENT_LOG:
+    case MDB_FNCT_WR_MUL_COIL:
+    case MDB_FNCT_WR_MUL_HOLD:
+    case MDB_FNCT_RD_FILE:
+    case MDB_FNCT_WR_FILE:
+    case MDB_FNCT_WR_MASK_REG:
+    case MDB_FNCT_RD_WR_MUL_REGS:
+    case MDB_FNCT_RD_FIFO:
+        result = 1;
+        break;
+    default:
+        result = 0;
+    }
+
+    return result;
+}
+
+/**
+ * @brief Calculate CRC16 for ModBUS packet
+ * @param buf - pointer to ModBUS packet
+ * @param len - packet lenght without CRC
+ * @ingroup mdb
+ * @return calculated crc16 for packet
+ */
+static u16 mdb_crc16_calc(u8* buf, u16 len){
+    u16 crc;
+
+    u16 i, j;
+    len = len > 254?254:len;
+    crc = 0xFFFF;
+    for (i = 0; i < len; i++)  {
+        crc ^= buf[i];
+        for (j = 0; j < 8; j++) {
+            if ((crc & 0x01) == 1){
+                crc = (crc >> 1) ^ 0xA001;
+            }else{
+                crc >>= 1;
+            }
+        }
+    }
+
+    return crc;
+}
