@@ -87,7 +87,7 @@
 //#include "st7735.h"
 #include <string.h>
 #include "ds18b20.h"
-#include "regs.h"
+#include "reg.h"
 
 /*add includes before */
 

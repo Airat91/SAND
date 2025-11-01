@@ -1,12 +1,12 @@
 /*
- * File:        regs.h
+ * File:        reg.h
  * Authors:     Girfanov.Ayrat@yandex.ru
- * Description: Global registers
+ * Description: Global registers access
  * Revision history: 0.1
  */
 
-#ifndef __REGS_H__
-#define __REGS_H__
+#ifndef __REG_H__
+#define __REG_H__
 /*add includes below */
 #if(DEVICE_TYPE == DEFPCB)
     #include "rergs_defpcb.h"
@@ -18,6 +18,11 @@
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
+
+/**
+ * @defgroup reg
+ * @brief Global registers access
+ */
 
 //--------Defines--------
 
@@ -32,4 +37,4 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif
-#endif // __REGS_H__
+#endif // __REG_H__

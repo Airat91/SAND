@@ -18,7 +18,7 @@
 #include "type_def.h"
 #include "pin_map.h"
 #include "main_config.h"
-#include "regs.h"
+#include "reg.h"
 #include "service.h"
 #include "us_tim.h"
 /*add includes before */

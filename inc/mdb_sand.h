@@ -14,7 +14,8 @@
 #include "type_def.h"
 #include "mdb.h"
 #include "pin_map.h"
-#include "regs.h"
+#include "reg.h"
+#include "sofi_reg.h"
 #include "debug.h"
 /*add includes before */
 
