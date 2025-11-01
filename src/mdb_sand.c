@@ -212,6 +212,17 @@ static int mdb_sand_read_reg(mdb_packet_t* packet, u8* out_buf, u16* out_len){
 static int mdb_sand_write_reg(mdb_packet_t* packet, u8* out_buf, u16* out_len){
     int result = 0;
 
+    // Write values from packet
+    u16 ptr = 0;
+    // For debug only
+    // Copy reg address to response
+    out_buf[ptr++] = (u8)packet->reg_addr >> 8;
+    out_buf[ptr++] = (u8)packet->reg_addr;
+    // Cop regs number to response
+    out_buf[ptr++] = (u8)packet->reg_nmb >> 8;
+    out_buf[ptr++] = (u8)packet->reg_nmb;
+    *out_len = ptr;
+
     return result;
 }
 
