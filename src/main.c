@@ -123,7 +123,7 @@ int main(void){
     main_IWDG_Init();
 #endif //RELEASE
 
-    osThreadDef(main_task, main_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE*2);
+    osThreadDef(main_task, main_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
     main_task_handle = osThreadCreate(osThread(main_task), NULL);
     if(main_task_handle == NULL){
         debug_msg(__func__, DBG_MSG_ERR, "Can't create main_task");
@@ -141,10 +141,10 @@ int main(void){
 #endif // RTC_EN
 
 #if RS485_EN
-    osThreadDef(rs485_task, rs485_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
+    osThreadDef(rs485_task, rs485_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE*4);
     rs485_task_handle = osThreadCreate(osThread(rs485_task), NULL);
     if(rs485_task_handle == NULL){
-        debug_msg(__func__, DBG_MSG_ERR, "Can't create rtc_task");
+        debug_msg(__func__, DBG_MSG_ERR, "Can't create rs485_task");
     }else{
         service.vars.rs485_state = RS485_INIT_TIMEOUT_MS;
         service.vars.rs485_state |= SRV_ST_CREATED;

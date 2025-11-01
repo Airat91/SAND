@@ -24,7 +24,9 @@ extern "C" {
 //--------Defines--------
 
 #define MDB_BUF_MAX_LEN     300     // ModBUS packet max lenght
-#define MDB_ASCII_START     0x3A    //
+#define MDB_ASCII_START     0x3A    // Start-byte of ModBUS-ASCII packet
+#define MDB_ASCII_PREEND    0x0D    // Preend-byte of ModBUS-ASCII packet
+#define MDB_ASCII_END       0x0A    // End-byte of ModBUS-ASCII packet
 #define MDB_FNCT_ERR_FLAG   0x80    // Error flag added into function code
 
 //--------Macro--------
