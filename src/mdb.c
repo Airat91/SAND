@@ -77,7 +77,6 @@ int mdb_make_response(mdb_packet_t* packet, u8* data, u16* data_len, u8* out_buf
     if(packet->protocol == MDB_PROT_RTU){
         out_buf[ptr++] = packet->slave_addr;
         out_buf[ptr++] = packet->function;
-        out_buf[ptr++] = (u8)*data_len;
         memcpy(&out_buf[ptr], data, *data_len);
         ptr += *data_len;
         crc16 = mdb_crc16_calc(out_buf, ptr);

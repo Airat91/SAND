@@ -25,6 +25,7 @@ extern "C" {
 
 #define MDB_BUF_MAX_LEN     300     // ModBUS packet max lenght
 #define MDB_ASCII_START     0x3A    //
+#define MDB_FNCT_ERR_FLAG   0x80    // Error flag added into function code
 
 //--------Macro--------
 
