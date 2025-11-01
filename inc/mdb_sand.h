@@ -14,6 +14,7 @@
 #include "type_def.h"
 #include "mdb.h"
 #include "pin_map.h"
+#include "regs.h"
 /*add includes before */
 
 #ifdef __cplusplus
@@ -101,14 +102,14 @@ extern mdb_sand_pcb_t mdb_sand_pcb;
 /**
  * @brief Main task of ModBUS service
  * @param argument - a pointer to arguments
- * @ingroup modbus
+ * @ingroup mdb
  */
 void mdb_sand_task(void const * argument);
 
 /**
  * @brief Init ModBUS process control block
  * @param mdb_sand_pcb - pointer to ModBUS proccess control block
- * @ingroup modbus
+ * @ingroup mdb
  * @return  0 - ok,\n
  *          negative value if error
  */
@@ -117,7 +118,7 @@ int mdb_sand_init(mdb_sand_pcb_t* mdb_sand_pcb);
 /**
  * @brief Deinit ModBUS process control block
  * @param mdb_sand_pcb - pointer to ModBUS proccess control block
- * @ingroup modbus
+ * @ingroup mdb
  * @return  0 - ok,\n
  *          negative value if error
  */
@@ -126,7 +127,7 @@ int mdb_sand_deinit(mdb_sand_pcb_t* mdb_sand_pcb);
 /**
  * @brief Read ModBUs address switches state
  * @return self modbus address
- * @ingroup modbus
+ * @ingroup mdb
  */
 int mdb_sand_read_addr(void);
 
@@ -134,9 +135,10 @@ int mdb_sand_read_addr(void);
  * @brief Handle input ModBUS packet
  * @param mdb_sand_pcb - pointer to ModBUS proccess control block
  * @param packet - pointer to packet struct
- * @ingroup modbus
+ * @ingroup mdb
  * @return  0 - ok,\n
- *          negative value - error,\n
+ *          -1 - slave address mismatch,\n
+ *          -2 - mdb_make_response() error,\n
  */
 int mdb_sand_packet_handle(mdb_sand_pcb_t* mdb_sand_pcb, mdb_packet_t* packet);
 

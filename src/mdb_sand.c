@@ -25,9 +25,9 @@ static const mdb_function_t mdb_sand_suprt_fnct_list[MDB_SUPRT_FNCT_NMB] = {
 
 static void mdb_sand_gpio_init(void);
 static void mdb_sand_gpio_deinit(void);
-static int mdb_sand_read_reg(mdb_packet_t* packet, u8* out_buf, u16 out_len);
-static int mdb_sand_write_reg(mdb_packet_t* packet, u8* out_buf, u16 out_len);
-static int mdb_sand_unsupport_funct(mdb_packet_t* packet, u8* out_buf, u16 out_len);
+static int mdb_sand_read_reg(mdb_packet_t* packet, u8* out_buf, u16* out_len);
+static int mdb_sand_write_reg(mdb_packet_t* packet, u8* out_buf, u16* out_len);
+static int mdb_sand_unsupport_funct(mdb_packet_t* packet, u8* out_buf, u16* out_len);
 
 //-------Functions----------
 
@@ -106,25 +106,21 @@ int mdb_sand_packet_handle(mdb_sand_pcb_t* mdb_sand_pcb, mdb_packet_t* packet){
         switch(packet->function){
         case MDB_FNCT_RD_MUL_HOLD:
         case MDB_FNCT_RD_MUL_INPUT:
-            result = mdb_sand_read_reg(packet, resp_data, resp_len);
+            result = mdb_sand_read_reg(packet, resp_data, &resp_len);
             break;
         case MDB_FNCT_WR_MUL_COIL:
         case MDB_FNCT_WR_MUL_HOLD:
-            result = mdb_sand_write_reg(packet, resp_data, resp_len);
+            result = mdb_sand_write_reg(packet, resp_data, &resp_len);
             break;
         default:
-            result = mdb_sand_unsupport_funct(packet, resp_data, resp_len);
+            result = mdb_sand_unsupport_funct(packet, resp_data, &resp_len);
         }
         if(result == 0){
-            resp_len = mdb_make_response(packet, resp_data, resp_len, mdb_sand_pcb->resp_buf);
-            if(resp_len > 0){
-                mdb_sand_pcb->resp_len = resp_len;
-            }else{
+            if(mdb_make_response(packet, resp_data, &resp_len, mdb_sand_pcb->resp_buf, &mdb_sand_pcb->resp_len) != 0){
                 result = -2;
             }
         }
     }
-
 
     return result;
 }
@@ -133,7 +129,7 @@ int mdb_sand_packet_handle(mdb_sand_pcb_t* mdb_sand_pcb, mdb_packet_t* packet){
 
 /**
  * @brief Init switches GPIO of ModBUS
- * @ingroup modbus
+ * @ingroup mdb
  *
  * Init MDB_ADDR switch pins
  */
@@ -168,7 +164,7 @@ static void mdb_sand_gpio_init(void){
 
 /**
  * @brief Deinit switches GPIO of ModBUS
- * @ingroup modbus
+ * @ingroup mdb
  *
  * Deinit MDB_ADDR switch pins
  */
@@ -185,22 +181,31 @@ static void mdb_sand_gpio_deinit(void){
 
 //=======ModBUS functions realisation=======
 
-static int mdb_sand_read_reg(mdb_packet_t* packet, u8* out_buf, u16 out_len){
+static int mdb_sand_read_reg(mdb_packet_t* packet, u8* out_buf, u16* out_len){
     int result = 0;
 
     return result;
 }
 
-static int mdb_sand_write_reg(mdb_packet_t* packet, u8* out_buf, u16 out_len){
+static int mdb_sand_write_reg(mdb_packet_t* packet, u8* out_buf, u16* out_len){
     int result = 0;
 
     return result;
 }
 
-static int mdb_sand_unsupport_funct(mdb_packet_t* packet, u8* out_buf, u16 out_len){
+/**
+ * @brief Write error value to output buffer
+ * @param packet - pointer to input packet
+ * @param out_buf - pointer to output buffer
+ * @param out_len - pointer to output buffer lenght
+ * @ingroup mdb
+ * @return 0
+ */
+static int mdb_sand_unsupport_funct(mdb_packet_t* packet, u8* out_buf, u16* out_len){
     int result = 0;
+
+    out_buf[0] = MDB_ERR_FUNCT;
+    *out_len = 1;
 
     return result;
 }
-
-

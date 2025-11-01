@@ -21,7 +21,7 @@ mdb_packet_t mdb_packet_recognise(u8* buf, u16 len){
     return packet;
 }
 
-int mdb_make_response(mdb_packet_t* packet, u8* data, u16 data_len, u8* out_buf){
+int mdb_make_response(mdb_packet_t* packet, u8* data, u16* data_len, u8* out_buf, u16* out_len){
     int result = 0;
 
     return result;
