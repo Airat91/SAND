@@ -141,7 +141,7 @@ int main(void){
 #endif // RTC_EN
 
 #if RS485_EN
-    osThreadDef(rs485_task, rs485_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE*4);
+    osThreadDef(rs485_task, rs485_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE*2);
     rs485_task_handle = osThreadCreate(osThread(rs485_task), NULL);
     if(rs485_task_handle == NULL){
         debug_msg(__func__, DBG_MSG_ERR, "Can't create rs485_task");

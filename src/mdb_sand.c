@@ -45,7 +45,7 @@ int mdb_sand_init(mdb_sand_pcb_t* mdb_sand_pcb){
 
     mdb_sand_gpio_init();
     mdb_sand_pcb->state |= MDB_ST_READY;
-    debug_msg(__func__, DBG_MSG_INFO, "ModBUS deinited");
+    debug_msg(__func__, DBG_MSG_INFO, "ModBUS inited");
 
     return result;
 }
@@ -55,7 +55,7 @@ int mdb_deinit(mdb_sand_pcb_t* mdb_sand_pcb){
 
     mdb_sand_gpio_deinit();
     mdb_sand_pcb->state = MDB_ST_DISABLE;
-    debug_msg(__func__, DBG_MSG_INFO, "ModBUS inited");
+    debug_msg(__func__, DBG_MSG_INFO, "ModBUS deinited");
 
     return result;
 }

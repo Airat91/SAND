@@ -52,14 +52,14 @@ mdb_packet_t mdb_packet_recognise(u8* buf, u16 len){
                 mdb_buf_temp[ptr] += mdb_ascii_to_byte(buf[i + 1]);
                 ptr++;
             }
-        }
-        packet.function     =       mdb_buf_temp[1];
-        packet.crc          =  (u16)mdb_buf_temp[ptr - 1];
-        if(mdb_function_correct(packet.function) == 0){
-            mismatch++;
-        }
-        if(mdb_lrc8_calc(mdb_buf_temp, ptr - 1) != (u8)packet.crc){
-            mismatch++;
+            packet.function     =       mdb_buf_temp[1];
+            packet.crc          =  (u16)mdb_buf_temp[ptr - 1];
+            if(mdb_function_correct(packet.function) == 0){
+                mismatch++;
+            }
+            if(mdb_lrc8_calc(mdb_buf_temp, ptr - 1) != (u8)packet.crc){
+                mismatch++;
+            }
         }
 
         if(mismatch == 0){
@@ -244,7 +244,7 @@ static u8 mdb_lrc8_calc(u8* buf, u16 len){
  * @ingroup mdb
  * @return byte value of ASCII-symbol
  */
-static u8 mdb_ascii_to_byte(u16 ascii){
+static inline u8 mdb_ascii_to_byte(u16 ascii){
     u8 result = 0;
 
     switch(ascii){
@@ -317,7 +317,7 @@ static u8 mdb_ascii_to_byte(u16 ascii){
  * @details
  * Input byte masked by 0x0F
  */
-static u8 mdb_halfbyte_to_ascii(u8 byte){
+static inline u8 mdb_halfbyte_to_ascii(u8 byte){
     u8 result = 0;
 
     switch(byte & 0x0F){

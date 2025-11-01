@@ -37,14 +37,14 @@ extern "C" {
 #define RS485_TASK_PERIOD               2
 #define RS485_BAUDRATE_CHECK_PERIOD     1000    // 1 sec
 #define RS485_INIT_TIMEOUT_MS           2000    // 2 sec
-#define RS485_BUF_LEN                   300     // RS-485 buffers size
+#define RS485_BUF_LEN                   512     // RS-485 buffers size
 #define RS485_CONN_LOST_TIMEOUT         2500    // 2,5 sec
 #define RS485_SENDING_TIMEOUT           2000    // 2 sec
 #define RS485_RECEIVING_TIMEOUT         2000    // 2 sec
 #define RS485_MAX_ERR_NMB               10
 #define RS485_LED_BLINK_MS              200     // 200 ms
 #define RS485_BTR_VAR_NMB               16      // Number of bitrate variants (see rs485_bitrate_t enum)
-#define RS485_DEBUG_PRINT_EN            1       // Print debug data buffer via RS-485
+#define RS485_DEBUG_PRINT_EN            0       // Print debug data buffer via RS-485
 #define RS485_DEBUG_BUF_LEN             RS485_BUF_LEN   //
 
 //========Default config========
@@ -52,7 +52,7 @@ extern "C" {
 #define RS485_DEFAULT_DATA_LEN          RS485_DATA_8_BIT;
 #define RS485_DEFAULT_PARITY            RS485_PAR_NONE;
 #define RS485_DEFAULT_STOP_BIT          RS485_STOP_1;
-#define RS485_DEFAULT_RX_TIMEOUT_MS     50
+#define RS485_DEFAULT_RX_TIMEOUT_MS     20
 
 //--------Macro--------
 
