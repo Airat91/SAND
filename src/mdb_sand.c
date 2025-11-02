@@ -193,7 +193,6 @@ static void mdb_sand_gpio_deinit(void){
 static int mdb_sand_read_reg(mdb_packet_t* packet, u8* out_buf, u16* out_len){
     int result = 0;
 
-    // For debug only
     u16 ptr = 0;
     u16 data = 0;
     u16 addr = packet->reg_addr;
@@ -201,7 +200,7 @@ static int mdb_sand_read_reg(mdb_packet_t* packet, u8* out_buf, u16* out_len){
     out_buf[ptr++] = packet->reg_nmb*2;
     // Add data bytes to response
     for(u8 i = 0; i < packet->reg_nmb; i++){
-        data = reg_mdb_read_reg(addr++);
+        data = reg_mdb_read(addr++);
         out_buf[ptr++] = (u8)(data >> 8);
         out_buf[ptr++] = (u8)data;
     }

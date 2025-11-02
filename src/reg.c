@@ -79,12 +79,13 @@ int reg_base_write(sofi_prop_base_t* reg, u16 array_ind, reg_var_t* value){
 
 reg_var_t reg_base_read(sofi_prop_base_t* reg, u16 array_ind){
     reg_var_t var = {0};
-    u8* value_ptr = reg->p_value;
+    u16 byte_size = reg_get_byte_num(reg->type);
     var.var_type = reg->type;
     if(reg_access_blocked(reg) == 0){
         if(array_ind <= reg->array_len){
-            value_ptr += array_ind * reg_get_byte_num(reg->type);
-            var.var.var_u8 = *value_ptr;
+            //value_ptr += array_ind * reg_get_byte_num(reg->type);
+            memcpy(&var.var.var_u8, reg->p_value + array_ind * byte_size, byte_size);
+            //var.var.var_u8 = *value_ptr;
         }
     }
     return var;
@@ -92,16 +93,42 @@ reg_var_t reg_base_read(sofi_prop_base_t* reg, u16 array_ind){
 
 //=======Regs prop_mdb functions=======
 
-u16 reg_mdb_read_reg(u16 addr){
+u16 reg_mdb_read(u16 addr){
     u16 result = 0;
-    u16* value_ptr = 0;
+    u16 temp = 0;
+
+    u16 array_ind = 0;
+    u16 value_shift = 0;
+    reg_var_t value = {0};
+    // Get register by ModBUS address
     sofi_prop_base_t* reg = reg_mdb_get_by_addr(addr);
     sofi_prop_mdb_t* mdb_prop = (sofi_prop_mdb_t*)reg_base_get_prop(reg, SOFI_PROP_MDB);
+    u16 reg_size = reg_get_byte_num(reg->type);
     if(reg != NULL){
-        value_ptr = (u16*)reg->p_value;
-        // Find array element
-        value_ptr += (addr - mdb_prop->mdb_addr);
-        result = *value_ptr;
+        // Find array index and value shift for regs_size > 2
+        temp = (addr - mdb_prop->mdb_addr);
+        array_ind = (addr - mdb_prop->mdb_addr)*2/reg_size;
+        value_shift = (addr - mdb_prop->mdb_addr)%(reg_size/2);
+        value = reg_base_read(reg, array_ind);
+        switch(reg_size){
+        case 1:
+            result = value.var.var_u16;
+            // Read neaxt element
+            value = reg_base_read(reg, array_ind + 1);
+            result += (u16)(value.var.var_u16 << 8);
+            break;
+        case 2:
+            result = value.var.var_u16;
+            break;
+        case 4:
+            result = (u16)(value.var.var_u32 >> value_shift * 16);
+            break;
+        case 8:
+            result = (u16)(value.var.var_u64 >> value_shift * 16);
+            break;
+        default:
+            result = 0;
+        }
     }
 
     return result;
@@ -190,7 +217,7 @@ static sofi_prop_base_t* reg_mdb_get_by_addr(u16 addr){
         property = (sofi_prop_mdb_t*)&sofi_prop_mdb_list[i];
         reg = (sofi_prop_base_t*)property->header.header_base;
         start_addr = property->mdb_addr;
-        end_addr = start_addr + reg->array_len * reg_get_byte_num(reg->type);
+        end_addr = start_addr + reg->array_len * reg_get_byte_num(reg->type)/2;
         if((addr >= start_addr)&&(addr < end_addr)){
             reg_found = 1;
             break;

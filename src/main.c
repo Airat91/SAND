@@ -200,6 +200,19 @@ void main_task(void const * argument){
     u32 tick = 0;
     debug_msg(__func__, DBG_MSG_INFO, "MAIN_task started");
     sprintf(os.vars.build, BUILD_INFO);
+    for(u8 i = 0; i < 20; i++){
+        test.vars.arr_u8[i]     = (u8)(i+1);
+        test.vars.arr_s8[i]     = (s8)(i+1);
+        test.vars.arr_u16[i]    = (u16)(i+1+0xAB00);
+        test.vars.arr_s16[i]    = (s16)(i+1+0x7B00);
+        test.vars.arr_u32[i]    = (u32)(i+1+0xABCDEF00);
+        test.vars.arr_s32[i]    = (s32)(i+1+0x7BCDEF00);
+        test.vars.arr_u64[i]    = (u64)(i+1+0xABCDEF00ABCDEF00);
+        test.vars.arr_s64[i]    = (s64)(i+1+0x7BCDEF00ABCDEF00);
+        test.vars.arr_float[i]  = (float)((i+1)*10.01f);
+        test.vars.arr_double[i] = (double)((i+1)*10.01f);
+        test.vars.arr_char[i]   = (char)(i + 0x30);
+    }
 
     while(1){
         // Every 1 second
@@ -222,26 +235,14 @@ void main_task(void const * argument){
         // Checks other tasks state and restart them if error or suspend
 
         // Debug functions
-        /*sofi_prop_base_t* reg = {0};
-        reg = reg_base_get_by_name("device_name");
-        if(reg == NULL){
-            debug_msg(__func__, DBG_MSG_WARN, "register not found");
-        }else{
-            debug_msg(__func__, DBG_MSG_INFO, "register found");
-        }
+
+        /*os.vars.runtime = 0x1456789;
+        sofi_prop_base_t* reg = NULL;
         reg_var_t var = {0};
-        var.var_type = VAR_TYPE_CHAR;
-        var.var.var_char = 'D';
-        reg_base_write(reg, 1, &var);
-        //reg = reg_mdb_get_by_addr(15);
-        var = reg_base_read(reg_base_get_by_name("build"), 12);
-        if(reg == NULL){
-            debug_msg(__func__, DBG_MSG_WARN, "register not found");
-        }else{
-            debug_msg(__func__, DBG_MSG_INFO, "register found");
-        }
-        var.var.var_u8 = 8;
-        var.var_type = VAR_TYPE_U8;
+        reg = reg_base_get_by_name("runtime");
+        var = reg_base_read(reg, 0);
+        reg = reg_base_get_by_name("build");
+        var = reg_base_read(reg, 12);
         reg_base_write(reg_base_get_by_name("uniq_id"), 2, &var);*/
 
 

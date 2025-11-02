@@ -108,7 +108,7 @@ reg_var_t reg_base_read(sofi_prop_base_t* reg, u16 array_ind);
  * @return  readed value,\n
  *          0 - if access disabled,\n
  */
-u16 reg_mdb_read_reg(u16 addr);
+u16 reg_mdb_read(u16 addr);
 
 /**
  * @brief Read array of register values by start address
