@@ -100,58 +100,41 @@ int reg_base_write(sofi_prop_base_t* reg, u16 array_ind, reg_var_t* value);
  *          -1 - reg is NULL,\n
  *          -2 - access blocked,\n
  *          -3 - array index out of lenght,\n
- *
- * @note
- * This function set only necessary parameters of value struct.
+ * @details
+ * 1. In error the value is sets to 0, type is sets to VAR_TYPE_UNKNOWN
+ * 2. This function set only necessary parameters of value struct.
  * Please reset this struct before use.
- *
- * @note
- * Value type after reading sets to the same register type
+ * 3. Value type after reading sets to the same register type
  */
 int reg_base_read(sofi_prop_base_t* reg, u16 array_ind, reg_var_t* value);
+
+/**
+ * @brief reg_get_byte_num
+ * @param reg - pointer to register
+ * @ingroup reg
+ * @return number in bytes of var type
+ */
+int reg_base_get_byte_size(sofi_prop_base_t* reg);
+/**
+ * @brief Get property header of register
+ * @param reg - pointer to register
+ * @param prop - property type
+ * @ingroup reg
+ * @return  - pointer to property header,\n
+ *          NULL - property header not found,\n
+ */
+sofi_header_t* reg_base_get_prop(sofi_prop_base_t* reg, sofi_prop_enum_t prop);
 
 //=======Regs prop_mdb functions=======
 
 /**
- * @brief Read register value by address
- * @param addr - address for read
+ * @brief Find register by ModBUS address
+ * @param addr - address for find
  * @ingroup reg
- * @return  readed value,\n
- *          0 - if access disabled,\n
+ * @return  - pointer to reg,\n
+ *          NULL - register not found,\n
  */
-u16 reg_mdb_read(u16 addr);
-
-/**
- * @brief Read array of register values by start address
- * @param addr - start address for read
- * @param len - lenght for read in u16
- * @param buf - pointer to buffer for reading
- * @ingroup reg
- * @return  0 - ok,\n
- *          negative value if error,\n
- */
-int reg_mdb_read_array(u16 addr, u16 len, u16* buf);
-
-/**
- * @brief Read register value by address
- * @param addr - address for read
- * @param value - value for write
- * @ingroup reg
- * @return  0 - ok,\n
- *          negative value if error,\n
- */
-int reg_mdb_write_reg(u16 addr, u16 value);
-
-/**
- * @brief Write to array of register by start address
- * @param addr - start address for write
- * @param len - lenght for write array in u16
- * @param buf - pointer to buffer with write data
- * @ingroup reg
- * @return  0 - ok,\n
- *          negative value if error,\n
- */
-int reg_mdb_write_array(u16 addr, u16 len, u16* buf);
+sofi_prop_base_t* reg_mdb_get_by_addr(u16 addr);
 
 //=======Regs prop_range functions=======
 

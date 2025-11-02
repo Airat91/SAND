@@ -189,20 +189,68 @@ static void mdb_sand_gpio_deinit(void){
  * @param out_len - pointer to response data lenght
  * @ingroup mdb
  * @return 0
+ *
+ * @warning If register with the given address does not exist his value in response is 0
+ *
+ * @todo Check registers address available and send error code
  */
 static int mdb_sand_read_reg(mdb_packet_t* packet, u8* out_buf, u16* out_len){
     int result = 0;
-
+    // Vars for use
     u16 ptr = 0;
     u16 data = 0;
     u16 addr = packet->reg_addr;
+    u16 array_ind = 0;
+    u16 value_shift = 0;
+    reg_var_t value = {0};
+    sofi_prop_base_t* reg = NULL;
+    sofi_prop_mdb_t* mdb_prop = NULL;
+    // Vars for debug
+    u16 temp = 0;
+    int err = 0;
+
     // Add number of data bytes to response
     out_buf[ptr++] = packet->reg_nmb*2;
     // Add data bytes to response
     for(u8 i = 0; i < packet->reg_nmb; i++){
-        data = reg_mdb_read(addr++);
+        // Get register by ModBUS address
+        reg = reg_mdb_get_by_addr(addr);
+        mdb_prop = (sofi_prop_mdb_t*)reg_base_get_prop(reg, SOFI_PROP_MDB);
+        u16 reg_size = reg_base_get_byte_size(reg);
+        if(reg != NULL){
+            // Find array index and value shift for regs_size > 2
+            temp = (addr - mdb_prop->mdb_addr);
+            array_ind = (addr - mdb_prop->mdb_addr) * MDB_REG_BYTE_SIZE / reg_size;
+            value_shift = (addr - mdb_prop->mdb_addr) % (reg_size / MDB_REG_BYTE_SIZE) * MDB_REG_BIT_SIZE;
+            err = reg_base_read(reg, array_ind, &value);  // @todo: check errors
+            switch(reg_size){
+            case 1:
+                data = value.var.var_u16;
+                // Read neaxt element
+                err = reg_base_read(reg, array_ind + 1, &value);  // @todo: check errors
+                data += (u16)(value.var.var_u16 << 8);
+                break;
+            case 2:
+                data = value.var.var_u16;
+                break;
+            case 4:
+                data = (u16)(value.var.var_u32 >> value_shift);
+                break;
+            case 8:
+                data = (u16)(value.var.var_u64 >> value_shift);
+                break;
+            default:
+                data = 0;
+            }
+        }else{
+            // If register with given address does not exist
+            data = 0;
+        }
+        // Copy data to out buffer
         out_buf[ptr++] = (u8)(data >> 8);
         out_buf[ptr++] = (u8)data;
+        // Increase ModBUS register address
+        addr++;
     }
     *out_len = ptr;
 

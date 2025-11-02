@@ -29,6 +29,7 @@ extern "C" {
 #define MDB_ASCII_END       0x0A    // End-byte of ModBUS-ASCII packet
 #define MDB_FNCT_ERR_FLAG   0x80    // Error flag added into function code
 #define MDB_REG_BYTE_SIZE   2       // One ModBUS register is 2 bytes
+#define MDB_REG_BIT_SIZE    16      // One ModBUS register is 16 bits
 
 //--------Macro--------
 
