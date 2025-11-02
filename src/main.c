@@ -222,7 +222,7 @@ void main_task(void const * argument){
         // Checks other tasks state and restart them if error or suspend
 
         // Debug functions
-        sofi_prop_base_t* reg = {0};
+        /*sofi_prop_base_t* reg = {0};
         reg = reg_base_get_by_name("device_name");
         if(reg == NULL){
             debug_msg(__func__, DBG_MSG_WARN, "register not found");
@@ -242,7 +242,7 @@ void main_task(void const * argument){
         }
         var.var.var_u8 = 8;
         var.var_type = VAR_TYPE_U8;
-        reg_base_write(reg_base_get_by_name("uniq_id"), 2, &var);
+        reg_base_write(reg_base_get_by_name("uniq_id"), 2, &var);*/
 
 
 

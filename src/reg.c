@@ -94,6 +94,15 @@ reg_var_t reg_base_read(sofi_prop_base_t* reg, u16 array_ind){
 
 u16 reg_mdb_read_reg(u16 addr){
     u16 result = 0;
+    u16* value_ptr = 0;
+    sofi_prop_base_t* reg = reg_mdb_get_by_addr(addr);
+    sofi_prop_mdb_t* mdb_prop = (sofi_prop_mdb_t*)reg_base_get_prop(reg, SOFI_PROP_MDB);
+    if(reg != NULL){
+        value_ptr = (u16*)reg->p_value;
+        // Find array element
+        value_ptr += (addr - mdb_prop->mdb_addr);
+        result = *value_ptr;
+    }
 
     return result;
 }

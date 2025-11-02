@@ -195,14 +195,15 @@ static int mdb_sand_read_reg(mdb_packet_t* packet, u8* out_buf, u16* out_len){
 
     // For debug only
     u16 ptr = 0;
-    u16 data = 100;
+    u16 data = 0;
+    u16 addr = packet->reg_addr;
     // Add number of data bytes to response
     out_buf[ptr++] = packet->reg_nmb*2;
     // Add data bytes to response
     for(u8 i = 0; i < packet->reg_nmb; i++){
-        out_buf[ptr++] = (u8)data >> 8;
+        data = reg_mdb_read_reg(addr++);
+        out_buf[ptr++] = (u8)(data >> 8);
         out_buf[ptr++] = (u8)data;
-        data++;
     }
     *out_len = ptr;
 
