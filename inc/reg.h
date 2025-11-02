@@ -32,11 +32,30 @@ extern "C" {
 
 //--------Typedefs-------
 
+typedef union{
+    u8      var_u8;
+    u16     var_u16;
+    u32     var_u32;
+    u64     var_u64;
+    s8      var_s8;
+    s16     var_s16;
+    s32     var_s32;
+    s64     var_s64;
+    float   var_float;
+    double  var_double;
+    char    var_char;
+}reg_var_union_t;
+
+typedef struct{
+    reg_var_union_t  var;
+    sofi_var_t var_type;
+}reg_var_t;
+
 //-------External variables------
 
 //-------Function prototypes----------
 
-//=======Regs search functions=======
+//=======Regs prop_base functions=======
 
 /**
  * @brief Find register by name
@@ -45,7 +64,7 @@ extern "C" {
  * @return  - pointer to reg,\n
  *          NULL - register not found,\n
  */
-sofi_prop_base_t* reg_get_by_name(char* reg_name);
+sofi_prop_base_t* reg_base_get_by_name(char* reg_name);
 
 /**
  * @brief Find register by index
@@ -54,7 +73,89 @@ sofi_prop_base_t* reg_get_by_name(char* reg_name);
  * @return  - pointer to reg,\n
  *          NULL - register not found,\n
  */
-sofi_prop_base_t* reg_get_by_ind(u16 ind);
+sofi_prop_base_t* reg_base_get_by_ind(u16 ind);
+
+/**
+ * @brief Write new value to register (register array)
+ * @param reg - pointer to register
+ * @param array_ind - register array index (set 1 if register isn't array)
+ * @param value - pointer to value
+ * @ingroup reg
+ * @return  0 - ok,\n
+ *          -1 - register read only,\n
+ *          -2 - access blocked,\n
+ *          -3 - array index out of lenght,\n
+ *          -4 - value type mismatch,\n
+ */
+int reg_base_write(sofi_prop_base_t* reg, u16 array_ind, reg_var_t* value);
+
+/**
+ * @brief Read register value (register array)
+ * @param reg - pointer to register
+ * @param array_ind - register array index (set 1 if register isn't array)
+ * @ingroup reg
+ * @return  reg_var_t struct with result,\n
+ *          reg.var = 0 - if access blocked,\n
+ */
+reg_var_t reg_base_read(sofi_prop_base_t* reg, u16 array_ind);
+
+//=======Regs prop_mdb functions=======
+
+/**
+ * @brief Read register value by address
+ * @param addr - address for read
+ * @ingroup reg
+ * @return  readed value,\n
+ *          0 - if access disabled,\n
+ */
+u16 reg_mdb_read_reg(u16 addr);
+
+/**
+ * @brief Read array of register values by start address
+ * @param addr - start address for read
+ * @param len - lenght for read in u16
+ * @param buf - pointer to buffer for reading
+ * @ingroup reg
+ * @return  0 - ok,\n
+ *          negative value if error,\n
+ */
+int reg_mdb_read_array(u16 addr, u16 len, u16* buf);
+
+/**
+ * @brief Read register value by address
+ * @param addr - address for read
+ * @param value - value for write
+ * @ingroup reg
+ * @return  0 - ok,\n
+ *          negative value if error,\n
+ */
+int reg_mdb_write_reg(u16 addr, u16 value);
+
+/**
+ * @brief Write to array of register by start address
+ * @param addr - start address for write
+ * @param len - lenght for write array in u16
+ * @param buf - pointer to buffer with write data
+ * @ingroup reg
+ * @return  0 - ok,\n
+ *          negative value if error,\n
+ */
+int reg_mdb_write_array(u16 addr, u16 len, u16* buf);
+
+//=======Regs prop_range functions=======
+
+//=======Regs prop_save functions=======
+
+//=======Regs prop_access functions=======
+
+/**
+ * @brief Check register access
+ * @param reg - pointer to reg
+ * @ingroup reg
+ * @return  0 - access enable,\n
+ *          1 - access blocked,\n
+ */
+int reg_access_blocked(sofi_prop_base_t* reg);
 
 #ifdef __cplusplus
 }

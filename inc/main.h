@@ -63,6 +63,7 @@
 #include "debug.h"
 #include "sofi_reg.h"
 #include "us_tim.h"
+#include "build_info.h"
 
 #if MDB_EN
     #include "mdb_sand.h"
