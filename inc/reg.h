@@ -82,10 +82,11 @@ sofi_prop_base_t* reg_base_get_by_ind(u16 ind);
  * @param value - pointer to value
  * @ingroup reg
  * @return  0 - ok,\n
- *          -1 - register read only,\n
+ *          -1 - reg is NULL,\n
  *          -2 - access blocked,\n
  *          -3 - array index out of lenght,\n
  *          -4 - value type mismatch,\n
+ *          -5 - register read only,\n
  */
 int reg_base_write(sofi_prop_base_t* reg, u16 array_ind, reg_var_t* value);
 
@@ -93,11 +94,21 @@ int reg_base_write(sofi_prop_base_t* reg, u16 array_ind, reg_var_t* value);
  * @brief Read register value (register array)
  * @param reg - pointer to register
  * @param array_ind - register array index (set 1 if register isn't array)
+ * @param value - pointer to value
  * @ingroup reg
- * @return  reg_var_t struct with result,\n
- *          reg.var = 0 - if access blocked,\n
+ * @return  0 - ok,\n
+ *          -1 - reg is NULL,\n
+ *          -2 - access blocked,\n
+ *          -3 - array index out of lenght,\n
+ *
+ * @note
+ * This function set only necessary parameters of value struct.
+ * Please reset this struct before use.
+ *
+ * @note
+ * Value type after reading sets to the same register type
  */
-reg_var_t reg_base_read(sofi_prop_base_t* reg, u16 array_ind);
+int reg_base_read(sofi_prop_base_t* reg, u16 array_ind, reg_var_t* value);
 
 //=======Regs prop_mdb functions=======
 

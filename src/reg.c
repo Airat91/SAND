@@ -53,42 +53,55 @@ sofi_prop_base_t* reg_base_get_by_ind(u16 ind){
 
 int reg_base_write(sofi_prop_base_t* reg, u16 array_ind, reg_var_t* value){
     int result = 0;
-    u8* value_ptr = reg->p_value;
 
-    if(reg->read_only == 1){
+    if(reg == NULL){
         result = -1;
-    }
-    if(reg_access_blocked(reg)){
-        result = -2;
-    }
-    if(result == 0){
-        if(array_ind <= reg->array_len){
-            value_ptr += array_ind * reg_get_byte_num(reg->type);
-            if(value->var_type == reg->type){
-                *value_ptr = value->var.var_u8;
+    }else{
+        u8* value_ptr = reg->p_value;
+
+        if(reg->read_only == 1){
+            result = -5;
+        }
+        if(reg_access_blocked(reg)){
+            result = -2;
+        }
+        if(result == 0){
+            if(array_ind <= reg->array_len){
+                value_ptr += array_ind * reg_get_byte_num(reg->type);
+                if(value->var_type == reg->type){
+                    *value_ptr = value->var.var_u8;
+                }else{
+                    result = -4;
+                }
             }else{
-                result = -4;
+                result = -3;
             }
-        }else{
-            result = -3;
         }
     }
 
     return result;
 }
 
-reg_var_t reg_base_read(sofi_prop_base_t* reg, u16 array_ind){
-    reg_var_t var = {0};
-    u16 byte_size = reg_get_byte_num(reg->type);
-    var.var_type = reg->type;
-    if(reg_access_blocked(reg) == 0){
-        if(array_ind <= reg->array_len){
-            //value_ptr += array_ind * reg_get_byte_num(reg->type);
-            memcpy(&var.var.var_u8, reg->p_value + array_ind * byte_size, byte_size);
-            //var.var.var_u8 = *value_ptr;
+int reg_base_read(sofi_prop_base_t* reg, u16 array_ind, reg_var_t* value){
+    int result = 0;
+
+    if(reg == NULL){
+        result = -1;
+    }else{
+        u16 byte_size = reg_get_byte_num(reg->type);
+        if(reg_access_blocked(reg) == 0){
+            if(array_ind <= reg->array_len){
+                memcpy(&value->var.var_u8, reg->p_value + array_ind * byte_size, byte_size);
+                value->var_type = reg->type;
+            }else{
+                result = -3;
+            }
+        }else{
+            result = -2;
         }
     }
-    return var;
+
+    return result;
 }
 
 //=======Regs prop_mdb functions=======
@@ -96,6 +109,7 @@ reg_var_t reg_base_read(sofi_prop_base_t* reg, u16 array_ind){
 u16 reg_mdb_read(u16 addr){
     u16 result = 0;
     u16 temp = 0;
+    int err = 0;
 
     u16 array_ind = 0;
     u16 value_shift = 0;
@@ -109,12 +123,12 @@ u16 reg_mdb_read(u16 addr){
         temp = (addr - mdb_prop->mdb_addr);
         array_ind = (addr - mdb_prop->mdb_addr)*2/reg_size;
         value_shift = (addr - mdb_prop->mdb_addr)%(reg_size/2);
-        value = reg_base_read(reg, array_ind);
+        err = reg_base_read(reg, array_ind, &value);  // @todo: check errors
         switch(reg_size){
         case 1:
             result = value.var.var_u16;
             // Read neaxt element
-            value = reg_base_read(reg, array_ind + 1);
+            err = reg_base_read(reg, array_ind + 1, &value);  // @todo: check errors
             result += (u16)(value.var.var_u16 << 8);
             break;
         case 2:
