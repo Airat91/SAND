@@ -123,6 +123,7 @@ int mdb_sand_packet_handle(mdb_sand_pcb_t* mdb_sand_pcb, mdb_packet_t* packet){
             break;
         case MDB_FNCT_RD_MUL_HOLD:
             result = mdb_sand_read_mul_hold(packet, resp_data, &resp_len);
+            break;
         case MDB_FNCT_RD_MUL_INPUT:
             result = mdb_sand_read_mul_input(packet, resp_data, &resp_len);
             break;
