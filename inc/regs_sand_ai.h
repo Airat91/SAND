@@ -23,20 +23,22 @@
 
 //--------Defines--------
 
+#define DEVICE_NAME                 "SAND-AI"
+
 //#generator_message{"msg":"sofi_struct_define", "action":"insert_start"}
 // This part of file generated automatically, don't change it
-#define OS_STRUCT_SIZE           	75
-#define TIME_STRUCT_SIZE         	14
-#define DEVICE_STRUCT_SIZE       	98
-#define MODBUS_STRUCT_SIZE       	1
+#define OS_STRUCT_SIZE           	132
+#define TIME_STRUCT_SIZE         	20
+#define DEVICE_STRUCT_SIZE       	100
+#define MODBUS_STRUCT_SIZE       	2
 #define SERVICE_STRUCT_SIZE      	16
 #define TEST_STRUCT_SIZE         	860
 
-#define SOFI_PROP_BASE_REG_NUM   	43
-#define SOFI_PROP_MDB_REG_NUM    	43
+#define SOFI_PROP_BASE_REG_NUM   	44
+#define SOFI_PROP_MDB_REG_NUM    	44
 #define SOFI_PROP_RANGE_REG_NUM  	0
-#define SOFI_PROP_SAVE_REG_NUM   	9
-#define SOFI_PROP_ACCESS_REG_NUM 	1
+#define SOFI_PROP_SAVE_REG_NUM   	8
+#define SOFI_PROP_ACCESS_REG_NUM 	0
 //#generator_message{"msg":"sofi_struct_define", "action":"insert_end"}
 
 //--------Macro--------
@@ -47,16 +49,17 @@
 // This part of file generated automatically, don't change it
 typedef union{
 	struct MCU_PACK{
-		u8     os_version[4];     // "Software version"
+		u16    os_version[4];     // "Software version"
 		u16    num_of_vars;       // "Total vars in project"
-		u8     lang;              // "Interface language"
+		u16    lang;              // "Interface language"
 		char   build[40];         // "Build info"
+		char   build_date[40];    // "Date of SW building"
 		u16    command;           // "Command register"
 		u16    reset_num;         // "Number of resets"
 		u32    runtime;           // "Runtime from last reset (sec)"
 		u32    runtime_total;     // "Total runtime (sec)"
 		float  cpu_load;          // "CPU load (%)"
-		u8     uniq_id[12];       // "Unique ID number"
+		u16    uniq_id[12];       // "Unique ID number"
 	}vars;
 	u8 bytes[OS_STRUCT_SIZE];
 }os_struct;
@@ -64,23 +67,23 @@ typedef union{
 typedef union{
 	struct MCU_PACK{
 		u16    year;              // "Year"
-		u8     month;             // "Month [1..12]"
-		u8     day;               // "Day [1..31]"
-		u8     hour;              // "Hour [0..23]"
-		u8     minute;            // "Minute [0..59]"
-		u8     sec;               // "Sec [0..59]"
+		u16    month;             // "Month [1..12]"
+		u16    day;               // "Day [1..31]"
+		u16    hour;              // "Hour [0..23]"
+		u16    minute;            // "Minute [0..59]"
+		u16    sec;               // "Sec [0..59]"
 		u16    msec;              // "Msec [0..999]"
 		u32    unix;              // "Unix timestamp"
-		s8     utc;               // "Utc [-12..14]"
+		s16    utc;               // "Utc [-12..14]"
 	}vars;
 	u8 bytes[TIME_STRUCT_SIZE];
 }time_struct;
 
 typedef union{
 	struct MCU_PACK{
-		u8     device_type;       // "Device type code"
+		u16    device_type;       // "Device type code"
 		char   device_name[40];   // "Device name"
-		u8     board_ver;         // "Hardware version"
+		u16    board_ver;         // "Hardware version"
 		u32    serial;            // "Serial number"
 		char   configuration[40]; // "Hardware configuration"
 		float  temperature;       // "Temperature (°C)"
@@ -92,7 +95,7 @@ typedef union{
 
 typedef union{
 	struct MCU_PACK{
-		u8     addr;              // "Device ModBUS address"
+		u16    addr;              // "Device ModBUS address"
 	}vars;
 	u8 bytes[MODBUS_STRUCT_SIZE];
 }modbus_struct;
