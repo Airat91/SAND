@@ -43,8 +43,12 @@ static int mdb_sand_read_fifo(mdb_packet_t* packet, u8* out_buf, u16* out_len);
 
 void mdb_sand_task(void const * argument){
     (void)argument;
+    // Init ModBUS process control block
+    mdb_sand_init(&mdb_sand_pcb);
+
     uint32_t last_wake_time = osKernelSysTick();
     while(1){
+        // Main loop
 
         osDelayUntil(&last_wake_time, MDB_TASK_PERIOD);
     }
@@ -401,7 +405,7 @@ static int mdb_sand_write_sin_coil(mdb_packet_t* packet, u8* out_buf, u16* out_l
 }
 
 /**
- * @brief Stub function
+ * @brief Write single register
  * @param packet - pointer to input packet
  * @param out_buf - pointer to output buffer
  * @param out_len - pointer to output buffer lenght
@@ -410,8 +414,62 @@ static int mdb_sand_write_sin_coil(mdb_packet_t* packet, u8* out_buf, u16* out_l
  */
 static int mdb_sand_write_sin_hold(mdb_packet_t* packet, u8* out_buf, u16* out_len){
     int result = 0;
+    // Vars for use
+    u16 ptr = 0;
+    u16 addr = packet->reg_addr;
+    u16 addr_end = addr + 1;
+    reg_var_t value = {0};
+    sofi_prop_base_t* reg = NULL;
+    sofi_prop_mdb_t* mdb_prop = NULL;
+    u16 array_ind = 0;
+    u16 reg_size = 0;
+    // Vars for debug
+    int err = 0;
 
-    result = mdb_sand_unsupport_funct(packet, out_buf, out_len);
+    // Move packet data pointer
+    packet->data -= 2;
+
+    // Get register by ModBUS address
+    reg = reg_mdb_get_by_addr(addr);
+    if(reg != NULL){
+        mdb_prop = (sofi_prop_mdb_t*)reg_base_get_prop(reg, SOFI_PROP_MDB);
+        reg_size = reg_base_get_byte_size(reg);
+        array_ind = (addr - mdb_prop->mdb_addr) * MDB_REG_BYTE_SIZE / reg_size;
+        if((addr + reg_size / MDB_REG_BYTE_SIZE) <= addr_end){
+            // Reset value struct
+            value.var.var_u64 = 0;
+            value.var_type = reg->type;
+            switch(reg_size){
+            case 1:
+                // If register size is 1 byte first write next index register
+                value.var.var_u8 = packet->data[ptr++];
+                err = reg_base_write(reg, array_ind + 1, &value);
+                value.var.var_u8 = packet->data[ptr++];
+                break;
+            case 2:
+                value.var.var_u16 += ((u16)packet->data[ptr++] << 8);
+                value.var.var_u16 += ((u16)packet->data[ptr++] << 0);
+                break;
+            default:
+                break;
+            }
+            err = reg_base_write(reg, array_ind, &value);
+        }else{
+            // Don't write a part of register. Get out of handling cycle
+        }
+    }else{
+        // Register doesn't exist
+    }
+
+    // Make response
+    // Copy reg address to response
+    ptr = 0;
+    out_buf[ptr++] = (u8)(packet->reg_addr >> 8);
+    out_buf[ptr++] = (u8)packet->reg_addr;
+    // Copy reg value to response
+    out_buf[ptr++] = packet->data[0];
+    out_buf[ptr++] = packet->data[1];
+    *out_len = ptr;
 
     return result;
 }
@@ -497,7 +555,7 @@ static int mdb_sand_write_mul_coil(mdb_packet_t* packet, u8* out_buf, u16* out_l
 }
 
 /**
- * @brief Write registers value
+ * @brief Write array of registers
  * @param packet - pointer to input packet
  * @param out_buf - pointer to response data buffer
  * @param out_len - pointer to response data lenght
