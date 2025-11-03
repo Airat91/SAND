@@ -91,6 +91,7 @@ static void main_IWDG_Init(void);
 static void main_gpio_init(void);
 static void main_IWDG_refresh(void);
 static int  main_leds_handle(u32 call_period);
+static int main_write_device_info(void);
 
 static void RTC_Init(void);
 static void tim2_init(void);
@@ -199,21 +200,7 @@ void main_task(void const * argument){
     uint32_t last_wake_time = osKernelSysTick();
     u32 tick = 0;
     debug_msg(__func__, DBG_MSG_INFO, "MAIN_task started");
-    sprintf(os.vars.build, BUILD_INFO);
-    for(u8 i = 0; i < 20; i++){
-        test.vars.arr_u8[i]     = (u8)(i+1);
-        test.vars.arr_s8[i]     = (s8)(i+1);
-        test.vars.arr_u16[i]    = (u16)(i+1+0xAB00);
-        test.vars.arr_s16[i]    = (s16)(i+1+0x7B00);
-        test.vars.arr_u32[i]    = (u32)(i+1+0xABCDEF00);
-        test.vars.arr_s32[i]    = (s32)(i+1+0x7BCDEF00);
-        test.vars.arr_u64[i]    = (u64)(i+1+0xABCDEF00ABCDEF00);
-        test.vars.arr_s64[i]    = (s64)(i+1+0x7BCDEF00ABCDEF00);
-        test.vars.arr_float[i]  = (float)((i+1)*10.01f);
-        test.vars.arr_double[i] = (double)((i+1)*10.01f);
-        test.vars.arr_char[i]   = (char)(i + 0x30);
-    }
-
+    main_write_device_info();
     while(1){
         // Every 1 second
         if(((tick)%(1000/MAIN_TASK_PERIOD))==0u){
@@ -1418,5 +1405,26 @@ static int main_leds_handle(u32 call_period){
         HAL_GPIO_WritePin(LED_CON_R_PORT, LED_CON_R_PIN, GPIO_PIN_RESET);
     }
 #endif // CAN_EN
+    return result;
+}
+
+/**
+ * @brief Write information about device into global registers
+ * @ingroup main
+ * @return 0
+ */
+static int main_write_device_info(void){
+    int result = 0;
+
+    u16 temp[3] = BUILD_VERSION;
+    memcpy(&os.vars.os_version, &temp, 6);
+    os.vars.num_of_vars = SOFI_PROP_BASE_REG_NUM;
+    sprintf(os.vars.build, BUILD_INFO);
+    sprintf(os.vars.build_date, BUILD_DATE);
+    os.vars.uniq_id[0] = 0; // Read data from Flash
+
+    device.vars.device_type = DEVICE_TYPE;
+    sprintf(device.vars.device_name, DEVICE_NAME);
+
     return result;
 }
