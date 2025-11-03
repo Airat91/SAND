@@ -178,6 +178,7 @@ static int mdb_function_correct(u8 code){
     case MDB_FNCT_RD_EVENT_LOG:
     case MDB_FNCT_WR_MUL_COIL:
     case MDB_FNCT_WR_MUL_HOLD:
+    case MDB_FNCT_RD_SLAVE_ID:
     case MDB_FNCT_RD_FILE:
     case MDB_FNCT_WR_FILE:
     case MDB_FNCT_WR_MASK_REG:

@@ -18,6 +18,7 @@ static const mdb_function_t mdb_sand_suprt_fnct_list[MDB_SUPRT_FNCT_NMB] = {
     MDB_FNCT_RD_MUL_HOLD,
     MDB_FNCT_RD_MUL_INPUT,
     MDB_FNCT_WR_MUL_HOLD,
+    MDB_FNCT_RD_SLAVE_ID,
 };
 
 //-------Static functions declaration-----------
@@ -26,6 +27,7 @@ static void mdb_sand_gpio_init(void);
 static void mdb_sand_gpio_deinit(void);
 static int mdb_sand_read_reg(mdb_packet_t* packet, u8* out_buf, u16* out_len);
 static int mdb_sand_write_reg(mdb_packet_t* packet, u8* out_buf, u16* out_len);
+static int mdb_sand_read_id(mdb_packet_t* packet, u8* out_buf, u16* out_len);
 static int mdb_sand_unsupport_funct(mdb_packet_t* packet, u8* out_buf, u16* out_len);
 
 //-------Functions----------
@@ -110,6 +112,9 @@ int mdb_sand_packet_handle(mdb_sand_pcb_t* mdb_sand_pcb, mdb_packet_t* packet){
             break;
         case MDB_FNCT_WR_MUL_HOLD:
             result = mdb_sand_write_reg(packet, resp_data, &resp_len);
+            break;
+        case MDB_FNCT_RD_SLAVE_ID:
+            result = mdb_sand_read_id(packet, resp_data, &resp_len);
             break;
         default:
             result = mdb_sand_unsupport_funct(packet, resp_data, &resp_len);
@@ -366,6 +371,38 @@ static int mdb_sand_write_reg(mdb_packet_t* packet, u8* out_buf, u16* out_len){
     out_buf[ptr++] = (u8)(packet->reg_nmb >> 8);
     out_buf[ptr++] = (u8)packet->reg_nmb;
     *out_len = ptr;
+
+    return result;
+}
+
+/**
+ * @brief Read slave ID
+ * @param packet - pointer to input packet
+ * @param out_buf - pointer to output buffer
+ * @param out_len - pointer to output buffer lenght
+ * @ingroup mdb
+ * @return 0
+ *
+ * @details
+ * Read parameters of device:
+ * - Device type code
+ * - Device name
+ * - Board version
+ * - Serial number
+ * - Hardware configuration
+ */
+static int mdb_sand_read_id(mdb_packet_t* packet, u8* out_buf, u16* out_len){
+    int result = 0;
+    u16 ptr = 0;
+
+    // Make response
+    out_buf++;
+    *out_len = (u16)sprintf((char*)out_buf, "Device code: %d\nDevice name: %s\nBorad version: "
+                "%d\nSerial number: %ld\nHardware: %s", device.vars.device_type, device.vars.device_name,
+                device.vars.board_ver, device.vars.serial, device.vars.configuration);
+    *out_len += 1;
+    out_buf--;
+    *out_buf = *out_len - 1;
 
     return result;
 }

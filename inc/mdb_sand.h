@@ -27,7 +27,7 @@ extern "C" {
 
 #define MDB_TASK_PERIOD      10
 #define MDB_INIT_TIMEOUT_MS  2000
-#define MDB_SUPRT_FNCT_NMB   3
+#define MDB_SUPRT_FNCT_NMB   4
 
 //--------Macro--------
 

@@ -41,8 +41,8 @@ typedef enum{
     MDB_FNCT_RD_MUL_DISCR   = 2,    // Read Discrete Inputs
     MDB_FNCT_RD_MUL_HOLD    = 3,    // Read Holding Registers
     MDB_FNCT_RD_MUL_INPUT   = 4,    // Read Input Registers
-    MDB_FNCT_WR_SIN_COIL    = 5,    // Force Single Coil
-    MDB_FNCT_WR_SIN_HOLD    = 6,    // Preset Single Register
+    MDB_FNCT_WR_SIN_COIL    = 5,    // Write Single Coil
+    MDB_FNCT_WR_SIN_HOLD    = 6,    // Write Single Register
     MDB_FNCT_RD_EXCP_STAT   = 7,    // Read Exception Status
     MDB_FNCT_DIAGNOSTIC     = 8,    // Diagnostic
 
@@ -51,10 +51,10 @@ typedef enum{
 
     MDB_FNCT_WR_MUL_COIL    = 15,   // Force Multiple Coils
     MDB_FNCT_WR_MUL_HOLD    = 16,   // Preset Multiple Registers
-    MDB_FNCT_RD_SLAVE_ID    = 17,   // Report Slave ID
+    MDB_FNCT_RD_SLAVE_ID    = 17,   // Read Slave ID
 
-    MDB_FNCT_RD_FILE        = 20,   // Read File Record
-    MDB_FNCT_WR_FILE        = 21,   // Write File Record
+    MDB_FNCT_RD_FILE        = 20,   // Read File
+    MDB_FNCT_WR_FILE        = 21,   // Write File
     MDB_FNCT_WR_MASK_REG    = 22,   // Mask Write Register
     MDB_FNCT_RD_WR_MUL_REGS = 23,   // Read/Write Multiple registers
     MDB_FNCT_RD_FIFO        = 24,   // Read FIFO Queue
