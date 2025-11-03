@@ -14,21 +14,30 @@ mdb_sand_pcb_t mdb_sand_pcb = {0};
 
 //-------Static variables------
 
-static const mdb_function_t mdb_sand_suprt_fnct_list[MDB_SUPRT_FNCT_NMB] = {
-    MDB_FNCT_RD_MUL_HOLD,
-    MDB_FNCT_RD_MUL_INPUT,
-    MDB_FNCT_WR_MUL_HOLD,
-    MDB_FNCT_RD_SLAVE_ID,
-};
-
 //-------Static functions declaration-----------
 
 static void mdb_sand_gpio_init(void);
 static void mdb_sand_gpio_deinit(void);
-static int mdb_sand_read_reg(mdb_packet_t* packet, u8* out_buf, u16* out_len);
-static int mdb_sand_write_reg(mdb_packet_t* packet, u8* out_buf, u16* out_len);
-static int mdb_sand_read_id(mdb_packet_t* packet, u8* out_buf, u16* out_len);
 static int mdb_sand_unsupport_funct(mdb_packet_t* packet, u8* out_buf, u16* out_len);
+
+static int mdb_sand_read_mul_coil(mdb_packet_t* packet, u8* out_buf, u16* out_len);
+static int mdb_sand_read_mul_discr(mdb_packet_t* packet, u8* out_buf, u16* out_len);
+static int mdb_sand_read_mul_hold(mdb_packet_t* packet, u8* out_buf, u16* out_len);
+static int mdb_sand_read_mul_input(mdb_packet_t* packet, u8* out_buf, u16* out_len);
+static int mdb_sand_write_sin_coil(mdb_packet_t* packet, u8* out_buf, u16* out_len);
+static int mdb_sand_write_sin_hold(mdb_packet_t* packet, u8* out_buf, u16* out_len);
+static int mdb_sand_read_except(mdb_packet_t* packet, u8* out_buf, u16* out_len);
+static int mdb_sand_diagnostic(mdb_packet_t* packet, u8* out_buf, u16* out_len);
+static int mdb_sand_read_evnt_cnt(mdb_packet_t* packet, u8* out_buf, u16* out_len);
+static int mdb_sand_read_evnt_log(mdb_packet_t* packet, u8* out_buf, u16* out_len);
+static int mdb_sand_write_mul_coil(mdb_packet_t* packet, u8* out_buf, u16* out_len);
+static int mdb_sand_write_mul_hold(mdb_packet_t* packet, u8* out_buf, u16* out_len);
+static int mdb_sand_read_slave_id(mdb_packet_t* packet, u8* out_buf, u16* out_len);
+static int mdb_sand_read_file(mdb_packet_t* packet, u8* out_buf, u16* out_len);
+static int mdb_sand_write_file(mdb_packet_t* packet, u8* out_buf, u16* out_len);
+static int mdb_sand_write_mask_reg(mdb_packet_t* packet, u8* out_buf, u16* out_len);
+static int mdb_sand_rd_wr_mul_regs(mdb_packet_t* packet, u8* out_buf, u16* out_len);
+static int mdb_sand_read_fifo(mdb_packet_t* packet, u8* out_buf, u16* out_len);
 
 //-------Functions----------
 
@@ -106,15 +115,58 @@ int mdb_sand_packet_handle(mdb_sand_pcb_t* mdb_sand_pcb, mdb_packet_t* packet){
         result = -1;
     }else{
         switch(packet->function){
+        case MDB_FNCT_RD_MUL_COIL:
+            result = mdb_sand_read_mul_coil(packet, resp_data, &resp_len);
+            break;
+        case MDB_FNCT_RD_MUL_DISCR:
+            result = mdb_sand_read_mul_discr(packet, resp_data, &resp_len);
+            break;
         case MDB_FNCT_RD_MUL_HOLD:
+            result = mdb_sand_read_mul_hold(packet, resp_data, &resp_len);
         case MDB_FNCT_RD_MUL_INPUT:
-            result = mdb_sand_read_reg(packet, resp_data, &resp_len);
+            result = mdb_sand_read_mul_input(packet, resp_data, &resp_len);
+            break;
+        case MDB_FNCT_WR_SIN_COIL:
+            result = mdb_sand_write_sin_coil(packet, resp_data, &resp_len);
+            break;
+        case MDB_FNCT_WR_SIN_HOLD:
+            result = mdb_sand_write_sin_hold(packet, resp_data, &resp_len);
+            break;
+        case MDB_FNCT_RD_EXCP_STAT:
+            result = mdb_sand_read_except(packet, resp_data, &resp_len);
+            break;
+        case MDB_FNCT_DIAGNOSTIC:
+            result = mdb_sand_diagnostic(packet, resp_data, &resp_len);
+            break;
+        case MDB_FNCT_RD_EVENT_CNT:
+            result = mdb_sand_read_evnt_cnt(packet, resp_data, &resp_len);
+            break;
+        case MDB_FNCT_RD_EVENT_LOG:
+            result = mdb_sand_read_evnt_log(packet, resp_data, &resp_len);
+            break;
+        case MDB_FNCT_WR_MUL_COIL:
+            result = mdb_sand_write_mul_coil(packet, resp_data, &resp_len);
             break;
         case MDB_FNCT_WR_MUL_HOLD:
-            result = mdb_sand_write_reg(packet, resp_data, &resp_len);
+            result = mdb_sand_write_mul_hold(packet, resp_data, &resp_len);
             break;
         case MDB_FNCT_RD_SLAVE_ID:
-            result = mdb_sand_read_id(packet, resp_data, &resp_len);
+            result = mdb_sand_read_slave_id(packet, resp_data, &resp_len);
+            break;
+        case MDB_FNCT_RD_FILE:
+            result = mdb_sand_read_file(packet, resp_data, &resp_len);
+            break;
+        case MDB_FNCT_WR_FILE:
+            result = mdb_sand_write_file(packet, resp_data, &resp_len);
+            break;
+        case MDB_FNCT_WR_MASK_REG:
+            result = mdb_sand_write_mask_reg(packet, resp_data, &resp_len);
+            break;
+        case MDB_FNCT_RD_WR_MUL_REGS:
+            result = mdb_sand_rd_wr_mul_regs(packet, resp_data, &resp_len);
+            break;
+        case MDB_FNCT_RD_FIFO:
+            result = mdb_sand_read_fifo(packet, resp_data, &resp_len);
             break;
         default:
             result = mdb_sand_unsupport_funct(packet, resp_data, &resp_len);
@@ -186,6 +238,73 @@ static void mdb_sand_gpio_deinit(void){
 //=======ModBUS functions realisation=======
 
 /**
+ * @brief Write error value to output buffer
+ * @param packet - pointer to input packet
+ * @param out_buf - pointer to output buffer
+ * @param out_len - pointer to output buffer lenght
+ * @ingroup mdb
+ * @return 0
+ */
+static int mdb_sand_unsupport_funct(mdb_packet_t* packet, u8* out_buf, u16* out_len){
+    int result = 0;
+
+    packet->function |= MDB_FNCT_ERR_FLAG;
+    out_buf[0] = MDB_ERR_FUNCT;
+    *out_len = 1;
+
+    return result;
+}
+
+/**
+ * @brief Stub function
+ * @param packet - pointer to input packet
+ * @param out_buf - pointer to output buffer
+ * @param out_len - pointer to output buffer lenght
+ * @ingroup mdb
+ * @return -1 for handle like unsupport function
+ */
+static int mdb_sand_read_mul_coil(mdb_packet_t* packet, u8* out_buf, u16* out_len){
+    int result = 0;
+
+    result = mdb_sand_unsupport_funct(packet, out_buf, out_len);
+
+    return result;
+}
+
+/**
+ * @brief Stub function
+ * @param packet - pointer to input packet
+ * @param out_buf - pointer to output buffer
+ * @param out_len - pointer to output buffer lenght
+ * @ingroup mdb
+ * @return -1 for handle like unsupport function
+ */
+static int mdb_sand_read_mul_discr(mdb_packet_t* packet, u8* out_buf, u16* out_len){
+    int result = 0;
+
+    result = mdb_sand_unsupport_funct(packet, out_buf, out_len);
+
+    return result;
+}
+
+/**
+ * @brief Stub function
+ * @param packet - pointer to input packet
+ * @param out_buf - pointer to output buffer
+ * @param out_len - pointer to output buffer lenght
+ * @ingroup mdb
+ * @return -1 for handle like unsupport function
+ */
+static int mdb_sand_read_mul_hold(mdb_packet_t* packet, u8* out_buf, u16* out_len){
+    int result = 0;
+
+    result = mdb_sand_read_mul_input(packet, out_buf, out_len);
+
+    return result;
+}
+
+
+/**
  * @brief Read registers value
  * @param packet - pointer to input packet
  * @param out_buf - pointer to response data buffer
@@ -202,7 +321,7 @@ static void mdb_sand_gpio_deinit(void){
  *
  * @todo Check registers address available and send error code
  */
-static int mdb_sand_read_reg(mdb_packet_t* packet, u8* out_buf, u16* out_len){
+static int mdb_sand_read_mul_input(mdb_packet_t* packet, u8* out_buf, u16* out_len){
     int result = 0;
     // Vars for use
     u16 ptr = 0;
@@ -265,6 +384,118 @@ static int mdb_sand_read_reg(mdb_packet_t* packet, u8* out_buf, u16* out_len){
 }
 
 /**
+ * @brief Stub function
+ * @param packet - pointer to input packet
+ * @param out_buf - pointer to output buffer
+ * @param out_len - pointer to output buffer lenght
+ * @ingroup mdb
+ * @return -1 for handle like unsupport function
+ */
+static int mdb_sand_write_sin_coil(mdb_packet_t* packet, u8* out_buf, u16* out_len){
+    int result = 0;
+
+    result = mdb_sand_unsupport_funct(packet, out_buf, out_len);
+
+    return result;
+}
+
+/**
+ * @brief Stub function
+ * @param packet - pointer to input packet
+ * @param out_buf - pointer to output buffer
+ * @param out_len - pointer to output buffer lenght
+ * @ingroup mdb
+ * @return -1 for handle like unsupport function
+ */
+static int mdb_sand_write_sin_hold(mdb_packet_t* packet, u8* out_buf, u16* out_len){
+    int result = 0;
+
+    result = mdb_sand_unsupport_funct(packet, out_buf, out_len);
+
+    return result;
+}
+
+/**
+ * @brief Stub function
+ * @param packet - pointer to input packet
+ * @param out_buf - pointer to output buffer
+ * @param out_len - pointer to output buffer lenght
+ * @ingroup mdb
+ * @return -1 for handle like unsupport function
+ */
+static int mdb_sand_read_except(mdb_packet_t* packet, u8* out_buf, u16* out_len){
+    int result = 0;
+
+    result = mdb_sand_unsupport_funct(packet, out_buf, out_len);
+
+    return result;
+}
+
+/**
+ * @brief Stub function
+ * @param packet - pointer to input packet
+ * @param out_buf - pointer to output buffer
+ * @param out_len - pointer to output buffer lenght
+ * @ingroup mdb
+ * @return -1 for handle like unsupport function
+ */
+static int mdb_sand_diagnostic(mdb_packet_t* packet, u8* out_buf, u16* out_len){
+    int result = 0;
+
+    result = mdb_sand_unsupport_funct(packet, out_buf, out_len);
+
+    return result;
+}
+
+/**
+ * @brief Stub function
+ * @param packet - pointer to input packet
+ * @param out_buf - pointer to output buffer
+ * @param out_len - pointer to output buffer lenght
+ * @ingroup mdb
+ * @return -1 for handle like unsupport function
+ */
+static int mdb_sand_read_evnt_cnt(mdb_packet_t* packet, u8* out_buf, u16* out_len){
+    int result = 0;
+
+    result = mdb_sand_unsupport_funct(packet, out_buf, out_len);
+
+    return result;
+}
+
+/**
+ * @brief Stub function
+ * @param packet - pointer to input packet
+ * @param out_buf - pointer to output buffer
+ * @param out_len - pointer to output buffer lenght
+ * @ingroup mdb
+ * @return -1 for handle like unsupport function
+ */
+static int mdb_sand_read_evnt_log(mdb_packet_t* packet, u8* out_buf, u16* out_len){
+    int result = 0;
+
+    result = mdb_sand_unsupport_funct(packet, out_buf, out_len);
+
+    return result;
+}
+
+/**
+ * @brief Stub function
+ * @param packet - pointer to input packet
+ * @param out_buf - pointer to output buffer
+ * @param out_len - pointer to output buffer lenght
+ * @ingroup mdb
+ * @return -1 for handle like unsupport function
+ */
+static int mdb_sand_write_mul_coil(mdb_packet_t* packet, u8* out_buf, u16* out_len){
+    int result = 0;
+
+    result = mdb_sand_unsupport_funct(packet, out_buf, out_len);
+
+    return result;
+}
+
+/**
  * @brief Write registers value
  * @param packet - pointer to input packet
  * @param out_buf - pointer to response data buffer
@@ -282,7 +513,7 @@ static int mdb_sand_read_reg(mdb_packet_t* packet, u8* out_buf, u16* out_len){
  *
  * @todo Check registers address available and send error code
  */
-static int mdb_sand_write_reg(mdb_packet_t* packet, u8* out_buf, u16* out_len){
+static int mdb_sand_write_mul_hold(mdb_packet_t* packet, u8* out_buf, u16* out_len){
     int result = 0;
     // Vars for use
     u16 ptr = 0;
@@ -391,7 +622,7 @@ static int mdb_sand_write_reg(mdb_packet_t* packet, u8* out_buf, u16* out_len){
  * - Serial number
  * - Hardware configuration
  */
-static int mdb_sand_read_id(mdb_packet_t* packet, u8* out_buf, u16* out_len){
+static int mdb_sand_read_slave_id(mdb_packet_t* packet, u8* out_buf, u16* out_len){
     int result = 0;
     u16 ptr = 0;
 
@@ -408,19 +639,82 @@ static int mdb_sand_read_id(mdb_packet_t* packet, u8* out_buf, u16* out_len){
 }
 
 /**
- * @brief Write error value to output buffer
+ * @brief Stub function
  * @param packet - pointer to input packet
  * @param out_buf - pointer to output buffer
  * @param out_len - pointer to output buffer lenght
  * @ingroup mdb
- * @return 0
+ * @return -1 for handle like unsupport function
  */
-static int mdb_sand_unsupport_funct(mdb_packet_t* packet, u8* out_buf, u16* out_len){
+static int mdb_sand_read_file(mdb_packet_t* packet, u8* out_buf, u16* out_len){
     int result = 0;
 
-    packet->function |= MDB_FNCT_ERR_FLAG;
-    out_buf[0] = MDB_ERR_FUNCT;
-    *out_len = 1;
+    result = mdb_sand_unsupport_funct(packet, out_buf, out_len);
 
     return result;
 }
+
+/**
+ * @brief Stub function
+ * @param packet - pointer to input packet
+ * @param out_buf - pointer to output buffer
+ * @param out_len - pointer to output buffer lenght
+ * @ingroup mdb
+ * @return -1 for handle like unsupport function
+ */
+static int mdb_sand_write_file(mdb_packet_t* packet, u8* out_buf, u16* out_len){
+    int result = 0;
+
+    result = mdb_sand_unsupport_funct(packet, out_buf, out_len);
+
+    return result;
+}
+
+/**
+ * @brief Stub function
+ * @param packet - pointer to input packet
+ * @param out_buf - pointer to output buffer
+ * @param out_len - pointer to output buffer lenght
+ * @ingroup mdb
+ * @return -1 for handle like unsupport function
+ */
+static int mdb_sand_write_mask_reg(mdb_packet_t* packet, u8* out_buf, u16* out_len){
+    int result = 0;
+
+    result = mdb_sand_unsupport_funct(packet, out_buf, out_len);
+
+    return result;
+}
+
+/**
+ * @brief Stub function
+ * @param packet - pointer to input packet
+ * @param out_buf - pointer to output buffer
+ * @param out_len - pointer to output buffer lenght
+ * @ingroup mdb
+ * @return -1 for handle like unsupport function
+ */
+static int mdb_sand_rd_wr_mul_regs(mdb_packet_t* packet, u8* out_buf, u16* out_len){
+    int result = 0;
+
+    result = mdb_sand_unsupport_funct(packet, out_buf, out_len);
+
+    return result;
+}
+
+/**
+ * @brief Stub function
+ * @param packet - pointer to input packet
+ * @param out_buf - pointer to output buffer
+ * @param out_len - pointer to output buffer lenght
+ * @ingroup mdb
+ * @return -1 for handle like unsupport function
+ */
+static int mdb_sand_read_fifo(mdb_packet_t* packet, u8* out_buf, u16* out_len){
+    int result = 0;
+
+    result = mdb_sand_unsupport_funct(packet, out_buf, out_len);
+
+    return result;
+}
+

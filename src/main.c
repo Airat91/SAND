@@ -729,7 +729,7 @@ void am2302_task (void const * argument){
                     dcts.dcts_rtc.hour = (uint8_t)((data.hum & 0xFF00) >> 8);
                     dcts.dcts_rtc.minute = (uint8_t)(data.hum & 0xFF);
                     dcts.dcts_rtc.second = (uint8_t)((data.tmpr & 0xFF00) >> 8);
-                    RTC_set(dcts.dcts_rtc);
+                    //RTC_set(dcts.dcts_rtc);
                 }
                 data_pin_irq_init();
                 break;
