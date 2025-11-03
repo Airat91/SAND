@@ -49,6 +49,7 @@ sofi_prop_base_t* reg_base_get_by_ind(u16 ind){
 
 int reg_base_write(sofi_prop_base_t* reg, u16 array_ind, reg_var_t* value){
     int result = 0;
+    u16 reg_size = 0;
 
     if(reg == NULL){
         result = -1;
@@ -62,10 +63,11 @@ int reg_base_write(sofi_prop_base_t* reg, u16 array_ind, reg_var_t* value){
             result = -2;
         }
         if(result == 0){
+            reg_size = reg_base_get_byte_size(reg);
             if(array_ind <= reg->array_len){
-                value_ptr += array_ind * reg_base_get_byte_size(reg);
+                value_ptr += array_ind * reg_size;
                 if(value->var_type == reg->type){
-                    *value_ptr = value->var.var_u8;
+                    memcpy(value_ptr, &value->var.var_u8, reg_size);
                 }else{
                     result = -4;
                 }
