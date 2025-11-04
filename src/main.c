@@ -154,22 +154,20 @@ int main(void){
 
 #if MDB_EN
     mdb_sand_init(&mdb_sand_pcb);
-    /*osThreadDef(modbus_task, mdb_sand_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
-    mdb_sand_task_handle = osThreadCreate(osThread(modbus_task), NULL);
-    if(mdb_sand_task_handle == NULL){
-        debug_msg(__func__, DBG_MSG_ERR, "Can't create modbus_task");
-    }else{
-        service.vars.mdb_state = MODBUS_INIT_TIMEOUT_MS;
-        service.vars.mdb_state |= SRV_ST_CREATED;
-    }*/
 #endif // MDB_EN
+
+    osThreadDef(adc_int_task, adc_int_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
+    adc_int_task_handle = osThreadCreate(osThread(adc_int_task), NULL);
+    if(adc_int_task_handle == NULL){
+        debug_msg(__func__, DBG_MSG_ERR, "Can't create adc_int_task");
+    }else{
+        service.vars.adc_state = RS485_INIT_TIMEOUT_MS;
+        service.vars.adc_state |= SRV_ST_CREATED;
+    }
 
 /*
     osThreadDef(display_task, display_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE*2);
     displayTaskHandle = osThreadCreate(osThread(display_task), NULL);
-
-    osThreadDef(adc_task, adc_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE*2);
-    adcTaskHandle = osThreadCreate(osThread(adc_task), NULL);
 
     osThreadDef(am2302_task, am2302_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
     am2302TaskHandle = osThreadCreate(osThread(am2302_task), NULL);

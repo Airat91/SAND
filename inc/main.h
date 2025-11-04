@@ -76,7 +76,7 @@
 #include "dcts.h"
 #include "dcts_config.h"
 #include "pin_map.h"
-#include "adc.h"
+#include "adc_int.h"
 #include "portable.h"
 #include "am2302.h"
 #include "max7219.h"
@@ -226,10 +226,8 @@ extern osThreadId buttonsTaskHandle;
 extern osThreadId displayTaskHandle;
 extern osThreadId menuTaskHandle;
 extern osThreadId controlTaskHandle;
-extern osThreadId adcTaskHandle;
 extern osThreadId am2302TaskHandle;
 extern osThreadId navigationTaskHandle;
-extern osThreadId uartTaskHandle;
 extern uint8_t irq_state;
 extern saved_to_flash_t config;
 

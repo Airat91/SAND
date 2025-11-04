@@ -243,6 +243,15 @@ void USART2_IRQHandler(void){
   rs485_irq_callback(&rs485_pcb);
 }
 
+/**
+* @brief This function handles ADC1 and ADC2 global interrupt.
+*/
+void ADC1_2_IRQHandler(void){
+    // Call callback functions for ADC1
+    HAL_ADC_IRQHandler(&adc_int_pcb.hadc);
+    adc_int_irq_callback(&adc_int_pcb);
+}
+
 /* USER CODE BEGIN 1 */
 
 void EXTI9_5_IRQHandler(void) {
