@@ -13,6 +13,7 @@
 #include "stm32f1xx_hal.h"
 #include "stm32f1xx_hal_rcc.h"
 #include "stm32f1xx_hal_flash.h"
+#include "stm32f1xx_hal_flash_ex.h"
 #include "stdint.h"
 #include "string.h"
 #include "debug.h"
@@ -30,17 +31,17 @@ extern "C" {
 //--------Defines--------
 
 #if(STM32F103xB)    // STM32F103CBT6
-    #define FLASH_TOTAL_SIZE        0x0020000   // 128 Kbytes
-    #define FLASH_PAGE_SIZE         0x0000400   // 1 Kbytes
+    #define FLASH_TOTAL_SIZE        0x00020000  // 128 Kbytes
+    #define FLASH_PAGE_SIZE         0x00000400  // 1 Kbytes
 #elif(STM32F103x8)  // STM32F103C8T6
-    #define FLASH_TOTAL_SIZE        0x0010000   // 64 Kbytes
-    #define FLASH_PAGE_SIZE         0x0000400   // 1 Kbytes
+    #define FLASH_TOTAL_SIZE        0x00010000  // 64 Kbytes
+    #define FLASH_PAGE_SIZE         0x00000400  // 1 Kbytes
 #elif(K1986BE92FI)  // K1986BE92FI (Milandr)
     #define FLASH_TOTAL_SIZE        0x0020000   // 128 Kbytes
     #define FLASH_PAGE_SIZE         0x0001000   // 4K bytes
 #endif // MCU_target
 
-#define FLASH_START                 0x0800000   // Start address of FLASH
+#define FLASH_START                 0x08000000  // Start address of FLASH
 #define FLASH_END                   FLASH_START + FLASH_TOTAL_SIZE
 #define FLASH_PAGE_NMB              FLASH_TOTAL_SIZE / FLASH_PAGE_SIZE
 
@@ -52,9 +53,11 @@ extern "C" {
 
 //--------Typedefs-------
 
-typedef struct{
-
-}flash_signature_t;
+typedef enum{
+    FLASH_WRITE_HALFWORD    = 1,    // Half-word (16-bit)
+    FLASH_WRITE_WORD        = 2,    // Word (32 bit)
+    FLASH_WRITE_DOUBLEWORD  = 4,    // Double-word (64 bit)
+}flash_write_size_t;
 
 //-------External variables------
 
@@ -64,40 +67,36 @@ typedef struct{
  * @brief Read data from device FLASH memory
  * @param addr - global address of FLASH
  * @param buf - pointer for read
- * @param len - data lenght in bytes
+ * @param len - data lenght in 16-bit words
  * @ingroup flash
  * @return  0 - ok,\n
  *          -1 - Address not in FLASH area,\n
  *          -2 - End of read data out of FLASH area
- *
- * @note High and Low bytes swaps inside the buf
  */
-int flash_read(u32 addr, u8* buf, u16 len);
+int flash_read(u32 addr, u16* buf, u16 len);
 
 /**
  * @brief Write data into device FLASH memory
  * @param addr - global address of FLASH
  * @param buf - pointer of data
- * @param len - data lenght in bytes
+ * @param len - data lenght in 16-bit words
  * @ingroup flash
  * @return  0 - ok,\n
- *          negative value if error,\n
+ *          -1 - Address is not even,\n
  *
- * @note High and Low bytes swaps inside the buf
+ * @warning Global address of FLASH must be even
  */
-int flash_write(u32 addr, u8* buf, u16 len);
+int flash_write(u32 addr, u16* buf, u16 len);
 
 /**
  * @brief Read data from global memory
  * @param addr - global address
  * @param buf - pointer for read
- * @param len - data lenght in bytes
+ * @param len - data lenght in 16-bit words
  * @ingroup flash
  * @return  0
- *
- * @note High and Low bytes swaps inside the buf
  */
-int flash_read_global(u32 addr, u8* buf, u16 len);
+int flash_read_global(u32 addr, u16* buf, u16 len);
 
 #ifdef __cplusplus
 }

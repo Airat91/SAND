@@ -1409,14 +1409,14 @@ static int main_write_device_info(void){
     u16 os_version[3] = BUILD_VERSION;
     u16 flash_size = 0;
 
-    flash_read_global(FLASH_SIG_SIZE_ADDR, (u8*)&flash_size, FLASH_SIG_SIZE_BYTE_LEN);
+    flash_read_global(FLASH_SIG_SIZE_ADDR, &flash_size, FLASH_SIG_SIZE_BYTE_LEN/2);
     if(flash_size != FLASH_TOTAL_SIZE / 1024){
         debug_msg(__func__, DBG_MSG_ERR, "MCU FLASH size mismatch: %d KB instead %d KB", flash_size, FLASH_TOTAL_SIZE / 1024);
     }
 
     sprintf(device.vars.device_name, DEVICE_NAME);
     sprintf(device.vars.mcu_info, "MCU: %s / %d Kbyte", MCU_NAME, flash_size);
-    flash_read_global(FLASH_SIG_ID_ADDR, (u8*)&device.vars.mcu_id, FLASH_SIG_ID_BYTE_LEN); // Read data from Flash
+    flash_read_global(FLASH_SIG_ID_ADDR, (u16*)&device.vars.mcu_id, FLASH_SIG_ID_BYTE_LEN/2); // Read data from Flash
     device.vars.device_type = DEVICE_TYPE;
 
     memcpy(&os.vars.os_version, &os_version, 6);
@@ -1424,6 +1424,35 @@ static int main_write_device_info(void){
     sprintf(os.vars.build, BUILD_INFO);
     sprintf(os.vars.build_date, BUILD_DATE);
 
+    //debug only
+    FLASH_EraseInitTypeDef erase = {0};
+    erase.TypeErase = FLASH_TYPEERASE_PAGES;
+    erase.Banks = FLASH_BANK_1;
+    erase.PageAddress = STORAGE_FLASH_START;
+    erase.NbPages = 1;
+    u32 page_error = 0;
+
+    HAL_FLASH_Unlock();
+    HAL_FLASHEx_Erase(&erase, (uint32_t*)&page_error);
+    HAL_FLASH_Lock();
+
+    u16 test_buf[11] = {
+        0xAAAA,
+        0xBBBB,
+        0xCCCC,
+        0xDDDD,
+        0xEEEE,
+        0x1234,
+        0xA5A5,
+        0x5678,
+        0xEBCA,
+        0x0001,
+        0x0002,
+    };
+    flash_write(STORAGE_FLASH_START + 4, test_buf, 11);
+    memset(test_buf, 0, 22);
+    flash_read(STORAGE_FLASH_START + 3, test_buf, 11);
+    //
 
     return result;
 }
