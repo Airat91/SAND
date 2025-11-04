@@ -156,34 +156,26 @@ int main(void){
     mdb_sand_init(&mdb_sand_pcb);
 #endif // MDB_EN
 
+#if AI_EN
+    osThreadDef(ai_task, ai_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
+    ai_task_handle = osThreadCreate(osThread(ai_task), NULL);
+    if(ai_task_handle == NULL){
+        debug_msg(__func__, DBG_MSG_ERR, "Can't create ai_task");
+    }else{
+        service.vars.ai_state = AI_INIT_TIMEOUT_MS;
+        service.vars.ai_state |= SRV_ST_CREATED;
+    }
+#endif // AI_EN
+
     osThreadDef(adc_int_task, adc_int_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
     adc_int_task_handle = osThreadCreate(osThread(adc_int_task), NULL);
     if(adc_int_task_handle == NULL){
         debug_msg(__func__, DBG_MSG_ERR, "Can't create adc_int_task");
     }else{
-        service.vars.adc_int_state = RS485_INIT_TIMEOUT_MS;
+        service.vars.adc_int_state = ADC_INT_INIT_TIMEOUT_MS;
         service.vars.adc_int_state |= SRV_ST_CREATED;
     }
 
-/*
-    osThreadDef(display_task, display_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE*2);
-    displayTaskHandle = osThreadCreate(osThread(display_task), NULL);
-
-    osThreadDef(am2302_task, am2302_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
-    am2302TaskHandle = osThreadCreate(osThread(am2302_task), NULL);
-
-    osThreadDef(buttons_task, buttons_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
-    buttonsTaskHandle = osThreadCreate(osThread(buttons_task), NULL);
-
-    osThreadDef(navigation_task, navigation_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
-    navigationTaskHandle = osThreadCreate(osThread(navigation_task), NULL);
-
-    osThreadDef(uart_task, uart_task, osPriorityHigh, 0, configMINIMAL_STACK_SIZE*4);
-    uartTaskHandle = osThreadCreate(osThread(uart_task), NULL);
-
-    osThreadDef(ds18b20_task, ds18b20_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
-    am2302TaskHandle = osThreadCreate(osThread(ds18b20_task), NULL);
-*/
     /* Start scheduler */
     osKernelStart();
 

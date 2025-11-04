@@ -71,6 +71,9 @@
 #if RTC_EN
     #include "rtc.h"
 #endif // RTC_EN
+#if AI_EN
+    #include "ai.h"
+#endif // AI_EN
 
 
 #include "dcts.h"

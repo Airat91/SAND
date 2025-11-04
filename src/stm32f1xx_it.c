@@ -248,8 +248,14 @@ void USART2_IRQHandler(void){
 */
 void ADC1_2_IRQHandler(void){
     // Call callback functions for ADC1
-    HAL_ADC_IRQHandler(&adc_int_pcb.hadc);
-    adc_int_irq_callback(&adc_int_pcb);
+    if(__HAL_ADC_GET_FLAG(&adc_int_pcb.hadc, ADC_FLAG_EOC)){
+        HAL_ADC_IRQHandler(&adc_int_pcb.hadc);
+        adc_int_irq_callback(&adc_int_pcb);
+    }
+    if(__HAL_ADC_GET_FLAG(&ai_pcb.hadc, ADC_FLAG_EOC)){
+        HAL_ADC_IRQHandler(&ai_pcb.hadc);
+        ai_irq_callback(&ai_pcb);
+    }
 }
 
 /* USER CODE BEGIN 1 */

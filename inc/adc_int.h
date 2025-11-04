@@ -33,7 +33,8 @@ extern "C" {
 #define ADC_INT_MAX_ERR_NMB         50      // Maximum errors numbers in a row for reinit
 #define ADC_INT_SAMPLE_NUM          10      // Samples number for averaging
 #define ADC_INT_MAX_RANGE           4096    // ADC code max value
-#define ADC_INT_TASK_PERIOD         100     //
+#define ADC_INT_TASK_PERIOD         100     // Equal measurement period in ms
+#define ADC_INT_INIT_TIMEOUT_MS     2000    // 2 sec
 
 //========Vref configuration========
 #define ADC_INT_VREF_INT            0x01    // Vref code for select
@@ -157,7 +158,6 @@ extern adc_int_pcb_t adc_int_pcb;   // Internal ADC process control block
 extern float* adc_int_vref_code_avg;// Pointer to voltage reference averaged code
 
 //-------Function prototypes----------
-
 
 /**
  * @brief Main task of internal ADC
