@@ -60,24 +60,18 @@ extern "C" {
 //========Internal channels parameters========
 #define ADC_INT_PWR_A               16.0f   // Koef of function Vlt = (VREF_VALUE * ADC / VREF_CODE) * A + B
 #define ADC_INT_PWR_B               0.0f    // Koef of function Vlt = (VREF_VALUE * ADC / VREF_CODE) * A + B
-#define ADC_INT_PWR_PERIOD_US       1000000 // Measure period in us (1 sec)
 
 #define ADC_INT_BAT_A               1.0f    // Koef of function Vlt = (VREF_VALUE * ADC / VREF_CODE) * A + B
 #define ADC_INT_BAT_B               0.0f    // Koef of function Vlt = (VREF_VALUE * ADC / VREF_CODE) * A + B
-#define ADC_INT_BAT_PERIOD_US       10000000// Measure period in us (10 sec)
+#define ADC_INT_BAT_PERIOD_US       60000   // Battery measurement period
 
 #define ADC_INT_TEMP_A              -232.55814f // Koef of function Tmpr = (VREF_VALUE * ADC / VREF_CODE) * A + B
 #define ADC_INT_TEMP_B              375.55814f  // Koef of function Tmpr = (VREF_VALUE * ADC / VREF_CODE) * A + B
-#define ADC_INT_TEMP_PERIOD_US      1000000 // Measure period in us (1 sec)
                                             // Temperature (in °C) = {(V_25 - V SENSE ) / Avg_Slope} + 25.
                                             // Avg_Slope = 4.3 (4.0 - 4.6) mV/°C
                                             // V_25 = 1.43 (1.34 - 1.52) V
                                             // The V_25 varies from chip to chip due to process variation (up to 45 °C
                                             // from one chip to another) so use individual koef B from regs
-
-#define ADC_INT_VREF_INT_PERIOD_US  100000  // Measure period in us (0.1 sec)
-
-#define ADC_INT_VREF_INT_PERIOD_US  100000  // Measure period in us (0.1 sec)
 
 //--------Macro--------
 

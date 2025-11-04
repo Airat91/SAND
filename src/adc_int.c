@@ -85,7 +85,7 @@ int adc_int_init (adc_int_pcb_t* adc_int_pcb){
 
 #if(ADC_INT_BAT_EN == 1)
     adc_int_pcb->adc_inp[ptr] = _ADC_CHANNEL_BAT;
-    adc_int_pcb->adc_inp[ptr++] = ADC_INT_CH_BAT;
+    adc_int_pcb->adc_channel[ptr++] = ADC_INT_CH_BAT;
 #endif // ADC_INT_BAT_EN
 
 #if(ADC_INT_TEMP_EN == 1)
@@ -143,6 +143,7 @@ int adc_int_deinit (adc_int_pcb_t* adc_int_pcb){
 
 int adc_int_irq_callback(adc_int_pcb_t* adc_int_pcb){
     int result = 0;
+    static u16 bat_meas_cnt = 0;
 
     static ADC_ChannelConfTypeDef sConfig = {0};
     sConfig.Rank = 1;
@@ -168,6 +169,17 @@ int adc_int_irq_callback(adc_int_pcb_t* adc_int_pcb){
     }
     //Increase channel
     adc_int_pcb->cur_channel++;
+    if(adc_int_pcb->adc_channel[adc_int_pcb->cur_channel] == ADC_INT_CH_BAT){
+        if(bat_meas_cnt != 0){
+            //Skip battery channel
+            adc_int_pcb->cur_channel++;
+        }
+        bat_meas_cnt++;
+        if(bat_meas_cnt * ADC_INT_TASK_PERIOD > ADC_INT_BAT_PERIOD_US){
+            bat_meas_cnt = 0;
+        }
+    }
+    //Special handle for battery channel
     if(adc_int_pcb->cur_channel >= ADC_INT_CH_NUM){
         adc_int_pcb->cur_channel = 0;
         adc_int_pcb->cycle_done = 1;
@@ -343,7 +355,7 @@ static int adc_int_handle_results(adc_int_pcb_t* adc_int_pcb){
 #endif // ADC_INT_VREF_INT_EN
 
 #if(ADC_INT_VREF_EXT_EN == 1)
-        value = ADC_INT_VREF_VALUE * adc_int_get_result_avg(adc_int_pcb, ADC_INT_CH_VREF_INT) / *adc_int_vref_code_avg;
+        value = ADC_INT_VREF_VALUE * adc_int_get_result_avg(adc_int_pcb, ADC_INT_CH_VREF_EXT) / *adc_int_vref_code_avg;
         device.vars.vref_ext = value;
 #endif // ADC_INT_VREF_EXT_EN
     }
