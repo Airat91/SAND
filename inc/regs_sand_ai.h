@@ -29,13 +29,13 @@
 // This part of file generated automatically, don't change it
 #define OS_STRUCT_SIZE           	132
 #define TIME_STRUCT_SIZE         	20
-#define DEVICE_STRUCT_SIZE       	100
+#define DEVICE_STRUCT_SIZE       	108
 #define MODBUS_STRUCT_SIZE       	2
 #define SERVICE_STRUCT_SIZE      	16
 #define TEST_STRUCT_SIZE         	860
 
-#define SOFI_PROP_BASE_REG_NUM   	44
-#define SOFI_PROP_MDB_REG_NUM    	44
+#define SOFI_PROP_BASE_REG_NUM   	46
+#define SOFI_PROP_MDB_REG_NUM    	46
 #define SOFI_PROP_RANGE_REG_NUM  	0
 #define SOFI_PROP_SAVE_REG_NUM   	8
 #define SOFI_PROP_ACCESS_REG_NUM 	0
@@ -89,6 +89,8 @@ typedef union{
 		float  temperature;       // "Temperature (°C)"
 		float  v_bat;             // "Battery voltage (V)"
 		float  v_pwr;             // "Power voltage (V)"
+		float  vref_int;          // "Vref internal (V)"
+		float  vref_ext;          // "Vref external (V)"
 	}vars;
 	u8 bytes[DEVICE_STRUCT_SIZE];
 }device_struct;
