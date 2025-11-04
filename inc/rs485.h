@@ -279,4 +279,8 @@ int rs485_rx_timeout_callback(rs485_pcb_t* rs485_pcb);
  */
 int rs485_irq_callback(rs485_pcb_t* rs485_pcb);
 
+#ifdef __cplusplus
+}
+#endif
+
 #endif // RS485_H

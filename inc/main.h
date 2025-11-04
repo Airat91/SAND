@@ -64,6 +64,10 @@
 #include "sofi_reg.h"
 #include "us_tim.h"
 #include "build_info.h"
+#include "storage.h"
+#include "rs485.h"
+#include "reg.h"
+#include "adc_int.h"
 
 #if MDB_EN
     #include "mdb_sand.h"
@@ -75,25 +79,19 @@
     #include "ai.h"
 #endif // AI_EN
 
+/*add includes before */
 
 #include "dcts.h"
 #include "dcts_config.h"
-#include "pin_map.h"
-#include "adc_int.h"
 #include "portable.h"
 #include "am2302.h"
 #include "max7219.h"
 #include "buttons.h"
 #include "menu.h"
-#include "flash.h"
-#include "rs485.h"
 #include "modbus.h"
-//#include "st7735.h"
 #include <string.h>
 #include "ds18b20.h"
-#include "reg.h"
 
-/*add includes before */
 
 #ifdef __cplusplus
  extern "C" {
@@ -259,8 +257,8 @@ void refresh_watchdog(void);
 uint32_t uint32_pow(uint16_t x, uint8_t pow);
 u16 str_smb_num(char* string, char symbol);
 
-uint32_t us_tim_get_value(void);
-void us_tim_delay(uint32_t us);
+//uint32_t us_tim_get_value(void);
+//void us_tim_delay(uint32_t us);
 
 
 #ifdef __cplusplus

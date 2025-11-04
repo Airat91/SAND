@@ -14,14 +14,18 @@ extern "C" {
 #endif /* __cplusplus */
     
 // String like "<brach name>_<commit counter>_<commit hash>"
-#define BUILD_INFO "main-22-7803ee33"
+#define BUILD_INFO "ftr/flash-81-c130a1"
 #define BUILD_INFO_MAX_LEN  20      // Max length of BUILD_INFO string
 // Array of software version numbers
-#define BUILD_VERSION {0, 0, 0}
+#define BUILD_VERSION {0, 0, 4}
 // Build time string like "<day>-<month>-<year>_<hour>:<min>"
-#define BUILD_DATE "04-05-2025_22:11"
+#define BUILD_DATE "05-11-2025_00:17"
 #define BUILD_DATE_MAX_LEN  20      // Max length of BUILD_DATE string
     
+#if STM32F103xB
+    #define MCU_NAME    "STM32F103CBT6"
+#endif // MCU_NAME
+
 #ifdef	__cplusplus
 }
 #endif /* __cplusplus */

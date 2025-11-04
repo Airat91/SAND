@@ -1406,15 +1406,24 @@ static int main_leds_handle(u32 call_period){
 static int main_write_device_info(void){
     int result = 0;
 
-    u16 temp[3] = BUILD_VERSION;
-    memcpy(&os.vars.os_version, &temp, 6);
+    u16 os_version[3] = BUILD_VERSION;
+    u16 flash_size = 0;
+
+    flash_read_global(FLASH_SIG_SIZE_ADDR, (u8*)&flash_size, FLASH_SIG_SIZE_BYTE_LEN);
+    if(flash_size != FLASH_TOTAL_SIZE / 1024){
+        debug_msg(__func__, DBG_MSG_ERR, "MCU FLASH size mismatch: %d KB instead %d KB", flash_size, FLASH_TOTAL_SIZE / 1024);
+    }
+
+    sprintf(device.vars.device_name, DEVICE_NAME);
+    sprintf(device.vars.mcu_info, "MCU: %s / %d Kbyte", MCU_NAME, flash_size);
+    flash_read_global(FLASH_SIG_ID_ADDR, (u8*)&device.vars.mcu_id, FLASH_SIG_ID_BYTE_LEN); // Read data from Flash
+    device.vars.device_type = DEVICE_TYPE;
+
+    memcpy(&os.vars.os_version, &os_version, 6);
     os.vars.num_of_vars = SOFI_PROP_BASE_REG_NUM;
     sprintf(os.vars.build, BUILD_INFO);
     sprintf(os.vars.build_date, BUILD_DATE);
-    os.vars.uniq_id[0] = 0; // Read data from Flash
 
-    device.vars.device_type = DEVICE_TYPE;
-    sprintf(device.vars.device_name, DEVICE_NAME);
 
     return result;
 }

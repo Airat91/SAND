@@ -1,3 +1,75 @@
+/*
+ * File:        flash.c
+ * Authors:     Girfanov.Ayrat@yandex.ru
+ * Description: Functions for work with internal FLASH
+ * Revision history: 0.1
+ */
+
+#include "flash.h"
+
+//-------Global variables------
+
+//-------Static variables------
+
+//-------Static functions declaration-----------
+
+static void flash_htol(u16* word);
+
+//-------Functions----------
+
+int flash_read(u32 addr, u8* buf, u16 len){
+    int result = 0;
+    u32* ptr = (u32*)addr;
+    u32 addr_end = addr + len;
+
+    if((addr < FLASH_START) || (addr > FLASH_END)){
+        result = -1;
+        // Addr not in FLASH area
+    }else{
+        if(addr_end > FLASH_END){
+            result = -2;
+            // End of read data out of FLASH area
+        }else{
+            memcpy(buf, ptr, len);
+        }
+    }
+
+    return result;
+}
+
+int flash_write(u32 addr, u8* buf, u16 len){
+    int result = 0;
+
+    return result;
+}
+
+int flash_read_global(u32 addr, u8* buf, u16 len){
+    int result = 0;
+
+    u32* ptr = (u32*)addr;
+    memcpy(buf, ptr, len);
+
+    return result;
+}
+
+//-------Static functions----------
+
+/**
+ * @brief Swap High and Low bytes into 16-bit word
+ * @param word - pointer to 16-bit word for change
+ * @ingroup flash
+ */
+static void flash_htol(u16* word){
+    u16 temp = 0;
+    temp  = (u16)(*word & 0x00FF << 8);
+    temp |= (u16)(*word & 0xFF00 >> 8);
+    *word = temp;
+}
+
+
+
+//-------Unrefactoried----------
+
 #include "flash.h"
 #include "main.h"
 #include "FreeRTOS.h"

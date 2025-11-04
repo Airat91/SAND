@@ -650,6 +650,3 @@ static int rs485_state_is_busy(rs485_pcb_t* rs485_pcb){
 
     return result;
 }
-
-
-

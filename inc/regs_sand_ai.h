@@ -27,16 +27,17 @@
 
 //#generator_message{"msg":"sofi_struct_define", "action":"insert_start"}
 // This part of file generated automatically, don't change it
-#define OS_STRUCT_SIZE           	132
+#define OS_STRUCT_SIZE           	108
 #define TIME_STRUCT_SIZE         	20
-#define DEVICE_STRUCT_SIZE       	108
+#define DEVICE_STRUCT_SIZE       	200
 #define MODBUS_STRUCT_SIZE       	2
 #define SERVICE_STRUCT_SIZE      	20
+#define DEBUG_STRUCT_SIZE        	0
 #define AI_STRUCT_SIZE           	36
 #define TEST_STRUCT_SIZE         	860
 
-#define SOFI_PROP_BASE_REG_NUM   	52
-#define SOFI_PROP_MDB_REG_NUM    	52
+#define SOFI_PROP_BASE_REG_NUM   	54
+#define SOFI_PROP_MDB_REG_NUM    	54
 #define SOFI_PROP_RANGE_REG_NUM  	0
 #define SOFI_PROP_SAVE_REG_NUM   	10
 #define SOFI_PROP_ACCESS_REG_NUM 	0
@@ -51,7 +52,7 @@
 typedef union{
 	struct MCU_PACK{
 		u16    os_version[4];      // "Software version"
-		u16    num_of_vars;        // "Total vars in project"
+		u16    num_of_vars;        // "Total registers in project"
 		u16    lang;               // "Interface language"
 		char   build[40];          // "Build info"
 		char   build_date[40];     // "Date of SW building"
@@ -60,7 +61,6 @@ typedef union{
 		u32    runtime;            // "Runtime from last reset (sec)"
 		u32    runtime_total;      // "Total runtime (sec)"
 		float  cpu_load;           // "CPU load (%)"
-		u16    uniq_id[12];        // "Unique ID number"
 	}vars;
 	u8 bytes[OS_STRUCT_SIZE];
 }os_struct;
@@ -82,11 +82,14 @@ typedef union{
 
 typedef union{
 	struct MCU_PACK{
-		u16    device_type;        // "Device type code"
 		char   device_name[40];    // "Device name"
+		char   user_name[40];      // "User device name"
+		char   configuration[40];  // "Hardware configuration"
+		char   mcu_info[40];       // "MCU information"
+		u8     mcu_id[12];         // "Unique MCU ID number"
+		u16    device_type;        // "Device type code"
 		u16    board_ver;          // "Hardware version"
 		u32    serial;             // "Serial number"
-		char   configuration[40];  // "Hardware configuration"
 		float  temperature;        // "Temperature (°C)"
 		float  v_bat;              // "Battery voltage (V)"
 		float  v_pwr;              // "Power voltage (V)"
@@ -113,6 +116,12 @@ typedef union{
 	}vars;
 	u8 bytes[SERVICE_STRUCT_SIZE];
 }service_struct;
+
+typedef union{
+	struct MCU_PACK{
+	}vars;
+	u8 bytes[DEBUG_STRUCT_SIZE];
+}debug_struct;
 
 typedef union{
 	struct MCU_PACK{
@@ -153,6 +162,7 @@ extern time_struct              	time;
 extern device_struct            	device;
 extern modbus_struct            	modbus;
 extern service_struct           	service;
+extern debug_struct             	debug;
 extern ai_struct                	ai;
 extern test_struct              	test;
 
@@ -168,4 +178,5 @@ extern const sofi_prop_access_t 	sofi_prop_access_list[];
 #ifdef __cplusplus
 }
 #endif
+
 #endif // REGS_SAND_AI_H
