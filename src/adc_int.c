@@ -31,7 +31,7 @@ void adc_int_task(void const * argument){
     (void)argument;
 
     if(adc_int_init(&adc_int_pcb) == 0){
-        service.vars.adc_state |= SRV_ST_RUN;
+        service.vars.adc_int_state |= SRV_ST_RUN;
         debug_msg(__func__, DBG_MSG_INFO, "ADC_INT_task started");
     }
     uint8_t tick = 0;
@@ -39,12 +39,12 @@ void adc_int_task(void const * argument){
     while(1){
         if(adc_int_pcb.state & ADC_INT_ST_ERROR){
             // Reinit ADC_INT if error
-            service.vars.adc_state |= SRV_ST_ERROR;
+            service.vars.adc_int_state |= SRV_ST_ERROR;
             debug_msg(__func__, DBG_MSG_ERR, "ADC_int reinit");
             adc_int_deinit(&adc_int_pcb);
             osDelay(1000);
             if(adc_int_init(&adc_int_pcb) == 0){
-                service.vars.adc_state &= ~(u32)SRV_ST_ERROR;
+                service.vars.adc_int_state &= ~(u32)SRV_ST_ERROR;
             }
         }else{
             // Normal work process

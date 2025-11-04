@@ -161,8 +161,8 @@ int main(void){
     if(adc_int_task_handle == NULL){
         debug_msg(__func__, DBG_MSG_ERR, "Can't create adc_int_task");
     }else{
-        service.vars.adc_state = RS485_INIT_TIMEOUT_MS;
-        service.vars.adc_state |= SRV_ST_CREATED;
+        service.vars.adc_int_state = RS485_INIT_TIMEOUT_MS;
+        service.vars.adc_int_state |= SRV_ST_CREATED;
     }
 
 /*

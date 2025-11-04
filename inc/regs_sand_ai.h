@@ -105,8 +105,8 @@ typedef union{
 typedef union{
 	struct MCU_PACK{
 		u32    rtc_state;         // "RTC service status"
-		u32    adc_state;         // "ADC service status"
-		u32    rs485_state;       // "RS485 service status"
+		u32    adc_int_state;     // "ADC_INT service status"
+		u32    rs485_state;       // "RS-485 service status"
 		u32    dbg_state;         // "Debug service status"
 	}vars;
 	u8 bytes[SERVICE_STRUCT_SIZE];
