@@ -311,7 +311,13 @@ def regs_module_h_processing(Proj):
                 if len(define_str) > max_spaces[0]:
                     max_spaces[0] = len(define_str)
 
-            # 1.1.3 Write defines to buffer_define
+            # 1.1.3 Write device name define
+            define_str = "DEVICE_NAME"
+            space_0 = " " * (max_spaces[0] - len(define_str) + 1)
+            buffer_define.append("#define {}{}\t\"{}\"\n".format(define_str, space_0, Proj.name))
+            buffer_define.append("\n")
+
+            # 1.1.4 Write defines to buffer_define
             for struct_name in Proj.struct_list:
                 struct = Proj.struct_list[struct_name]
                 struct_byte_size = struct["byte_size"]
@@ -488,11 +494,13 @@ def regs_module_c_processing(Proj):
     :param Proj: class Project (project_generator.Project)
     :return:
     """
+    step = "Open file"
     file_name = "regs_module_c"
     file = open(Proj.path[file_name], "r", encoding='UTF-8')
     text_lines = file.readlines()
     file.close()
-    # 1 Find start and end of sand_properties
+
+    step = "1 Find start and end of sand_properties"
     prop_insert_start = generator.get_msg_line_nmbr(Proj, file_name, "sand_properties", "insert_start")
     prop_insert_end = generator.get_msg_line_nmbr(Proj, file_name, "sand_properties", "insert_end")
     prop_insert_find = False
@@ -504,31 +512,45 @@ def regs_module_c_processing(Proj):
         Proj.errors["err_msg"].append("Don't found #generator_message \"sand_properties\" in " + file_name)
         Proj.errors["err_cnt"] += 1
     else:
-        # 1.1. Add defines to buffer for not corrupting file if errors
+        step = "1.1. Add defines to buffer for not corrupting file if errors"
         buffer_prop = []
         try:
-            # 1.1.1 Write generator message
+
+            step = "1.1.1 Write generator message"
             buffer_prop.append("// This part of file generated automatically, don't change it\n")
 
-            # 1.1.2 Write global structs declaration
-            max_spaces = [0]
+            step = "1.1.2 Write global structs declaration"
+            max_spaces = [0] * 2
+
+            step = "1.1.2.1 Calc words len for align text"
             for struct_name in Proj.struct_list:
                 struct_declaration = struct_name + "_struct"
                 if len(struct_declaration) > max_spaces[0]:
                     max_spaces[0] = len(struct_declaration)
+                if len(struct_name) > max_spaces[1]:
+                    max_spaces[1] = len (struct_name)
+
+            step = "1.1.2.2 Add global structs to buffer_prop"
             for struct_name in Proj.struct_list:
                 struct_declaration = struct_name + "_struct"
-                spaces = " " * (max_spaces[0] - len(struct_declaration) + 1)
-                buffer_prop.append("{}{}\t{};\n".format(struct_declaration, spaces, struct_name))
+                spaces_0 = " " * (max_spaces[0] - len(struct_declaration) + 1)
+                spaces_1 = " " * (max_spaces[1] - len(struct_name) + 1)
+                buffer_prop.append("{}{}\t{}{}\t".format(struct_declaration, spaces_0, struct_name, spaces_1))
+                buffer_prop.append(" = {0};\n")
             buffer_prop.append("\n")
 
+            step = "1.1.3 Write prop lists "
             for prop_name in Proj.prop_list:
                 prop_list = Proj.prop_list[prop_name]
-                # 1.1.3 Calc words len for align text
+
+                step = "1.1.3.1 Calc headers len for align text"
                 prop_param_list = list(sand_reg.sand_prop_list[prop_name].keys())
                 prop_param_list.remove("header")
                 header_param_list = list(sand_reg.sand_header_t.keys())
-                max_spaces = [0] * (len(prop_param_list) + len(header_param_list))
+                if prop_name != "sand_prop_base_t":
+                    max_spaces = [0] * (len(prop_param_list) + len(header_param_list) + 1)
+                else:
+                    max_spaces = [0] * (len(prop_param_list) + len(header_param_list))
                 for header_param in header_param_list:
                     ind = header_param_list.index(header_param)
                     if len(header_param) > max_spaces[ind]:
@@ -537,7 +559,14 @@ def regs_module_c_processing(Proj):
                     ind = prop_param_list.index(prop_param) + len(header_param_list)
                     if len(prop_param) > max_spaces[ind]:
                         max_spaces[ind] = len(prop_param)
+                if prop_name != "sand_prop_base_t":
+                    ind = len(prop_param_list) + len(header_param_list)
+                    for reg_name in prop_list["reg_list"]:
+                        if len(reg_name) > max_spaces[ind]:
+                            max_spaces[ind] = len(reg_name)
 
+
+                step = "1.1.3.2 Calc regs values len for align text"
                 for reg_name in prop_list["reg_list"]:
                     reg = prop_list["reg_list"][reg_name]
                     for header_param in header_param_list:
@@ -552,13 +581,13 @@ def regs_module_c_processing(Proj):
                             if len(str(prop["value"])) > max_spaces[ind]:
                                 max_spaces[ind] = len(str(prop["value"]))
 
-                # 1.1.4 Write prop_list to buffer_prop
+                step = "1.1.4 Write prop_list to buffer_prop"
                 prop_list_name = prop_name.replace("_t", "_list")
                 prop_list_reg_num = prop_name.replace("_t", "").upper() + "_REG_NUM"
                 buffer_prop.append("const {} {}[{}]".format(prop_name, prop_list_name, prop_list_reg_num))
                 buffer_prop.append("={\n")
 
-                # Write property parameters
+                step = "1.1.4.1 Write prop_list property parameters in comments"
                 buffer_prop.append("//")
                 for header_param in header_param_list:
                     ind = header_param_list.index(header_param)
@@ -568,12 +597,19 @@ def regs_module_c_processing(Proj):
                     ind = prop_param_list.index(prop_param) + len(header_param_list)
                     spaces = " " * (max_spaces[ind] - len(prop_param) + 1)
                     buffer_prop.append("{}{}\t".format(prop_param, spaces))
+                # Add reg name like comment to end of line
+                if prop_name != "sand_prop_base_t":
+                    ind = len(prop_param_list) + len(header_param_list)
+                    spaces = " " * (max_spaces[ind] - len("reg_name") + 1)
+                    buffer_prop.append("   reg_name")
                 buffer_prop.append("\n")
 
-                # Write property values
+                step = "1.1.4.2 Write prop_list values"
                 for reg_name in prop_list["reg_list"]:
                     reg = prop_list["reg_list"][reg_name]
                     buffer_prop.append("{{")
+
+                    step = "1.1.4.3 Write prop_list reg header values"
                     for header_param in header_param_list:
                         ind = header_param_list.index(header_param)
                         header_val = reg.prop_list[prop_name]["header"]["header_t"][header_param]
@@ -584,7 +620,7 @@ def regs_module_c_processing(Proj):
                             spaces = " " * (max_spaces[ind] - len(header_val))
                             buffer_prop.append(header_val + "}," + spaces + "\t")
 
-
+                    step = "1.1.4.4 Write prop_list reg prop values"
                     for prop_param in prop_param_list:
                         ind = prop_param_list.index(prop_param) + len(header_param_list)
                         if "value" in reg.prop_list[prop_name][prop_param]:
@@ -595,10 +631,18 @@ def regs_module_c_processing(Proj):
                             spaces = " " * (max_spaces[ind] - len(str(prop_val)))
                             buffer_prop.append("{},{}\t".format(prop_val, spaces))
                         else:
-                            buffer_prop.append("{}".format(prop_val) + "},\n")
+                            # Last prop_param (end of line)
+                            if prop_name != "sand_prop_base_t":
+                                ind = prop_param_list.index(prop_param) + len(header_param_list)
+                                spaces = " " * (max_spaces[ind] - len(str(prop_val)) + 2)
+                                buffer_prop.append("{}".format(prop_val) + "}," + spaces)
+                                buffer_prop.append("// {}\n".format(reg_name))#"// {}\n".format(reg_name))
+                            else:
+                                buffer_prop.append("{}".format(prop_val) + "},\n")
+
                 buffer_prop.append("};\n\n")
         except:
-            Proj.errors["err_msg"].append("Error during adding property lists to " + file_name)
+            Proj.errors["err_msg"].append("Error during adding property lists to " + file_name + ", step: " + step)
             Proj.errors["err_cnt"] += 1
 
     # 2. Rewrite file with new insertion from generator

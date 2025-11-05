@@ -203,6 +203,12 @@ def regs_handler(Proj):
     for reg_name in Proj.prop_list["sand_prop_range_t"]["reg_list"]:
         reg = Proj.prop_list["sand_prop_range_t"]["reg_list"][reg_name]
         struct_name = get_struct_of_reg(reg_name, Proj)
+        if reg.prop_list["sand_prop_range_t"]["p_def"]["value"] == None:
+            reg.prop_list["sand_prop_range_t"]["p_def"]["value"] = "NULL"
+        if reg.prop_list["sand_prop_range_t"]["p_min"]["value"] == None:
+            reg.prop_list["sand_prop_range_t"]["p_min"]["value"] = "NULL"
+        if reg.prop_list["sand_prop_range_t"]["p_max"]["value"] == None:
+            reg.prop_list["sand_prop_range_t"]["p_max"]["value"] = "NULL"
 
     #2.4 sand_prop_save_t
     #2.4.1 Manual setted save address check
