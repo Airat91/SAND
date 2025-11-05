@@ -130,6 +130,12 @@ int main(void){
         debug_msg(__func__, DBG_MSG_ERR, "Can't create regs_access_mutex");
     }
 
+    osMutexDef(regs_storage_mutex);
+    regs_storage_mutex = osMutexCreate(osMutex(regs_storage_mutex));
+    if(regs_storage_mutex == NULL){
+        debug_msg(__func__, DBG_MSG_ERR, "Can't create regs_storage_mutex");
+    }
+
     osThreadDef(main_task, main_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
     main_task_handle = osThreadCreate(osThread(main_task), NULL);
     if(main_task_handle == NULL){
@@ -196,6 +202,10 @@ void main_task(void const * argument){
     uint32_t last_wake_time = osKernelSysTick();
     u32 tick = 0;
     debug_msg(__func__, DBG_MSG_INFO, "MAIN_task started");
+    if(storage_restore_data(&storage_pcb, sand_prop_save_list, SAND_PROP_SAVE_REG_NUM) != 0){
+        // Print error message
+    }
+
     main_write_device_info();
     while(1){
         // Every 1 second

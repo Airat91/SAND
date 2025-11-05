@@ -52,24 +52,30 @@ sand_prop_base_t* reg_base_get_by_ind(u16 ind){
 int reg_base_write(sand_prop_base_t* reg, u16 array_ind, reg_var_t* value){
     int result = 0;
     u16 reg_size = 0;
+    u8* value_ptr = NULL;
 
     if(reg == NULL){
         result = -1;
     }else{
-        u8* value_ptr = reg->p_value;
-
+        value_ptr = reg->p_value;
         if(reg->read_only == 1){
             result = -5;
-        }
-        if(reg_access_blocked(reg)){
+        }else if(reg_access_blocked(reg)){
             result = -2;
         }
         if(result == 0){
+            // Correct min max value
+            reg_range_min_max_correct(reg, value);
             reg_size = reg_base_get_byte_size(reg);
             if(array_ind <= reg->array_len){
                 value_ptr += array_ind * reg_size;
                 if(value->var_type == reg->type){
-                    memcpy(value_ptr, &value->var.var_u8, reg_size);
+                    // Check storage mutex
+                    if(reg_save_busy_check(reg) == 0){
+                        memcpy(value_ptr, &value->var.var_u8, reg_size);
+                    }else{
+                        result = -6;
+                    }
                 }else{
                     result = -4;
                 }
@@ -183,7 +189,138 @@ sand_prop_base_t* reg_mdb_get_by_addr(u16 addr){
 
 //=======Regs prop_range functions=======
 
+int reg_range_min_max_correct(sand_prop_base_t* reg, reg_var_t* value){
+    int result = 0;
+    sand_prop_range_t* prop = NULL;
+
+    prop = (sand_prop_range_t*)reg_base_get_prop(reg, SAND_PROP_RANGE);
+    if(prop != NULL){
+        // Check max limit
+        if(prop->p_max != NULL){
+            switch(reg->type){
+            case VAR_TYPE_U8:
+                if(value->var.var_u8 > *(u8*)prop->p_max){
+                    value->var.var_u8 = *(u8*)prop->p_max;
+                }
+                break;
+            case VAR_TYPE_U16:
+                if(value->var.var_u16 > *(u16*)prop->p_max){
+                    value->var.var_u16 = *(u16*)prop->p_max;
+                }
+                break;
+            case VAR_TYPE_U32:
+                if(value->var.var_u32 > *(u32*)prop->p_max){
+                    value->var.var_u32 = *(u32*)prop->p_max;
+                }
+                break;
+            case VAR_TYPE_U64:
+                if(value->var.var_u64 > *(u64*)prop->p_max){
+                    value->var.var_u64 = *(u64*)prop->p_max;
+                }
+                break;
+            case VAR_TYPE_S8:
+                if(value->var.var_s8 > *(s8*)prop->p_max){
+                    value->var.var_s8 = *(s8*)prop->p_max;
+                }
+                break;
+            case VAR_TYPE_S16:
+                if(value->var.var_s16 > *(s16*)prop->p_max){
+                    value->var.var_s16 = *(s16*)prop->p_max;
+                }
+                break;
+            case VAR_TYPE_S32:
+                if(value->var.var_s32 > *(s32*)prop->p_max){
+                    value->var.var_s32 = *(s32*)prop->p_max;
+                }
+                break;
+            case VAR_TYPE_S64:
+                if(value->var.var_s64 > *(s64*)prop->p_max){
+                    value->var.var_s64 = *(s64*)prop->p_max;
+                }
+                break;
+            case VAR_TYPE_FLOAT:
+                if(value->var.var_float > *(float*)prop->p_max){
+                    value->var.var_float = *(float*)prop->p_max;
+                }
+                break;
+            case VAR_TYPE_DOUBLE:
+                if(value->var.var_double > *(double*)prop->p_max){
+                    value->var.var_double = *(double*)prop->p_max;
+                }
+                break;
+            default:
+                break;
+            }
+        }
+        // Check min limit
+        if(prop->p_min != NULL){
+            switch(reg->type){
+            case VAR_TYPE_U8:
+                if(value->var.var_u8 < *(u8*)prop->p_min){
+                    value->var.var_u8 = *(u8*)prop->p_min;
+                }
+                break;
+            case VAR_TYPE_U16:
+                if(value->var.var_u16 < *(u16*)prop->p_min){
+                    value->var.var_u16 = *(u16*)prop->p_min;
+                }
+                break;
+            case VAR_TYPE_U32:
+                if(value->var.var_u32 < *(u32*)prop->p_min){
+                    value->var.var_u32 = *(u32*)prop->p_min;
+                }
+                break;
+            case VAR_TYPE_U64:
+                if(value->var.var_u64 < *(u64*)prop->p_min){
+                    value->var.var_u64 = *(u64*)prop->p_min;
+                }
+                break;
+            case VAR_TYPE_S8:
+                if(value->var.var_s8 < *(s8*)prop->p_min){
+                    value->var.var_s8 = *(s8*)prop->p_min;
+                }
+                break;
+            case VAR_TYPE_S16:
+                if(value->var.var_s16 < *(s16*)prop->p_min){
+                    value->var.var_s16 = *(s16*)prop->p_min;
+                }
+                break;
+            case VAR_TYPE_S32:
+                if(value->var.var_s32 < *(s32*)prop->p_min){
+                    value->var.var_s32 = *(s32*)prop->p_min;
+                }
+                break;
+            case VAR_TYPE_S64:
+                if(value->var.var_s64 < *(s64*)prop->p_min){
+                    value->var.var_s64 = *(s64*)prop->p_min;
+                }
+                break;
+            case VAR_TYPE_FLOAT:
+                if(value->var.var_float < *(float*)prop->p_min){
+                    value->var.var_float = *(float*)prop->p_min;
+                }
+                break;
+            case VAR_TYPE_DOUBLE:
+                if(value->var.var_double < *(double*)prop->p_min){
+                    value->var.var_double = *(double*)prop->p_min;
+                }
+                break;
+            default:
+                break;
+            }
+        }
+    }
+
+    return result;
+}
+
 //=======Regs prop_save functions=======
+
+int reg_save_busy_check(sand_prop_base_t* reg){
+    int result = 0;
+
+    return result;
+}
 
 //=======Regs prop_access functions=======
 

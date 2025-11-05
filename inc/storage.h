@@ -32,6 +32,7 @@ extern "C" {
 #define STORAGE_FLASH_START         FLASH_START + FLASH_TOTAL_SIZE - STORAGE_FLASH_SIZE
 #define STORAGE_FLASH_END           STORAGE_FLASH_START + STORAGE_FLASH_SIZE
 #define STORAGE_FLASH_PAGE_NMB      FLASH_SAVE_AREA_SIZE / FLASH_PAGE_SIZE
+#define STORAGE_MUTEX_TIMEOUT       100
 
 //--------Macro--------
 
@@ -60,22 +61,63 @@ typedef struct{
 //-------External variables------
 
 extern storage_pcb_t storage_pcb;
+extern osMutexId regs_storage_mutex;
 
 //-------Function prototypes----------
 
 /**
  * @brief Init storage control block
- * @param storage_pcb
- * @param reg_list
- * @return
+ * @param storage_pcb - pointer to storage process control block
+ * @param reg_list - pointer to list of regs
+ * @param reg_list_len - lenght of reg_list
+ * @ingroup storage
+ * @return  0 - ok,\n
+ *          negative value if error,\n
  */
-int storage_init(storage_pcb_t* storage_pcb, sand_prop_save_t* reg_list, u16 reg_len);
+int storage_init(storage_pcb_t* storage_pcb, const sand_prop_save_t* reg_list, u16 reg_list_len);
 
-int storage_restore_data(storage_pcb_t* storage_pcb, sand_prop_save_t* reg_list, u16 reg_len);
+/**
+ * @brief Restore data from storage
+ * @param storage_pcb - pointer to storage process control block
+ * @param reg_list - pointer to list of regs
+ * @param reg_list_len - lenght of reg_list
+ * @ingroup storage
+ * @return  0 - ok,\n
+ *          negative value if error,\n
+ *
+ * @details
+ * If storage is empty, sets default values or null
+ */
+int storage_restore_data(storage_pcb_t* storage_pcb, const sand_prop_save_t* reg_list, u16 reg_list_len);
 
-int storage_save_data(storage_pcb_t* storage_pcb, sand_prop_save_t* reg_list, u16 reg_len);
+/**
+ * @brief Save all values of regs in storage
+ * @param storage_pcb - pointer to storage process control block
+ * @param reg_list - pointer to list of regs
+ * @param reg_list_len - lenght of reg_list
+ * @ingroup storage
+ * @return  0 - ok,\n
+ *          negative value if error,\n
+ *
+ * @details
+ * During saving time sets save_busy flags and block regs for changing via reg_base_write()
+ */
+int storage_save_data(storage_pcb_t* storage_pcb, const sand_prop_save_t* reg_list, u16 reg_list_len);
 
-int storage_data_changed_check(storage_pcb_t* storage_pcb, sand_prop_save_t* reg_list, u16 reg_len);
+/**
+ * @brief Check current regs values change
+ * @param storage_pcb - pointer to storage process control block
+ * @param reg_list - pointer to list of regs
+ * @param reg_list_len - lenght of reg_list
+ * @ingroup storage
+ * @return  0 - ok,\n
+ *          negative value if error,\n
+ *
+ * @details
+ * Calculate CRC of regs values and compare with CRC in storage.
+ * If change found, sets storage_pcb.data_changed flag
+ */
+int storage_data_changed_check(storage_pcb_t* storage_pcb, const sand_prop_save_t* reg_list, u16 reg_list_len);
 
 #ifdef __cplusplus
 }

@@ -10,6 +10,7 @@
 //-------Global variables------
 
 storage_pcb_t storage_pcb = {0};
+osMutexId regs_storage_mutex = {0};
 
 //-------Static variables------
 
@@ -18,6 +19,30 @@ static CRC_HandleTypeDef hcrc = {0};
 //-------Static functions declaration-----------
 
 //-------Functions----------
+
+int storage_init(storage_pcb_t* storage_pcb, const sand_prop_save_t* reg_list, u16 reg_list_len){
+    int result = 0;
+
+    return result;
+}
+
+int storage_restore_data(storage_pcb_t* storage_pcb, const sand_prop_save_t* reg_list, u16 reg_list_len){
+    int result = 0;
+
+    return result;
+}
+
+int storage_save_data(storage_pcb_t* storage_pcb, const sand_prop_save_t* reg_list, u16 reg_list_len){
+    int result = 0;
+
+    return result;
+}
+
+int storage_data_changed_check(storage_pcb_t* storage_pcb, const sand_prop_save_t* reg_list, u16 reg_list_len){
+    int result = 0;
+
+    return result;
+}
 
 //-------Static functions----------
 

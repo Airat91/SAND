@@ -23,22 +23,21 @@
 
 //--------Defines--------
 
-#define DEVICE_NAME                 "SAND-AI"
-
 //#generator_message{"msg":"sand_struct_define", "action":"insert_start"}
 // This part of file generated automatically, don't change it
-#define OS_STRUCT_SIZE           	108
+#define DEVICE_NAME              	"SAND_AI"
+
+#define OS_STRUCT_SIZE           	88
 #define TIME_STRUCT_SIZE         	20
 #define DEVICE_STRUCT_SIZE       	200
 #define MODBUS_STRUCT_SIZE       	2
 #define SERVICE_STRUCT_SIZE      	20
-#define DEBUG_STRUCT_SIZE        	0
 #define AI_STRUCT_SIZE           	36
 #define TEST_STRUCT_SIZE         	860
 
 #define SAND_PROP_BASE_REG_NUM   	54
 #define SAND_PROP_MDB_REG_NUM    	54
-#define SAND_PROP_RANGE_REG_NUM  	0
+#define SAND_PROP_RANGE_REG_NUM  	9
 #define SAND_PROP_SAVE_REG_NUM   	10
 #define SAND_PROP_ACCESS_REG_NUM 	0
 //#generator_message{"msg":"sand_struct_define", "action":"insert_end"}
@@ -55,7 +54,7 @@ typedef union{
 		u16    num_of_vars;        // "Total registers in project"
 		u16    lang;               // "Interface language"
 		char   build[40];          // "Build info"
-		char   build_date[40];     // "Date of SW building"
+		char   build_date[20];     // "Date of SW building"
 		u16    command;            // "Command register"
 		u16    reset_num;          // "Number of resets"
 		u32    runtime;            // "Runtime from last reset (sec)"
@@ -119,12 +118,6 @@ typedef union{
 
 typedef union{
 	struct MCU_PACK{
-	}vars;
-	u8 bytes[DEBUG_STRUCT_SIZE];
-}debug_struct;
-
-typedef union{
-	struct MCU_PACK{
 		float  ai_value[2];        // "Measured value"
 		float  ai_calib_a[2];      // "Calibration coef A"
 		float  ai_calib_b[2];      // "Calibration coef B"
@@ -162,7 +155,6 @@ extern time_struct              	time;
 extern device_struct            	device;
 extern modbus_struct            	modbus;
 extern service_struct           	service;
-extern debug_struct             	debug;
 extern ai_struct                	ai;
 extern test_struct              	test;
 
