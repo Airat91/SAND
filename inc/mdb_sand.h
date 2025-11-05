@@ -15,7 +15,7 @@
 #include "mdb.h"
 #include "pin_map.h"
 #include "reg.h"
-#include "sofi_reg.h"
+#include "sand_reg.h"
 #include "debug.h"
 /*add includes before */
 

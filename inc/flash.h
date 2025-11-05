@@ -56,7 +56,7 @@ extern "C" {
 typedef enum{
     FLASH_WRITE_HALFWORD    = 1,    // Half-word (16-bit)
     FLASH_WRITE_WORD        = 2,    // Word (32 bit)
-    FLASH_WRITE_DOUBLEWORD  = 4,    // Double-word (64 bit)
+    FLASH_WRITE_DOUBLEWORD     = 4,    // Double-word (64 bit)
 }flash_write_size_t;
 
 //-------External variables------
@@ -71,7 +71,7 @@ typedef enum{
  * @ingroup flash
  * @return  0 - ok,\n
  *          -1 - Address not in FLASH area,\n
- *          -2 - End of read data out of FLASH area
+ *          -2 - End of read data out of FLASH area,\n
  */
 int flash_read(u32 addr, u16* buf, u16 len);
 
@@ -83,6 +83,7 @@ int flash_read(u32 addr, u16* buf, u16 len);
  * @ingroup flash
  * @return  0 - ok,\n
  *          -1 - Address is not even,\n
+ *          -2 - End of read data out of FLASH area,\n
  *
  * @warning Global address of FLASH must be even
  */
@@ -103,33 +104,3 @@ int flash_read_global(u32 addr, u16* buf, u16 len);
 #endif
 
 #endif // FLASH_H
-
-//-------Unrefactoried----------
-
-/**
-  * @addtogroup LCD
-  * @{
-  */
-#define SAVE_AREA_SIZE 64   // One record size in bytes
-#define PAGE_SIZE 1024
-#define FLASH_SAVE_PAGE 63
-#define FLASH_START_ADDRESS 0x08000000
-#define FLASH_SAVE_PAGE_ADDRESS FLASH_START_ADDRESS+FLASH_SAVE_PAGE*PAGE_SIZE
-#define SAVE_AREA_NMB PAGE_SIZE/SAVE_AREA_SIZE
-/**
-  * @}
-  */
-
-
-/*========== TYPEDEFS ==========*/
-
-
-
-/*========= GLOBAL VARIABLES ==========*/
-
-
-
-/*========== FUNCTION PROTOTYPES ==========*/
-
-int save_to_flash(int area_cnt, uint8_t start_position, uint16_t *data);
-int find_free_area(void);

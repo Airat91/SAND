@@ -8,8 +8,9 @@
 #ifndef __REG_H__
 #define __REG_H__
 /*add includes below */
-#include "sofi_reg.h"
+#include "sand_reg.h"
 #include "string.h"
+#include "cmsis_os.h"
 #if(DEVICE_TYPE == DEFPCB)
     #include "rergs_defpcb.h"
 #elif(DEVICE_TYPE == SAND_AI)
@@ -48,10 +49,12 @@ typedef union{
 
 typedef struct{
     reg_var_union_t  var;
-    sofi_var_t var_type;
+    sand_var_t var_type;
 }reg_var_t;
 
 //-------External variables------
+
+extern osMutexId regs_access_mutex;
 
 //-------Function prototypes----------
 
@@ -64,7 +67,7 @@ typedef struct{
  * @return  - pointer to reg,\n
  *          NULL - register not found,\n
  */
-sofi_prop_base_t* reg_base_get_by_name(char* reg_name);
+sand_prop_base_t* reg_base_get_by_name(char* reg_name);
 
 /**
  * @brief Find register by index
@@ -73,7 +76,7 @@ sofi_prop_base_t* reg_base_get_by_name(char* reg_name);
  * @return  - pointer to reg,\n
  *          NULL - register not found,\n
  */
-sofi_prop_base_t* reg_base_get_by_ind(u16 ind);
+sand_prop_base_t* reg_base_get_by_ind(u16 ind);
 
 /**
  * @brief Write new value to register (register array)
@@ -88,7 +91,7 @@ sofi_prop_base_t* reg_base_get_by_ind(u16 ind);
  *          -4 - value type mismatch,\n
  *          -5 - register read only,\n
  */
-int reg_base_write(sofi_prop_base_t* reg, u16 array_ind, reg_var_t* value);
+int reg_base_write(sand_prop_base_t* reg, u16 array_ind, reg_var_t* value);
 
 /**
  * @brief Read register value (register array)
@@ -106,7 +109,7 @@ int reg_base_write(sofi_prop_base_t* reg, u16 array_ind, reg_var_t* value);
  * Please reset this struct before use.
  * 3. Value type after reading sets to the same register type
  */
-int reg_base_read(sofi_prop_base_t* reg, u16 array_ind, reg_var_t* value);
+int reg_base_read(sand_prop_base_t* reg, u16 array_ind, reg_var_t* value);
 
 /**
  * @brief reg_get_byte_num
@@ -114,7 +117,7 @@ int reg_base_read(sofi_prop_base_t* reg, u16 array_ind, reg_var_t* value);
  * @ingroup reg
  * @return number in bytes of var type
  */
-int reg_base_get_byte_size(sofi_prop_base_t* reg);
+int reg_base_get_byte_size(sand_prop_base_t* reg);
 /**
  * @brief Get property header of register
  * @param reg - pointer to register
@@ -123,7 +126,7 @@ int reg_base_get_byte_size(sofi_prop_base_t* reg);
  * @return  - pointer to property header,\n
  *          NULL - property header not found,\n
  */
-sofi_header_t* reg_base_get_prop(sofi_prop_base_t* reg, sofi_prop_enum_t prop);
+sand_header_t* reg_base_get_prop(sand_prop_base_t* reg, sand_prop_enum_t prop);
 
 //=======Regs prop_mdb functions=======
 
@@ -134,7 +137,7 @@ sofi_header_t* reg_base_get_prop(sofi_prop_base_t* reg, sofi_prop_enum_t prop);
  * @return  - pointer to reg,\n
  *          NULL - register not found,\n
  */
-sofi_prop_base_t* reg_mdb_get_by_addr(u16 addr);
+sand_prop_base_t* reg_mdb_get_by_addr(u16 addr);
 
 //=======Regs prop_range functions=======
 
@@ -149,7 +152,7 @@ sofi_prop_base_t* reg_mdb_get_by_addr(u16 addr);
  * @return  0 - access enable,\n
  *          1 - access blocked,\n
  */
-int reg_access_blocked(sofi_prop_base_t* reg);
+int reg_access_blocked(sand_prop_base_t* reg);
 
 #ifdef __cplusplus
 }

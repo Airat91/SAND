@@ -61,7 +61,7 @@
 #include "stm32f1xx_hal_iwdg.h"
 #include "pin_map.h"
 #include "debug.h"
-#include "sofi_reg.h"
+#include "sand_reg.h"
 #include "us_tim.h"
 #include "build_info.h"
 #include "storage.h"

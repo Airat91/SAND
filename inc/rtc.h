@@ -17,7 +17,7 @@
 #include "stm32f1xx_hal.h"
 #include "stm32f1xx_hal_rtc.h"
 #include "debug.h"
-#include "sofi_reg.h"
+#include "sand_reg.h"
 /*add includes before */
 
 #ifdef	__cplusplus

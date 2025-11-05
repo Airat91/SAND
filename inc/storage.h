@@ -11,9 +11,10 @@
 #include "cmsis_os.h"
 #include "type_def.h"
 #include "reg.h"
-#include "sofi_reg.h"
+#include "sand_reg.h"
 #include "debug.h"
 #include "flash.h"
+#include "stm32f1xx_hal_crc.h"
 /*add includes before */
 
 #ifdef __cplusplus
@@ -37,16 +38,44 @@ extern "C" {
 //--------Typedefs-------
 
 typedef struct{
-
+    u32* next_header;               // Pointer to next storage header
+    u16 data_crc;                   // CRC of storage data without header, used for storage data validation
+    u32 names_crc;                  // CRC of all saved registers names, used for restore
+    u16 data_len;                   // Storage data lenght in bytes
+    u16 erase_cnt;                  // Full erase of storage area counter
 }storage_header_t;
 
 typedef struct{
+    storage_header_t header;        // Storage header
+    u8 data;                        // Storage data first element
+}storage_dump_t;
 
+typedef struct{
+    u8 data_changed;                // Set this flag after regs change
+    u32 last_save_time_ms;          // Time of last data save
+    storage_dump_t* dump;           // Pointer to last actual damp in storage area
+    u32 current_names_crc;
 }storage_pcb_t;
 
 //-------External variables------
 
+extern storage_pcb_t storage_pcb;
+
 //-------Function prototypes----------
+
+/**
+ * @brief Init storage control block
+ * @param storage_pcb
+ * @param reg_list
+ * @return
+ */
+int storage_init(storage_pcb_t* storage_pcb, sand_prop_save_t* reg_list, u16 reg_len);
+
+int storage_restore_data(storage_pcb_t* storage_pcb, sand_prop_save_t* reg_list, u16 reg_len);
+
+int storage_save_data(storage_pcb_t* storage_pcb, sand_prop_save_t* reg_list, u16 reg_len);
+
+int storage_data_changed_check(storage_pcb_t* storage_pcb, sand_prop_save_t* reg_list, u16 reg_len);
 
 #ifdef __cplusplus
 }

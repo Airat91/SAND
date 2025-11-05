@@ -2,41 +2,38 @@ import project_generator as generator
 import colorama
 from colorama import Fore, Back, Style, init
 import openpyxl
-import sofi_reg
+import sand_reg
 import copy
 
-def sofi_reg_h_processing(Proj):
+def sand_reg_h_processing(Proj):
     """
-    Insert sofi_prop_xxx_t structs from sofi_reg.py to sofi_reg.h
+    Insert sand_prop_xxx_t structs from sand_reg.py to sand_reg.h
     :param Proj: class Project (project_generator.Project)
     :return:
     """
 
-    # 1 Read sofi_reg.py and find structs
+    # 1 Read sand_reg.py and find structs
 
-    for prop_name in sofi_reg.sofi_prop_list:
-        property = sofi_reg.sofi_prop_list[prop_name]
+    for prop_name in sand_reg.sand_prop_list:
+        property = sand_reg.sand_prop_list[prop_name]
         if "header" in property:
-            if property["header"]["type"] != "sofi_header_t":
-                print(Fore.YELLOW + Style.BRIGHT + "WARNING: generator/sofi_reg.py: '{}' header is '{}' (expected "
-                                                   "'sofi_header_t')\n".format(prop_name, property["header"]["type"]))
+            if property["header"]["type"] != "sand_header_t":
+                print(Fore.YELLOW + Style.BRIGHT + "WARNING: generator/sand_reg.py: '{}' header is '{}' (expected "
+                                                   "'sand_header_t')\n".format(prop_name, property["header"]["type"]))
             else:
-                Proj.sofi_properties["prop_name"].append(prop_name)
-                Proj.sofi_properties[prop_name] = property
+                Proj.sand_properties["prop_name"].append(prop_name)
+                Proj.sand_properties[prop_name] = property
         else:
-            Proj.errors["err_msg"].append("generator/sofi_reg.py: '{}' haven't header".format(prop_name))
+            Proj.errors["err_msg"].append("generator/sand_reg.py: '{}' haven't header".format(prop_name))
             Proj.errors["err_cnt"] += 1
-    if len(Proj.errors["err_msg"]) > 0:
-        Proj.print_new_errors()
-        quit("Generator breaked")
 
-    file_name = "sofi_reg_h"
+    file_name = "sand_reg_h"
     file = open(Proj.path[file_name], "r", encoding='UTF-8')
     text_lines = file.readlines()
     file.close()
     # find start and end of regs_description struct
-    start_insert = generator.get_msg_line_nmbr(Proj,file_name, "sofi_properties", "insert_start")
-    end_insert = generator.get_msg_line_nmbr(Proj,file_name, "sofi_properties", "insert_end")
+    start_insert = generator.get_msg_line_nmbr(Proj,file_name, "sand_properties", "insert_start")
+    end_insert = generator.get_msg_line_nmbr(Proj,file_name, "sand_properties", "insert_end")
     generator_insertion_find = False
     if start_insert != "not_found" and end_insert != "not_found":
         if start_insert < end_insert:
@@ -46,7 +43,7 @@ def sofi_reg_h_processing(Proj):
         Proj.errors["err_msg"].append("Don't found #generator_message in " + file_name)
         Proj.errors["err_cnt"] += 1
     else:
-        # 1. Add sofi_properties to buffer for not corrupting file if errors
+        # 1. Add sand_properties to buffer for not corrupting file if errors
         buffer = []
         try:
             # 1.1 Write generator message
@@ -54,65 +51,65 @@ def sofi_reg_h_processing(Proj):
 
             # 1.2 Calc words len for align text
             max_spaces = [0,0]
-            for param in sofi_reg.sofi_header_t:
-                if len(sofi_reg.sofi_header_t[param]["type"]) > max_spaces[0]:
-                    max_spaces[0] = len(sofi_reg.sofi_header_t[param]["type"])
+            for param in sand_reg.sand_header_t:
+                if len(sand_reg.sand_header_t[param]["type"]) > max_spaces[0]:
+                    max_spaces[0] = len(sand_reg.sand_header_t[param]["type"])
                 if len(param) > max_spaces[1]:
                     max_spaces[1] = len(param)
-            for prop_name in Proj.sofi_properties["prop_name"]:
-                property = Proj.sofi_properties[prop_name]
+            for prop_name in Proj.sand_properties["prop_name"]:
+                property = Proj.sand_properties[prop_name]
                 for param in property:
                     if len(property[param]["type"]) > max_spaces[0]:
                         max_spaces[0] = len(property[param]["type"])
                     if len(param) > max_spaces[1]:
                         max_spaces[1] = len(param)
-            for var_type in sofi_reg.sofi_var_t:
+            for var_type in sand_reg.sand_var_t:
                 if len(var_type) > max_spaces[0]:
                     max_spaces[0] = len(var_type)
-                if len(sofi_reg.sofi_var_t[var_type]["comment"]) > max_spaces[1]:
-                    max_spaces[1] = len(sofi_reg.sofi_var_t[var_type]["comment"])
-            for acc_lvl in sofi_reg.sofi_access_lvl_t:
+                if len(sand_reg.sand_var_t[var_type]["comment"]) > max_spaces[1]:
+                    max_spaces[1] = len(sand_reg.sand_var_t[var_type]["comment"])
+            for acc_lvl in sand_reg.sand_access_lvl_t:
                 if len(acc_lvl) > max_spaces[0]:
                     max_spaces[0] = len(acc_lvl)
-                if len(str(sofi_reg.sofi_access_lvl_t[acc_lvl]["value"])) > max_spaces[1]:
-                    max_spaces[1] = len(str(sofi_reg.sofi_access_lvl_t[acc_lvl]["value"]))
+                if len(str(sand_reg.sand_access_lvl_t[acc_lvl]["value"])) > max_spaces[1]:
+                    max_spaces[1] = len(str(sand_reg.sand_access_lvl_t[acc_lvl]["value"]))
 
-            # 1.3 Write sofi_prop enumeration
+            # 1.3 Write sand_prop enumeration
             buffer.append("typedef enum{\n")
-            for prop_name in Proj.sofi_properties["prop_name"]:
+            for prop_name in Proj.sand_properties["prop_name"]:
                 buffer.append("\t{},\n".format(prop_name.replace("_t","").upper()))
-            buffer.append("}sofi_prop_enum_t;\n\n")
+            buffer.append("}sand_prop_enum_t;\n\n")
 
-            # 1.4 Write sofi_var enumeration
+            # 1.4 Write sand_var enumeration
             buffer.append("typedef enum{\n")
-            for var_type in sofi_reg.sofi_var_t:
+            for var_type in sand_reg.sand_var_t:
                 space_0 = " "*(max_spaces[0] - len(var_type) + max_spaces[1] + 2)
-                space_1 = " "*(max_spaces[1] - len(sofi_reg.sofi_var_t[var_type]["comment"]) + 1)
-                buffer.append("\t{},{}// {}{}({} byte)\n".format(var_type.upper(), space_0, sofi_reg.sofi_var_t[var_type]["comment"],
-                                                                 space_1, sofi_reg.sofi_var_t[var_type]["byte_num"]))
-            buffer.append("}sofi_var_t;\n\n")
+                space_1 = " "*(max_spaces[1] - len(sand_reg.sand_var_t[var_type]["comment"]) + 1)
+                buffer.append("\t{},{}// {}{}({} byte)\n".format(var_type.upper(), space_0, sand_reg.sand_var_t[var_type]["comment"],
+                                                                 space_1, sand_reg.sand_var_t[var_type]["byte_num"]))
+            buffer.append("}sand_var_t;\n\n")
 
-            # 1.4 Write sofi_access_lvl enumeration
+            # 1.4 Write sand_access_lvl enumeration
             buffer.append("typedef enum{\n")
-            for acc_lvl in sofi_reg.sofi_access_lvl_t:
+            for acc_lvl in sand_reg.sand_access_lvl_t:
                 space_0 = " "*(max_spaces[0] - len(acc_lvl) + 1)
-                space_1 = " "*(max_spaces[1] - len(str(sofi_reg.sofi_access_lvl_t[acc_lvl]["value"])) - 1)
-                buffer.append("\t{}{}= {},{}// {}\n".format(acc_lvl.upper(), space_0, sofi_reg.sofi_access_lvl_t[acc_lvl]["value"],
-                                                                 space_1, sofi_reg.sofi_access_lvl_t[acc_lvl]["comment"]))
-            buffer.append("}sofi_access_lvl;\n\n")
+                space_1 = " "*(max_spaces[1] - len(str(sand_reg.sand_access_lvl_t[acc_lvl]["value"])) - 1)
+                buffer.append("\t{}{}= {},{}// {}\n".format(acc_lvl.upper(), space_0, sand_reg.sand_access_lvl_t[acc_lvl]["value"],
+                                                                 space_1, sand_reg.sand_access_lvl_t[acc_lvl]["comment"]))
+            buffer.append("}sand_access_lvl;\n\n")
 
             # 1.5 Write header to buffer
             buffer.append("typedef struct{\n")
-            for param in sofi_reg.sofi_header_t:
-                space_0 = " "*(max_spaces[0] - len(sofi_reg.sofi_header_t[param]["type"]) + 1)
+            for param in sand_reg.sand_header_t:
+                space_0 = " "*(max_spaces[0] - len(sand_reg.sand_header_t[param]["type"]) + 1)
                 space_1 = " "*(max_spaces[1] - len(param) + 1)
-                buffer.append("\t{}{}{};{}// {}\n".format(sofi_reg.sofi_header_t[param]["type"], space_0, param,
-                                                          space_1, sofi_reg.sofi_header_t[param]["comment"]))
-            buffer.append("}sofi_header_t;\n\n")
+                buffer.append("\t{}{}{};{}// {}\n".format(sand_reg.sand_header_t[param]["type"], space_0, param,
+                                                          space_1, sand_reg.sand_header_t[param]["comment"]))
+            buffer.append("}sand_header_t;\n\n")
 
-            # 1.6 Write sofi_prop_t to buffer
-            for prop_name in Proj.sofi_properties["prop_name"]:
-                property = Proj.sofi_properties[prop_name]
+            # 1.6 Write sand_prop_t to buffer
+            for prop_name in Proj.sand_properties["prop_name"]:
+                property = Proj.sand_properties[prop_name]
                 buffer.append("typedef struct{\n")
                 for param in property:
                     space_0 = " "*(max_spaces[0] - len(property[param]["type"]) + 1)
@@ -126,7 +123,7 @@ def sofi_reg_h_processing(Proj):
 
     # 4. Rewrite file with new insertion from generator
     if generator_insertion_find == True:
-        # 2. Rewrite sofi_reg.h file with new insertion from generator
+        # 2. Rewrite sand_reg.h file with new insertion from generator
         file = open(Proj.path[file_name], 'w', encoding='UTF-8')
         line_index = 0
         # 3. Write file before insertion
@@ -145,10 +142,6 @@ def sofi_reg_h_processing(Proj):
             line_index += 1
         # 6. Close modified file
         file.close()
-
-    if len(Proj.errors["err_msg"]) > 0:
-        Proj.print_new_errors()
-        quit("Generator breaked")
 
 def reg_map_module_xls_processing(Proj):
     """
@@ -191,7 +184,7 @@ def reg_map_module_xls_processing(Proj):
                                                "".format(Proj.module, struct, struct))
             struct_list_xls.remove(struct)
     # Add properties to project
-    for prop in sofi_reg.sofi_prop_list:
+    for prop in sand_reg.sand_prop_list:
         Proj.prop_list[prop] = {
             "reg_list" : {}
         }
@@ -216,8 +209,8 @@ def reg_map_module_xls_processing(Proj):
             property = worksheet.cell(1, column).value
             if property != None:
                 property = property.lower() + "_t"
-                if property in sofi_reg.sofi_prop_list:
-                    property_list[property] = copy.copy(sofi_reg.sofi_prop_list[property])
+                if property in sand_reg.sand_prop_list:
+                    property_list[property] = copy.copy(sand_reg.sand_prop_list[property])
                     property_list[property]["is_exist"] = False
                     # Read property parameters and save its indexes into property_headers
                     param = worksheet.cell(2, column).value
@@ -226,7 +219,7 @@ def reg_map_module_xls_processing(Proj):
                         avl_list.remove("header")
                         print(Fore.YELLOW + Style.BRIGHT + "WARNING: \"reg_map_{}.xls\" struct \"{}\" property \"{}\" "
                                                            "param \"{}\" is unknown.\nAvailable parameters defined in "
-                                                           "\"sofi_reg.py\": {}".format(Proj.module, struct_name, property,
+                                                           "\"sand_reg.py\": {}".format(Proj.module, struct_name, property,
                                                                                         param, avl_list))
                     else:
                         property_headers[column] = {
@@ -242,7 +235,7 @@ def reg_map_module_xls_processing(Proj):
                             print(
                                 Fore.YELLOW + Style.BRIGHT + "WARNING: \"reg_map_{}.xls\" struct \"{}\" property \"{}\" "
                                                              "param \"{}\" is unknown.\nAvailable parameters defined in "
-                                                             "\"sofi_reg.py\": {}".format(Proj.module, struct_name, property,
+                                                             "\"sand_reg.py\": {}".format(Proj.module, struct_name, property,
                                                                                           param, avl_list))
                         else:
                             property_headers[column] = {
@@ -254,16 +247,16 @@ def reg_map_module_xls_processing(Proj):
             column += 1
         # Read regs on sheet
         for row in range(3, worksheet.max_row + 1):
-            reg = sofi_reg.reg()
+            reg = sand_reg.reg()
             for column in range(1, max_column):
                 property = property_headers[column]["property"]
                 param = property_headers[column]["param"]
                 reg.prop_list[property][param]["value"] = worksheet.cell(row, column).value
                 if worksheet.cell(row, column).value != None:
                     reg.prop_list[property]["is_exist"] = True
-            reg_name = reg.prop_list["sofi_prop_base_t"]["name"]["value"]
+            reg_name = reg.prop_list["sand_prop_base_t"]["name"]["value"]
             reg.name = reg_name
-            reg.type = reg.prop_list["sofi_prop_base_t"]["type"]["value"]
+            reg.type = reg.prop_list["sand_prop_base_t"]["type"]["value"]
             reg.struct = struct_name
             Proj.struct_list[struct_name]["reg_list"][reg_name] = reg
         print("Struct \"{}\" found {} registers".format(struct_name, len(Proj.struct_list[struct_name]["reg_list"])))
@@ -288,16 +281,16 @@ def regs_module_h_processing(Proj):
     file = open(Proj.path[file_name], "r", encoding='UTF-8')
     text_lines = file.readlines()
     file.close()
-    # 1 Find start and end of sofi_struct_define
-    define_insert_start = generator.get_msg_line_nmbr(Proj, file_name, "sofi_struct_define", "insert_start")
-    define_insert_end = generator.get_msg_line_nmbr(Proj, file_name, "sofi_struct_define", "insert_end")
+    # 1 Find start and end of sand_struct_define
+    define_insert_start = generator.get_msg_line_nmbr(Proj, file_name, "sand_struct_define", "insert_start")
+    define_insert_end = generator.get_msg_line_nmbr(Proj, file_name, "sand_struct_define", "insert_end")
     define_insert_find = False
     if define_insert_start != "not_found" and define_insert_end != "not_found":
         if define_insert_start < define_insert_end:
             # We found end of regs_description struct
             define_insert_find = True
     if define_insert_find == False:
-        Proj.errors["err_msg"].append("Don't found #generator_message \"sofi_struct_define\" in " + file_name)
+        Proj.errors["err_msg"].append("Don't found #generator_message \"sand_struct_define\" in " + file_name)
         Proj.errors["err_cnt"] += 1
     else:
         # 1.1. Add defines to buffer for not corrupting file if errors
@@ -338,16 +331,16 @@ def regs_module_h_processing(Proj):
             Proj.errors["err_msg"].append("Error during adding defines to " + file_name)
             Proj.errors["err_cnt"] += 1
 
-    # 2. Find start and end of sofi_struct
-    struct_insert_start = generator.get_msg_line_nmbr(Proj, file_name, "sofi_struct", "insert_start")
-    struct_insert_end = generator.get_msg_line_nmbr(Proj, file_name, "sofi_struct", "insert_end")
+    # 2. Find start and end of sand_struct
+    struct_insert_start = generator.get_msg_line_nmbr(Proj, file_name, "sand_struct", "insert_start")
+    struct_insert_end = generator.get_msg_line_nmbr(Proj, file_name, "sand_struct", "insert_end")
     struct_insertion_find = False
     if struct_insert_start != "not_found" and struct_insert_end != "not_found":
         if struct_insert_start < struct_insert_end:
-            # We found end of sofi_struct
+            # We found end of sand_struct
             struct_insertion_find = True
     if struct_insertion_find == False:
-        Proj.errors["err_msg"].append("Don't found #generator_message \"sofi_struct\" in " + file_name)
+        Proj.errors["err_msg"].append("Don't found #generator_message \"sand_struct\" in " + file_name)
         Proj.errors["err_cnt"] += 1
     else:
         # 2.1. Add structs to buffer for not corrupting file if errors
@@ -369,7 +362,7 @@ def regs_module_h_processing(Proj):
                     if len(reg.name) > max_spaces[1]:
                         max_spaces[1] = len(reg.name)
                     #array_len
-                    array_len = reg.prop_list["sofi_prop_base_t"]["array_len"]["value"]
+                    array_len = reg.prop_list["sand_prop_base_t"]["array_len"]["value"]
                     if array_len > 1:
                         if len("[{}]".format(array_len)) > max_spaces[2]:
                             max_spaces[2] = len("[{}]".format(array_len))
@@ -381,14 +374,14 @@ def regs_module_h_processing(Proj):
                     reg = struct["reg_list"][reg_name]
                     space_0 = " " * (max_spaces[0] - len(reg.type) + 1)
                     space_1 = " " * (max_spaces[1] - len(reg.name) + 1)
-                    array_len = reg.prop_list["sofi_prop_base_t"]["array_len"]["value"]
+                    array_len = reg.prop_list["sand_prop_base_t"]["array_len"]["value"]
                     array_len_str = ""
                     if array_len > 1:
                         array_len_str = "[{}]".format(array_len)
                         space_2 = " " * (max_spaces[2] - len(array_len_str))
                     else:
                         space_2 = " " * max_spaces[2]
-                    descr = reg.prop_list["sofi_prop_base_t"]["description"]["value"]
+                    descr = reg.prop_list["sand_prop_base_t"]["description"]["value"]
                     buffer_struct.append("\t\t{}{}{}{};{}{}// {}\n".format(reg.type, space_0, reg.name, array_len_str, space_1,
                                                                 space_2, descr))
                 buffer_struct.append("\t}vars;\n")
@@ -399,16 +392,16 @@ def regs_module_h_processing(Proj):
             Proj.errors["err_msg"].append("Error during adding structs to " + file_name)
             Proj.errors["err_cnt"] += 1
 
-    # 3. Find start and end of sofi_struct_external
-    external_insert_start = generator.get_msg_line_nmbr(Proj, file_name, "sofi_struct_external", "insert_start")
-    external_insert_end = generator.get_msg_line_nmbr(Proj, file_name, "sofi_struct_external", "insert_end")
+    # 3. Find start and end of sand_struct_external
+    external_insert_start = generator.get_msg_line_nmbr(Proj, file_name, "sand_struct_external", "insert_start")
+    external_insert_end = generator.get_msg_line_nmbr(Proj, file_name, "sand_struct_external", "insert_end")
     external_insertion_find = False
     if external_insert_start != "not_found" and external_insert_end != "not_found":
         if external_insert_start < external_insert_end:
-            # We found end of sofi_struct_external
+            # We found end of sand_struct_external
             external_insertion_find = True
     if external_insertion_find == False:
-        Proj.errors["err_msg"].append("Don't found #generator_message \"sofi_struct_external\" in " + file_name)
+        Proj.errors["err_msg"].append("Don't found #generator_message \"sand_struct_external\" in " + file_name)
         Proj.errors["err_cnt"] += 1
     else:
         # 3.1. Add structs to buffer for not corrupting file if errors
@@ -499,16 +492,16 @@ def regs_module_c_processing(Proj):
     file = open(Proj.path[file_name], "r", encoding='UTF-8')
     text_lines = file.readlines()
     file.close()
-    # 1 Find start and end of sofi_properties
-    prop_insert_start = generator.get_msg_line_nmbr(Proj, file_name, "sofi_properties", "insert_start")
-    prop_insert_end = generator.get_msg_line_nmbr(Proj, file_name, "sofi_properties", "insert_end")
+    # 1 Find start and end of sand_properties
+    prop_insert_start = generator.get_msg_line_nmbr(Proj, file_name, "sand_properties", "insert_start")
+    prop_insert_end = generator.get_msg_line_nmbr(Proj, file_name, "sand_properties", "insert_end")
     prop_insert_find = False
     if prop_insert_start != "not_found" and prop_insert_end != "not_found":
         if prop_insert_start < prop_insert_end:
             # We found end of regs_description struct
             prop_insert_find = True
     if prop_insert_find == False:
-        Proj.errors["err_msg"].append("Don't found #generator_message \"sofi_properties\" in " + file_name)
+        Proj.errors["err_msg"].append("Don't found #generator_message \"sand_properties\" in " + file_name)
         Proj.errors["err_cnt"] += 1
     else:
         # 1.1. Add defines to buffer for not corrupting file if errors
@@ -532,9 +525,9 @@ def regs_module_c_processing(Proj):
             for prop_name in Proj.prop_list:
                 prop_list = Proj.prop_list[prop_name]
                 # 1.1.3 Calc words len for align text
-                prop_param_list = list(sofi_reg.sofi_prop_list[prop_name].keys())
+                prop_param_list = list(sand_reg.sand_prop_list[prop_name].keys())
                 prop_param_list.remove("header")
-                header_param_list = list(sofi_reg.sofi_header_t.keys())
+                header_param_list = list(sand_reg.sand_header_t.keys())
                 max_spaces = [0] * (len(prop_param_list) + len(header_param_list))
                 for header_param in header_param_list:
                     ind = header_param_list.index(header_param)

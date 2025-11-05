@@ -15,7 +15,7 @@
 #include "type_def.h"
 #include "pin_map.h"
 #include "reg.h"
-#include "sofi_reg.h"
+#include "sand_reg.h"
 #include "debug.h"
 #include "adc_int.h"
 /*add includes before */

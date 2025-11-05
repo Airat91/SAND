@@ -10,7 +10,7 @@
 
 /*add includes below */
 #include "type_def.h"
-#include "sofi_reg.h"
+#include "sand_reg.h"
 /*add includes before */
 #ifdef __cplusplus
    extern "C" {
@@ -25,7 +25,7 @@
 
 #define DEVICE_NAME                 "SAND-AI"
 
-//#generator_message{"msg":"sofi_struct_define", "action":"insert_start"}
+//#generator_message{"msg":"sand_struct_define", "action":"insert_start"}
 // This part of file generated automatically, don't change it
 #define OS_STRUCT_SIZE           	108
 #define TIME_STRUCT_SIZE         	20
@@ -36,18 +36,18 @@
 #define AI_STRUCT_SIZE           	36
 #define TEST_STRUCT_SIZE         	860
 
-#define SOFI_PROP_BASE_REG_NUM   	54
-#define SOFI_PROP_MDB_REG_NUM    	54
-#define SOFI_PROP_RANGE_REG_NUM  	0
-#define SOFI_PROP_SAVE_REG_NUM   	10
-#define SOFI_PROP_ACCESS_REG_NUM 	0
-//#generator_message{"msg":"sofi_struct_define", "action":"insert_end"}
+#define SAND_PROP_BASE_REG_NUM   	54
+#define SAND_PROP_MDB_REG_NUM    	54
+#define SAND_PROP_RANGE_REG_NUM  	0
+#define SAND_PROP_SAVE_REG_NUM   	10
+#define SAND_PROP_ACCESS_REG_NUM 	0
+//#generator_message{"msg":"sand_struct_define", "action":"insert_end"}
 
 //--------Macro--------
 
 //--------Typedefs-------
 
-//#generator_message{"msg":"sofi_struct", "action":"insert_start"}
+//#generator_message{"msg":"sand_struct", "action":"insert_start"}
 // This part of file generated automatically, don't change it
 typedef union{
 	struct MCU_PACK{
@@ -151,11 +151,11 @@ typedef union{
 	u8 bytes[TEST_STRUCT_SIZE];
 }test_struct;
 
-//#generator_message{"msg":"sofi_struct", "action":"insert_end"}
+//#generator_message{"msg":"sand_struct", "action":"insert_end"}
 
 //-------External variables------
 
-//#generator_message{"msg":"sofi_struct_external", "action":"insert_start"}
+//#generator_message{"msg":"sand_struct_external", "action":"insert_start"}
 // This part of file generated automatically, don't change it
 extern os_struct                	os;
 extern time_struct              	time;
@@ -166,12 +166,12 @@ extern debug_struct             	debug;
 extern ai_struct                	ai;
 extern test_struct              	test;
 
-extern const sofi_prop_base_t   	sofi_prop_base_list[];
-extern const sofi_prop_mdb_t    	sofi_prop_mdb_list[];
-extern const sofi_prop_range_t  	sofi_prop_range_list[];
-extern const sofi_prop_save_t   	sofi_prop_save_list[];
-extern const sofi_prop_access_t 	sofi_prop_access_list[];
-//#generator_message{"msg":"sofi_struct_external", "action":"insert_end"}
+extern const sand_prop_base_t   	sand_prop_base_list[];
+extern const sand_prop_mdb_t    	sand_prop_mdb_list[];
+extern const sand_prop_range_t  	sand_prop_range_list[];
+extern const sand_prop_save_t   	sand_prop_save_list[];
+extern const sand_prop_access_t 	sand_prop_access_list[];
+//#generator_message{"msg":"sand_struct_external", "action":"insert_end"}
 
 //-------Function prototypes----------
 

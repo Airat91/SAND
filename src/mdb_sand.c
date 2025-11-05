@@ -336,8 +336,8 @@ static int mdb_sand_read_mul_input(mdb_packet_t* packet, u8* out_buf, u16* out_l
     u16 value_shift = 0;
     reg_var_t value = {0};
     u16 reg_size = 0;
-    sofi_prop_base_t* reg = NULL;
-    sofi_prop_mdb_t* mdb_prop = NULL;
+    sand_prop_base_t* reg = NULL;
+    sand_prop_mdb_t* mdb_prop = NULL;
     // Vars for debug
     int err = 0;
 
@@ -348,7 +348,7 @@ static int mdb_sand_read_mul_input(mdb_packet_t* packet, u8* out_buf, u16* out_l
         // Get register by ModBUS address
         reg = reg_mdb_get_by_addr(addr);
         if(reg != NULL){
-            mdb_prop = (sofi_prop_mdb_t*)reg_base_get_prop(reg, SOFI_PROP_MDB);
+            mdb_prop = (sand_prop_mdb_t*)reg_base_get_prop(reg, SAND_PROP_MDB);
             reg_size = reg_base_get_byte_size(reg);
             // Find array index and value shift for regs_size > 2
             array_ind = (addr - mdb_prop->mdb_addr) * MDB_REG_BYTE_SIZE / reg_size;
@@ -419,8 +419,8 @@ static int mdb_sand_write_sin_hold(mdb_packet_t* packet, u8* out_buf, u16* out_l
     u16 addr = packet->reg_addr;
     u16 addr_end = addr + 1;
     reg_var_t value = {0};
-    sofi_prop_base_t* reg = NULL;
-    sofi_prop_mdb_t* mdb_prop = NULL;
+    sand_prop_base_t* reg = NULL;
+    sand_prop_mdb_t* mdb_prop = NULL;
     u16 array_ind = 0;
     u16 reg_size = 0;
     // Vars for debug
@@ -432,7 +432,7 @@ static int mdb_sand_write_sin_hold(mdb_packet_t* packet, u8* out_buf, u16* out_l
     // Get register by ModBUS address
     reg = reg_mdb_get_by_addr(addr);
     if(reg != NULL){
-        mdb_prop = (sofi_prop_mdb_t*)reg_base_get_prop(reg, SOFI_PROP_MDB);
+        mdb_prop = (sand_prop_mdb_t*)reg_base_get_prop(reg, SAND_PROP_MDB);
         reg_size = reg_base_get_byte_size(reg);
         array_ind = (addr - mdb_prop->mdb_addr) * MDB_REG_BYTE_SIZE / reg_size;
         if((addr + reg_size / MDB_REG_BYTE_SIZE) <= addr_end){
@@ -579,8 +579,8 @@ static int mdb_sand_write_mul_hold(mdb_packet_t* packet, u8* out_buf, u16* out_l
     u16 addr = packet->reg_addr;
     u16 addr_end = addr + packet->reg_nmb;
     reg_var_t value = {0};
-    sofi_prop_base_t* reg = NULL;
-    sofi_prop_mdb_t* mdb_prop = NULL;
+    sand_prop_base_t* reg = NULL;
+    sand_prop_mdb_t* mdb_prop = NULL;
     u16 array_ind = 0;
     u16 reg_size = 0;
     u8 data_bytes_nmb = 0;
@@ -597,7 +597,7 @@ static int mdb_sand_write_mul_hold(mdb_packet_t* packet, u8* out_buf, u16* out_l
         // Get register by ModBUS address
         reg = reg_mdb_get_by_addr(addr);
         if(reg != NULL){
-            mdb_prop = (sofi_prop_mdb_t*)reg_base_get_prop(reg, SOFI_PROP_MDB);
+            mdb_prop = (sand_prop_mdb_t*)reg_base_get_prop(reg, SAND_PROP_MDB);
             reg_size = reg_base_get_byte_size(reg);
             array_ind = (addr - mdb_prop->mdb_addr) * MDB_REG_BYTE_SIZE / reg_size;
             if((addr + reg_size / MDB_REG_BYTE_SIZE) <= addr_end){

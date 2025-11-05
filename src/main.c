@@ -124,6 +124,12 @@ int main(void){
     main_IWDG_Init();
 #endif //RELEASE
 
+    osMutexDef(regs_access_mutex);
+    regs_access_mutex = osMutexCreate(osMutex(regs_access_mutex));
+    if(regs_access_mutex == NULL){
+        debug_msg(__func__, DBG_MSG_ERR, "Can't create regs_access_mutex");
+    }
+
     osThreadDef(main_task, main_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
     main_task_handle = osThreadCreate(osThread(main_task), NULL);
     if(main_task_handle == NULL){
@@ -1017,7 +1023,7 @@ void _Error_Handler(char *file, int line)
 }
 
 static void save_params(void){
-    int area_cnt = find_free_area();
+    /*int area_cnt = find_free_area();
     if(area_cnt < 0){
         uint32_t erase_error = 0;
         FLASH_EraseInitTypeDef flash_erase = {0};
@@ -1037,11 +1043,11 @@ static void save_params(void){
     //uart_deinit();
     //uart_init(config.params.mdb_bitrate, 8, 1, PARITY_NONE, 10000, UART_CONN_LOST_TIMEOUT);
     //delay for show message
-    osDelay(2000);
+    osDelay(2000);*/
 }
 
 static void restore_params(void){
-    int area_cnt = find_free_area();
+    /*int area_cnt = find_free_area();
     if(area_cnt != 0){
         if(area_cnt == -1){
             // page is fill, actual values in last area
@@ -1065,7 +1071,7 @@ static void restore_params(void){
         config.params.data_pin_config = DATA_PIN_DISABLE;
         config.params.tmpr_coef_a = 100;
         config.params.tmpr_coef_b = 0;
-    }
+    }*/
     /*for(bitrate_array_pointer = 0; bitrate_array_pointer < 14; bitrate_array_pointer++){
         if(bitrate_array[bitrate_array_pointer] == config.params.mdb_bitrate){
             break;
@@ -1420,7 +1426,7 @@ static int main_write_device_info(void){
     device.vars.device_type = DEVICE_TYPE;
 
     memcpy(&os.vars.os_version, &os_version, 6);
-    os.vars.num_of_vars = SOFI_PROP_BASE_REG_NUM;
+    os.vars.num_of_vars = SAND_PROP_BASE_REG_NUM;
     sprintf(os.vars.build, BUILD_INFO);
     sprintf(os.vars.build_date, BUILD_DATE);
 
@@ -1431,6 +1437,7 @@ static int main_write_device_info(void){
     erase.PageAddress = STORAGE_FLASH_START;
     erase.NbPages = 1;
     u32 page_error = 0;
+    int err = 0;
 
     HAL_FLASH_Unlock();
     HAL_FLASHEx_Erase(&erase, (uint32_t*)&page_error);
@@ -1449,9 +1456,9 @@ static int main_write_device_info(void){
         0x0001,
         0x0002,
     };
-    flash_write(STORAGE_FLASH_START + 4, test_buf, 11);
+    err = flash_write(STORAGE_FLASH_START + 2, test_buf, 11);
     memset(test_buf, 0, 22);
-    flash_read(STORAGE_FLASH_START + 3, test_buf, 11);
+    err = flash_read(STORAGE_FLASH_START + 2, test_buf, 11);
     //
 
     return result;

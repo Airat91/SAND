@@ -9,6 +9,8 @@
 
 //-------Global variables------
 
+osMutexId regs_access_mutex = {0};
+
 //-------Static variables------
 
 //-------Static functions declaration-----------
@@ -17,12 +19,12 @@
 
 //=======Regs prop_base functions=======
 
-sofi_prop_base_t* reg_base_get_by_name(char* reg_name){
-    sofi_prop_base_t* reg;
+sand_prop_base_t* reg_base_get_by_name(char* reg_name){
+    sand_prop_base_t* reg;
     u8 reg_found = 0;
 
-    for(u16 i = 0; i < SOFI_PROP_BASE_REG_NUM; i++){
-        reg = (sofi_prop_base_t*)&sofi_prop_base_list[i];
+    for(u16 i = 0; i < SAND_PROP_BASE_REG_NUM; i++){
+        reg = (sand_prop_base_t*)&sand_prop_base_list[i];
         if(strcmp(reg->name, reg_name) == 0){
             reg_found = 1;
             break;
@@ -35,19 +37,19 @@ sofi_prop_base_t* reg_base_get_by_name(char* reg_name){
     return reg;
 }
 
-sofi_prop_base_t* reg_base_get_by_ind(u16 ind){
-    sofi_prop_base_t* reg;
+sand_prop_base_t* reg_base_get_by_ind(u16 ind){
+    sand_prop_base_t* reg;
 
-    if(ind > SOFI_PROP_BASE_REG_NUM){
+    if(ind > SAND_PROP_BASE_REG_NUM){
         reg = NULL;
     }else{
-        reg = (sofi_prop_base_t*)&sofi_prop_base_list[ind];
+        reg = (sand_prop_base_t*)&sand_prop_base_list[ind];
     }
 
     return reg;
 }
 
-int reg_base_write(sofi_prop_base_t* reg, u16 array_ind, reg_var_t* value){
+int reg_base_write(sand_prop_base_t* reg, u16 array_ind, reg_var_t* value){
     int result = 0;
     u16 reg_size = 0;
 
@@ -80,7 +82,7 @@ int reg_base_write(sofi_prop_base_t* reg, u16 array_ind, reg_var_t* value){
     return result;
 }
 
-int reg_base_read(sofi_prop_base_t* reg, u16 array_ind, reg_var_t* value){
+int reg_base_read(sand_prop_base_t* reg, u16 array_ind, reg_var_t* value){
     int result = 0;
 
     if(reg == NULL){
@@ -106,7 +108,7 @@ int reg_base_read(sofi_prop_base_t* reg, u16 array_ind, reg_var_t* value){
     return result;
 }
 
-int reg_base_get_byte_size(sofi_prop_base_t* reg){
+int reg_base_get_byte_size(sand_prop_base_t* reg){
     int result = 0;
     switch(reg->type){
     case VAR_TYPE_U8:
@@ -135,8 +137,8 @@ int reg_base_get_byte_size(sofi_prop_base_t* reg){
     return result;
 }
 
-sofi_header_t* reg_base_get_prop(sofi_prop_base_t* reg, sofi_prop_enum_t prop){
-    sofi_header_t* header = &reg->header;
+sand_header_t* reg_base_get_prop(sand_prop_base_t* reg, sand_prop_enum_t prop){
+    sand_header_t* header = &reg->header;
     u8 header_found = 0;
     for(u16 i = 0; i < reg->prop_num; i++){
         if(header->prop == prop){
@@ -154,16 +156,16 @@ sofi_header_t* reg_base_get_prop(sofi_prop_base_t* reg, sofi_prop_enum_t prop){
 
 //=======Regs prop_mdb functions=======
 
-sofi_prop_base_t* reg_mdb_get_by_addr(u16 addr){
-    sofi_prop_base_t* reg;
-    sofi_prop_mdb_t* property;
+sand_prop_base_t* reg_mdb_get_by_addr(u16 addr){
+    sand_prop_base_t* reg;
+    sand_prop_mdb_t* property;
     u8 reg_found = 0;
     u16 start_addr = 0;
     u16 end_addr = 0;
 
-    for(u16 i = 0; i < SOFI_PROP_MDB_REG_NUM; i++){
-        property = (sofi_prop_mdb_t*)&sofi_prop_mdb_list[i];
-        reg = (sofi_prop_base_t*)property->header.header_base;
+    for(u16 i = 0; i < SAND_PROP_MDB_REG_NUM; i++){
+        property = (sand_prop_mdb_t*)&sand_prop_mdb_list[i];
+        reg = (sand_prop_base_t*)property->header.header_base;
         start_addr = property->mdb_addr;
         end_addr = start_addr + reg->array_len * reg_base_get_byte_size(reg)/2;
         if((addr >= start_addr)&&(addr < end_addr)){
@@ -185,10 +187,10 @@ sofi_prop_base_t* reg_mdb_get_by_addr(u16 addr){
 
 //=======Regs prop_access functions=======
 
-int reg_access_blocked(sofi_prop_base_t* reg){
+int reg_access_blocked(sand_prop_base_t* reg){
     int result = 0;
     // Find prop_acces of reg
-    sofi_prop_access_t* property = (sofi_prop_access_t*)reg_base_get_prop(reg, SOFI_PROP_ACCESS);
+    sand_prop_access_t* property = (sand_prop_access_t*)reg_base_get_prop(reg, SAND_PROP_ACCESS);
     if(property != NULL){
         // Check access enable timer
         if(property->access_en_timer_ms == 0){

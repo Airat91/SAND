@@ -202,6 +202,12 @@ static int mdb_function_correct(u8 code){
  */
 static u16 mdb_crc16_calc(u8* buf, u16 len){
     u16 crc;
+    __HAL_RCC_CRC_CLK_ENABLE();
+    CRC_HandleTypeDef hcrc = {0};
+    hcrc.Instance = CRC;
+    HAL_CRC_Init(&hcrc);
+    u32 hw_crc = 0;
+    __HAL_CRC_DR_RESET(&hcrc);
 
     u16 i, j;
     len = len > 254?254:len;

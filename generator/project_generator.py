@@ -21,10 +21,10 @@ import regs_handler
 GENERATOR = {
     "marker": "#generator_message",     #marker in file for parse by generator
     "msg": [                            #list of available messages
-        "sofi_properties",                  #properties typedefs
-        "sofi_struct",                      #global struct
-        "sofi_struct_external",             #external struct definitions
-        "sofi_struct_define",               #global struct defines
+        "sand_properties",                  #properties typedefs
+        "sand_struct",                      #global struct
+        "sand_struct_external",             #external struct definitions
+        "sand_struct_define",               #global struct defines
     ],
     "action": ["insert_start","insert_end","search_start","search_end"],
     "type_module": ["ai","ao","di","do","do_16","multi","bric","all","do_r_16","di_n_16","do_24", "comb_22"],
@@ -51,8 +51,8 @@ class Project():
         self.module = module_name,
         self.path = {                   #path of files
             "project_path"              : project_path,
-            "sofi_reg_h"                : project_path + "\\inc\\sofi_reg.h",
-            "sofi_reg_py"               : project_path + "\\generator\sofi_reg.py",
+            "sand_reg_h"                : project_path + "\\inc\\sand_reg.h",
+            "sand_reg_py"               : project_path + "\\generator\sand_reg.py",
             "build_info_h"              : project_path + "\\inc\\build_info.h",
             "output_hex"                : project_path + "\\build\\SAND.hex",
             "output_hex_dir"            : project_path + "\\build\\",
@@ -69,14 +69,14 @@ class Project():
             "err_cnt": 0,
         }
         self.generated_list = [         #list of generate files
-            "sofi_reg_h",
-            "sofi_reg_py",
+            "sand_reg_h",
+            "sand_reg_py",
             "reg_map_{}_xls".format(module_name),
             "regs_module_h",
             "regs_module_c",
         ]
         self.was_changed_list = []      #list of files for generate
-        self.sofi_properties = {        #list of sofi_prop_xxx_t structs
+        self.sand_properties = {        #list of sand_prop_xxx_t structs
             "prop_name":    [],         #list of property names
         }
         self.struct_list = {}           #List of structs from reg_map_module_xls
@@ -136,8 +136,8 @@ def main():
     4. Preprocess: Generate project structs and handle project files
         4.1 Replace build info
         4.2 Checking project files hash and add into changed_list if changed
-        4.3 If sofi_reg.py in changed_list, add sofi_reg.h into changed_list
-        4.4 If sofi_reg.h in changed_list, run sofi_reg_h_processing()
+        4.3 If sand_reg.py in changed_list, add sand_reg.h into changed_list
+        4.4 If sand_reg.h in changed_list, run sand_reg_h_processing()
         4.5 If reg_map_module.xls in changed_list, run reg_map_module_xls_processing() and add regs_module_h into changed_list
         4.6 If regs_module_h in changed_list, run regs_module_h_processing(), and add regs_module_c to changed_list
         4.7 If regs_module_c in changed_list, run regs_module_c_processing()
@@ -237,30 +237,30 @@ def main():
             if len(PROJECT.was_changed_list) > 0:
                 print("Files {} was changed".format(PROJECT.was_changed_list))
 
-        #4.3 If sofi_reg.py in changed list
-        if "sofi_reg_py" in PROJECT.was_changed_list:
-            # Rewrite hash for sofi_reg.py
+        #4.3 If sand_reg.py in changed list
+        if "sand_reg_py" in PROJECT.was_changed_list:
+            # Rewrite hash for sand_reg.py
             hash_json = open(PROJECT.path["hash_json"], "r", encoding='UTF-8')
             hash_data = json.load(hash_json)
-            hash_data["sofi_reg_py"] = hash_calc(PROJECT.path["sofi_reg_py"])
+            hash_data["sand_reg_py"] = hash_calc(PROJECT.path["sand_reg_py"])
             hash_json = open(PROJECT.path["hash_json"], "w", encoding='UTF-8')
             json.dump(hash_data, hash_json, indent=4)
             hash_json.close()
             
-            # Add sofi_reg.h to changed list
-            if "sofi_reg_h" not in PROJECT.was_changed_list:
-                PROJECT.was_changed_list.append("sofi_reg_h")
+            # Add sand_reg.h to changed list
+            if "sand_reg_h" not in PROJECT.was_changed_list:
+                PROJECT.was_changed_list.append("sand_reg_h")
             
-        # 4.4 If sofi_reg.h in changed list
-        if "sofi_reg_h" in PROJECT.was_changed_list:
-            file_handler.sofi_reg_h_processing(PROJECT)
+        # 4.4 If sand_reg.h in changed list
+        if "sand_reg_h" in PROJECT.was_changed_list:
+            file_handler.sand_reg_h_processing(PROJECT)
             if PROJECT.errors["err_cnt"] > 0:
                 PROJECT.print_all_errors()
                 quit("Generator breaked")
-            # Rewrite hash for sofi_reg_h
+            # Rewrite hash for sand_reg_h
             hash_json = open(PROJECT.path["hash_json"], "r", encoding='UTF-8')
             hash_data = json.load(hash_json)
-            hash_data["sofi_reg_h"] = hash_calc(PROJECT.path["sofi_reg_h"])
+            hash_data["sand_reg_h"] = hash_calc(PROJECT.path["sand_reg_h"])
             hash_json = open(PROJECT.path["hash_json"], "w", encoding='UTF-8')
             json.dump(hash_data, hash_json, indent=4)
             hash_json.close()
@@ -412,7 +412,7 @@ def check_generator_descriptions(line):
                     err_msg += "\"" + GENERATOR["msg"][i] + "\", "
                 err_msg = err_msg[:-2] + "\n"
             else:
-                if json_obj["msg"] == "sofi_properties":
+                if json_obj["msg"] == "sand_properties":
                     #action check
                     if "action" not in json_obj:
                         err_found = True
