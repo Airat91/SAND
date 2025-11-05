@@ -12,8 +12,7 @@ def sand_reg_h_processing(Proj):
     :return:
     """
 
-    # 1 Read sand_reg.py and find structs
-
+    step = "1 Read sand_reg.py and find structs"
     for prop_name in sand_reg.sand_prop_list:
         property = sand_reg.sand_prop_list[prop_name]
         if "header" in property:
@@ -43,13 +42,13 @@ def sand_reg_h_processing(Proj):
         Proj.errors["err_msg"].append("Don't found #generator_message in " + file_name)
         Proj.errors["err_cnt"] += 1
     else:
-        # 1. Add sand_properties to buffer for not corrupting file if errors
+        step = "1. Add sand_properties to buffer for not corrupting file if errors"
         buffer = []
         try:
-            # 1.1 Write generator message
+            step = "1.1 Write generator message"
             buffer.append("// This part of file generated automatically, don't change it\n\n")
 
-            # 1.2 Calc words len for align text
+            step = "1.2 Calc words len for align text"
             max_spaces = [0,0]
             for param in sand_reg.sand_header_t:
                 if len(sand_reg.sand_header_t[param]["type"]) > max_spaces[0]:
@@ -74,13 +73,13 @@ def sand_reg_h_processing(Proj):
                 if len(str(sand_reg.sand_access_lvl_t[acc_lvl]["value"])) > max_spaces[1]:
                     max_spaces[1] = len(str(sand_reg.sand_access_lvl_t[acc_lvl]["value"]))
 
-            # 1.3 Write sand_prop enumeration
+            step = "1.3 Write sand_prop enumeration"
             buffer.append("typedef enum{\n")
             for prop_name in Proj.sand_properties["prop_name"]:
                 buffer.append("\t{},\n".format(prop_name.replace("_t","").upper()))
             buffer.append("}sand_prop_enum_t;\n\n")
 
-            # 1.4 Write sand_var enumeration
+            step = "1.4 Write sand_var enumeration"
             buffer.append("typedef enum{\n")
             for var_type in sand_reg.sand_var_t:
                 space_0 = " "*(max_spaces[0] - len(var_type) + max_spaces[1] + 2)
@@ -89,7 +88,7 @@ def sand_reg_h_processing(Proj):
                                                                  space_1, sand_reg.sand_var_t[var_type]["byte_num"]))
             buffer.append("}sand_var_t;\n\n")
 
-            # 1.4 Write sand_access_lvl enumeration
+            step = "1.4 Write sand_access_lvl enumeration"
             buffer.append("typedef enum{\n")
             for acc_lvl in sand_reg.sand_access_lvl_t:
                 space_0 = " "*(max_spaces[0] - len(acc_lvl) + 1)
@@ -98,7 +97,7 @@ def sand_reg_h_processing(Proj):
                                                                  space_1, sand_reg.sand_access_lvl_t[acc_lvl]["comment"]))
             buffer.append("}sand_access_lvl;\n\n")
 
-            # 1.5 Write header to buffer
+            step = "1.5 Write header to buffer"
             buffer.append("typedef struct{\n")
             for param in sand_reg.sand_header_t:
                 space_0 = " "*(max_spaces[0] - len(sand_reg.sand_header_t[param]["type"]) + 1)
@@ -107,7 +106,7 @@ def sand_reg_h_processing(Proj):
                                                           space_1, sand_reg.sand_header_t[param]["comment"]))
             buffer.append("}sand_header_t;\n\n")
 
-            # 1.6 Write sand_prop_t to buffer
+            step = "1.6 Write sand_prop_t to buffer"
             for prop_name in Proj.sand_properties["prop_name"]:
                 property = Proj.sand_properties[prop_name]
                 buffer.append("typedef struct{\n")
@@ -118,29 +117,29 @@ def sand_reg_h_processing(Proj):
                                                               space_1, property[param]["comment"]))
                 buffer.append("}"+"{};\n\n".format(prop_name))
         except:
-            Proj.errors["err_msg"].append("Error during adding data to " + file_name)
+            Proj.errors["err_msg"].append("Error during adding property lists to " + file_name + ", step: " + step)
             Proj.errors["err_cnt"] += 1
 
-    # 4. Rewrite file with new insertion from generator
+    step = "4. Rewrite file with new insertion from generator"
     if generator_insertion_find == True:
-        # 2. Rewrite sand_reg.h file with new insertion from generator
+        step = "2. Rewrite sand_reg.h file with new insertion from generator"
         file = open(Proj.path[file_name], 'w', encoding='UTF-8')
         line_index = 0
-        # 3. Write file before insertion
+        step = "3. Write file before insertion"
         while line_index <= start_insert:
             file.writelines(text_lines[line_index])
             line_index += 1
         line_index -= 1
-        # 4. Write insertion
+        step = "4. Write insertion"
         if len(buffer) > 0:
             for line in buffer:
                 file.writelines(line)
-        # 5. Write file afer insertion
+        step = "5. Write file afer insertion"
         line_index = end_insert - 1
         while line_index < len(text_lines):
             file.writelines(text_lines[line_index])
             line_index += 1
-        # 6. Close modified file
+        step = "6. Close modified file"
         file.close()
 
 def reg_map_module_xls_processing(Proj):
@@ -281,7 +280,8 @@ def regs_module_h_processing(Proj):
     file = open(Proj.path[file_name], "r", encoding='UTF-8')
     text_lines = file.readlines()
     file.close()
-    # 1 Find start and end of sand_struct_define
+
+    step = "1 Find start and end of sand_struct_define"
     define_insert_start = generator.get_msg_line_nmbr(Proj, file_name, "sand_struct_define", "insert_start")
     define_insert_end = generator.get_msg_line_nmbr(Proj, file_name, "sand_struct_define", "insert_end")
     define_insert_find = False
@@ -293,13 +293,15 @@ def regs_module_h_processing(Proj):
         Proj.errors["err_msg"].append("Don't found #generator_message \"sand_struct_define\" in " + file_name)
         Proj.errors["err_cnt"] += 1
     else:
-        # 1.1. Add defines to buffer for not corrupting file if errors
+
+        step = "1.1. Add defines to buffer for not corrupting file if errors"
         buffer_define = []
         try:
-            # 1.1.1 Write generator message
+
+            step = "1.1.1 Write generator message"
             buffer_define.append("// This part of file generated automatically, don't change it\n")
 
-            # 1.1.2 Calc words len for align text
+            step = "1.1.2 Calc words len for align text"
             max_spaces = [0]
             for struct_name in Proj.struct_list:
                 define_str = "{}_STRUCT_SIZE".format(struct_name)
@@ -311,13 +313,13 @@ def regs_module_h_processing(Proj):
                 if len(define_str) > max_spaces[0]:
                     max_spaces[0] = len(define_str)
 
-            # 1.1.3 Write device name define
+            step = "1.1.3 Write device name define"
             define_str = "DEVICE_NAME"
             space_0 = " " * (max_spaces[0] - len(define_str) + 1)
             buffer_define.append("#define {}{}\t\"{}\"\n".format(define_str, space_0, Proj.name))
             buffer_define.append("\n")
 
-            # 1.1.4 Write defines to buffer_define
+            step = "1.1.4 Write defines to buffer_define"
             for struct_name in Proj.struct_list:
                 struct = Proj.struct_list[struct_name]
                 struct_byte_size = struct["byte_size"]
@@ -334,7 +336,7 @@ def regs_module_h_processing(Proj):
                 buffer_define.append("#define {}{}\t{}\n".format(define_str, space_0, prop_reg_num))
 
         except:
-            Proj.errors["err_msg"].append("Error during adding defines to " + file_name)
+            Proj.errors["err_msg"].append("Error during adding property lists to " + file_name + ", step: " + step)
             Proj.errors["err_cnt"] += 1
 
     # 2. Find start and end of sand_struct

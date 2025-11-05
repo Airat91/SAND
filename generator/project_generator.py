@@ -37,7 +37,7 @@ DEVICE = {
     }
 }
 
-compilation_max_len = 20    #max length of compilation info string
+compilation_max_len = 40    #max length of compilation info string
 __description__ = 'Generate project'
 
 class Project():
