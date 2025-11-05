@@ -200,15 +200,22 @@ def regs_handler(Proj):
                 break
 
     #2.3 sand_prop_range_t
+    Proj.prop_list["sand_prop_range_t"]["range_const_list"] = {}
+    range_const_list = Proj.prop_list["sand_prop_range_t"]["range_const_list"]
+    range_const_names = ["p_def", "p_min", "p_max"]
     for reg_name in Proj.prop_list["sand_prop_range_t"]["reg_list"]:
         reg = Proj.prop_list["sand_prop_range_t"]["reg_list"][reg_name]
         struct_name = get_struct_of_reg(reg_name, Proj)
-        if reg.prop_list["sand_prop_range_t"]["p_def"]["value"] == None:
-            reg.prop_list["sand_prop_range_t"]["p_def"]["value"] = "NULL"
-        if reg.prop_list["sand_prop_range_t"]["p_min"]["value"] == None:
-            reg.prop_list["sand_prop_range_t"]["p_min"]["value"] = "NULL"
-        if reg.prop_list["sand_prop_range_t"]["p_max"]["value"] == None:
-            reg.prop_list["sand_prop_range_t"]["p_max"]["value"] = "NULL"
+        for range_const in range_const_names:
+            value = reg.prop_list["sand_prop_range_t"][range_const]["value"]
+            if value == None:
+                reg.prop_list["sand_prop_range_t"][range_const]["value"] = "NULL"
+            else:
+                const = get_range_const(reg, value, range_const)
+                reg.prop_list["sand_prop_range_t"][range_const]["value"] = "(void*)&" + const["name"]
+                if const["name"] not in range_const_list:
+                    range_const_list[const["name"]] = const
+
 
     #2.4 sand_prop_save_t
     #2.4.1 Manual setted save address check
@@ -371,3 +378,30 @@ def get_struct_of_reg(reg_name, Proj):
             return struct_name
     if found == False:
         return "Unknown"
+
+def get_range_const(reg, value, const_type):
+    replace_symbols = ",./\\!@#$%^&*-+= "
+    remove_symbols = "{}\""
+    # Make name from type and value
+    name = "{}_{}".format(reg.type, value)
+    # Get array len of reg
+    array_len = reg.prop_list["sand_prop_base_t"]["array_len"]["value"]
+    # Replace and remove unacceptable symbols
+    for i in range(len(replace_symbols)):
+        symbol = replace_symbols[i]
+        name = name.replace(symbol, "_")
+    for i in range(len(remove_symbols)):
+        symbol = remove_symbols[i]
+        name = name.replace(symbol, "")
+    const = {
+        "name": name,
+        "decl_name": name,
+        "type": reg.type,
+        "value": str(value),
+    }
+    # Special handle for p_def
+    if const_type == "p_def":
+        if array_len > 1:
+            const["decl_name"] += "[]"
+
+    return const

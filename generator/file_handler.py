@@ -519,7 +519,7 @@ def regs_module_c_processing(Proj):
         try:
 
             step = "1.1.1 Write generator message"
-            buffer_prop.append("// This part of file generated automatically, don't change it\n")
+            buffer_prop.append("// This part of file generated automatically, don't change it\n\n")
 
             step = "1.1.2 Write global structs declaration"
             max_spaces = [0] * 2
@@ -533,6 +533,7 @@ def regs_module_c_processing(Proj):
                     max_spaces[1] = len (struct_name)
 
             step = "1.1.2.2 Add global structs to buffer_prop"
+            buffer_prop.append("//Global structs declaration\n")
             for struct_name in Proj.struct_list:
                 struct_declaration = struct_name + "_struct"
                 spaces_0 = " " * (max_spaces[0] - len(struct_declaration) + 1)
@@ -541,11 +542,34 @@ def regs_module_c_processing(Proj):
                 buffer_prop.append(" = {0};\n")
             buffer_prop.append("\n")
 
-            step = "1.1.3 Write prop lists "
+            step = "1.1.3 Write range_const list"
+            buffer_prop.append("//range_const declaration\n")
+            range_const_list = Proj.prop_list["sand_prop_range_t"]["range_const_list"]
+
+            step = "1.1.3.1 Calc values len for align"
+            for const_name in range_const_list:
+                const = range_const_list[const_name]
+                string = "static const " + const["type"]
+                if len(string) > max_spaces[0]:
+                    max_spaces[0] = len(string)
+                if len(str(const["decl_name"])) > max_spaces[1]:
+                    max_spaces[1] = len(str(const["decl_name"]))
+
+            step = "1.1.3.2 Write range_const elements"
+            for const_name in range_const_list:
+                const = range_const_list[const_name]
+                string = "static const " + const["type"]
+                spaces_0 = " " * (max_spaces[0] - len(string) + 1)
+                spaces_1 = " " * (max_spaces[1] - len(str(const["decl_name"])) + 1)
+                buffer_prop.append("{}{}\t{}{} = {};\n".format(string, spaces_0, const["decl_name"], spaces_1, const["value"]))
+            buffer_prop.append("\n")
+
+            step = "1.1.4 Write prop lists "
+            buffer_prop.append("//Property lists\n")
             for prop_name in Proj.prop_list:
                 prop_list = Proj.prop_list[prop_name]
 
-                step = "1.1.3.1 Calc headers len for align text"
+                step = "1.1.4.1 Calc headers len for align text"
                 prop_param_list = list(sand_reg.sand_prop_list[prop_name].keys())
                 prop_param_list.remove("header")
                 header_param_list = list(sand_reg.sand_header_t.keys())
@@ -568,7 +592,7 @@ def regs_module_c_processing(Proj):
                             max_spaces[ind] = len(reg_name)
 
 
-                step = "1.1.3.2 Calc regs values len for align text"
+                step = "1.1.4.2 Calc regs values len for align text"
                 for reg_name in prop_list["reg_list"]:
                     reg = prop_list["reg_list"][reg_name]
                     for header_param in header_param_list:
@@ -583,13 +607,13 @@ def regs_module_c_processing(Proj):
                             if len(str(prop["value"])) > max_spaces[ind]:
                                 max_spaces[ind] = len(str(prop["value"]))
 
-                step = "1.1.4 Write prop_list to buffer_prop"
+                step = "1.1.5 Write prop_list to buffer_prop"
                 prop_list_name = prop_name.replace("_t", "_list")
                 prop_list_reg_num = prop_name.replace("_t", "").upper() + "_REG_NUM"
                 buffer_prop.append("const {} {}[{}]".format(prop_name, prop_list_name, prop_list_reg_num))
                 buffer_prop.append("={\n")
 
-                step = "1.1.4.1 Write prop_list property parameters in comments"
+                step = "1.1.5.1 Write prop_list property parameters in comments"
                 buffer_prop.append("//")
                 for header_param in header_param_list:
                     ind = header_param_list.index(header_param)
@@ -606,12 +630,12 @@ def regs_module_c_processing(Proj):
                     buffer_prop.append("   reg_name")
                 buffer_prop.append("\n")
 
-                step = "1.1.4.2 Write prop_list values"
+                step = "1.1.5.2 Write prop_list values"
                 for reg_name in prop_list["reg_list"]:
                     reg = prop_list["reg_list"][reg_name]
                     buffer_prop.append("{{")
 
-                    step = "1.1.4.3 Write prop_list reg header values"
+                    step = "1.1.5.3 Write prop_list reg header values"
                     for header_param in header_param_list:
                         ind = header_param_list.index(header_param)
                         header_val = reg.prop_list[prop_name]["header"]["header_t"][header_param]
@@ -622,7 +646,7 @@ def regs_module_c_processing(Proj):
                             spaces = " " * (max_spaces[ind] - len(header_val))
                             buffer_prop.append(header_val + "}," + spaces + "\t")
 
-                    step = "1.1.4.4 Write prop_list reg prop values"
+                    step = "1.1.5.4 Write prop_list reg prop values"
                     for prop_param in prop_param_list:
                         ind = prop_param_list.index(prop_param) + len(header_param_list)
                         if "value" in reg.prop_list[prop_name][prop_param]:
