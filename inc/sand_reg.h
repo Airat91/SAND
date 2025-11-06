@@ -92,7 +92,7 @@ typedef struct{
 
 typedef struct{
 	sand_header_t      header;             // Header of property
-	u16                save_addr;          // Address like byte number in contiguous save array
+	u16                save_addr;          // Address like byte number in continuous save array
 	u8                 busy;               // Register is busy in saving operation flag
 }sand_prop_save_t;
 

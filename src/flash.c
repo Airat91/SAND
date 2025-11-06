@@ -17,9 +17,9 @@ static void flash_htol(u16* word);
 
 //-------Functions----------
 
-int flash_read(u32 addr, u16* buf, u16 len){
+int flash_read(u32 addr, void* buf, u16 bytes_len){
     int result = 0;
-    u32 addr_end = addr + len * 2;
+    u32 addr_end = addr + bytes_len;
 
     if((addr < FLASH_START) || (addr > FLASH_END)){
         result = -1;
@@ -28,8 +28,7 @@ int flash_read(u32 addr, u16* buf, u16 len){
         // End of read data out of FLASH area
         result = -2;
     }else{
-        // @note memcpy() use lenght in bytes, terefore multiple len * 2
-        memcpy(buf, (u32*)addr, len * 2);
+        memcpy(buf, (u32*)addr, bytes_len);
     }
 
     return result;
@@ -58,21 +57,21 @@ int flash_write(u32 addr, u16* buf, u16 len){
             // Get tail size of buffer in half-words (16 bit)
             write_size = len - ptr;
             // Select one of writing mode
-            if(write_size >= FLASH_WRITE_DOUBLEWORD){
-                write_size = FLASH_WRITE_DOUBLEWORD;
-            }else if(write_size >= FLASH_WRITE_WORD){
-                write_size = FLASH_WRITE_WORD;
+            if(write_size >= FLASH_DOUBLEWORD){
+                write_size = FLASH_DOUBLEWORD;
+            }else if(write_size >= FLASH_WORD){
+                write_size = FLASH_WORD;
             }else{
-                write_size = FLASH_WRITE_HALFWORD; // Half-word (16-bit)
+                write_size = FLASH_HALFWORD; // Half-word (16-bit)
             }
             switch(write_size){
-            case FLASH_WRITE_HALFWORD:
+            case FLASH_HALFWORD:
                 stat = HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD, addr, *(u16*)buf);
                 break;
-            case FLASH_WRITE_WORD:
+            case FLASH_WORD:
                 stat = HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, addr, *(u32*)buf);
                 break;
-            case FLASH_WRITE_DOUBLEWORD:
+            case FLASH_DOUBLEWORD:
                 stat = HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, addr, *(u64*)buf);
                 break;
             }

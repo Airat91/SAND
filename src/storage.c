@@ -15,13 +15,36 @@ osMutexId regs_storage_mutex = {0};
 //-------Static variables------
 
 static CRC_HandleTypeDef hcrc = {0};
+static storage_fifo_pcb_t storage_fifo_pcb = {0};   // Storage FIFO process control block
 
 //-------Static functions declaration-----------
+
+static int storage_crc_init(CRC_HandleTypeDef* hcrc);
+static u32 storage_calc_names_crc(const sand_prop_save_t* reg_list, u16 reg_list_len);
+static u32 storage_calc_data_crc(const sand_prop_save_t* reg_list, u16 reg_list_len);
+static storage_dump_t* storage_dump_find(void);
+static int storage_erase(u32* erase_cnt);
+static int storage_fifo_init(storage_fifo_pcb_t* storage_fifo, u32 flash_addr);
+static int storage_fifo_push(storage_fifo_pcb_t* storage_fifo, u8* data, u16 len);
+static int storage_fifo_write_tail(storage_fifo_pcb_t* storage_fifo);
 
 //-------Functions----------
 
 int storage_init(storage_pcb_t* storage_pcb, const sand_prop_save_t* reg_list, u16 reg_list_len){
     int result = 0;
+    if(storage_crc_init(&hcrc) != 0){
+        result = -1;
+        debug_msg(__func__, DBG_MSG_ERR, "storage_crc_init() error");
+    }
+    // Reset storage_pcb
+    memset(storage_pcb, 0, sizeof(storage_pcb_t));
+    // Calculate actual names_crc
+    storage_pcb->current_names_crc = storage_calc_names_crc(reg_list, reg_list_len);
+    // Get last dump from storage
+    storage_pcb->dump = storage_dump_find();
+    if(storage_pcb->dump != NULL){
+        storage_pcb->erase_cnt = storage_pcb->dump->header.erase_cnt;
+    }
 
     return result;
 }
@@ -29,11 +52,134 @@ int storage_init(storage_pcb_t* storage_pcb, const sand_prop_save_t* reg_list, u
 int storage_restore_data(storage_pcb_t* storage_pcb, const sand_prop_save_t* reg_list, u16 reg_list_len){
     int result = 0;
 
+    sand_prop_base_t* reg = NULL;
+    sand_prop_range_t* prop_range = NULL;
+    u16 bytes_nmb = 0;
+    u32 addr = 0;
+
+    // Take regs_storage_mutex
+    storage_mutex_wait();
+
+    if(storage_pcb->dump != NULL){
+        // If dump is exist, restore last values from dump
+        for(u16 i = 0; i < reg_list_len; i++){
+            reg = (sand_prop_base_t*)reg_list[i].header.header_base;
+            bytes_nmb = reg_base_get_byte_size(reg) * reg->array_len;
+            addr = storage_pcb->dump->data + reg_list[i].save_addr;
+            flash_read(addr, (u16*)reg->p_value, bytes_nmb);
+        }
+    }else{
+        // If dump doesn't exist, set default values or null
+        for(u16 i = 0; i < reg_list_len; i++){
+            reg = (sand_prop_base_t*)reg_list[i].header.header_base;
+            prop_range = (sand_prop_range_t*)reg_base_get_prop(reg, SAND_PROP_RANGE);
+            if(reg->type == VAR_TYPE_CHAR){
+                // Get length of def-string
+                bytes_nmb = strlen(prop_range->p_def);
+            }else{
+                // Get length in bytes
+                bytes_nmb = reg_base_get_byte_size(reg) * reg->array_len;
+            }
+            if(prop_range != NULL){
+                // Copy default value into register value
+                memcpy(reg->p_value, prop_range->p_def, bytes_nmb);
+            }else{
+                // Write nulls
+                memset(reg->p_value, 0, bytes_nmb);
+            }
+        }
+        // Set data changed flag
+        storage_pcb->data_changed = 1;
+    }
+    // Update data_crc
+    storage_pcb->current_data_crc = storage_calc_data_crc(reg_list, reg_list_len);
+
+    // Release regs_storage_mutex
+    storage_mutex_release();
+
     return result;
 }
 
 int storage_save_data(storage_pcb_t* storage_pcb, const sand_prop_save_t* reg_list, u16 reg_list_len){
     int result = 0;
+
+    sand_prop_base_t* reg = NULL;
+    sand_prop_save_t* prop_save = NULL;
+    storage_header_t dump_header = {0};
+    const u16 dump_size = SAND_SAVE_DATA_SIZE + sizeof(storage_header_t);
+    const u16 header_size = sizeof(storage_header_t);
+    static u8 buf[STORAGE_SAVE_DATA_BUF_LEN] = {0}; // Buffer for write data to flash like FIFO
+    u16 buf_ptr = 0;        // Buffer element index
+    u16 bytes_nmb = 0;      // Total data size for copy into buf
+    u16 reg_size = 0;       // Register size in bytes
+    u32 save_addr_glob = 0; // Address value for save into storage FLASH
+    u16 byte_shift = 0;     // Unused
+    u8 need_erase = 0;      // Flag for erase
+    u16 reg_nmb = 0;        // Register counter for reg_list
+    u8* data_ptr = NULL;    // Pointer to data value for copy into buf
+    u16 save_addr_ptr = 0;  // Save address index
+    u8 null_value = 0;      // Null value for fill unused addresses
+
+    // debug vars
+    u32 temp = 0;
+    u32* temp_ptr = NULL;
+
+    // Take regs_storage_mutex
+    storage_mutex_wait();
+
+    // Fill new_dump header
+    dump_header.data_crc = storage_calc_data_crc(reg_list, reg_list_len);
+    dump_header.names_crc = storage_pcb->current_names_crc;
+    dump_header.data_len = SAND_SAVE_DATA_SIZE;
+    // Check available storage empty area for new dump
+    if(storage_pcb->dump != NULL){
+        temp = (u32)storage_pcb->dump->header.next_header;
+        if((u32)storage_pcb->dump->header.next_header + dump_size > STORAGE_FLASH_END){
+            // If new dump doesn't fit in free area
+            save_addr_glob = STORAGE_FLASH_START;                                   // Start address of new dump
+            dump_header.next_header = &*(u32*)(STORAGE_FLASH_START + dump_size);    // Set pointer address value
+            dump_header.erase_cnt = storage_pcb->erase_cnt;
+            storage_erase(&dump_header.erase_cnt);                                  // Erase storage FLASH and increase erase counter
+        }else{
+            save_addr_glob = (u32)storage_pcb->dump->header.next_header;            // Start address of new dump
+            dump_header.next_header = &*(u32*)(save_addr_glob + dump_size);         // Set pointer address value
+            dump_header.erase_cnt = storage_pcb->erase_cnt;
+        }
+    }else{
+        save_addr_glob = STORAGE_FLASH_START;                                   // Start address of new dump
+        dump_header.next_header = &*(u32*)(STORAGE_FLASH_START + dump_size);    // Set pointer address value
+        dump_header.erase_cnt = storage_pcb->erase_cnt;
+    }
+
+    // Init storage FIFO
+    storage_fifo_init(&storage_fifo_pcb, save_addr_glob);
+
+    // Push dump_header to FIFO
+    storage_fifo_push(&storage_fifo_pcb, (u8*)&dump_header, sizeof(storage_header_t));
+
+    // Push data to FIFO
+    bytes_nmb = SAND_SAVE_DATA_SIZE;
+    save_addr_ptr = 0;
+    for(reg_nmb = 0; reg_nmb < reg_list_len; reg_nmb++){
+        reg = (sand_prop_base_t*)reg_base_get_prop(reg_list[reg_nmb].header.header_base, SAND_PROP_BASE);
+        data_ptr = reg->p_value;
+        reg_size = reg_base_get_byte_size(reg) * reg->array_len;
+        if(reg_list[reg_nmb].save_addr > save_addr_ptr){
+            // Fill unused addresses by nulls
+            while(reg_list[reg_nmb].save_addr > save_addr_ptr){
+                storage_fifo_push(&storage_fifo_pcb, &null_value, 1);
+                save_addr_ptr++;
+            }
+        }
+        // Push reg value into storage
+        storage_fifo_push(&storage_fifo_pcb, reg->p_value, reg_size);
+        save_addr_ptr += reg_size;
+    }
+    // Write tail of FIFO
+    storage_fifo_write_tail(&storage_fifo_pcb);
+
+    // Release regs_storage_mutex
+    storage_mutex_release();
 
     return result;
 }
@@ -41,7 +187,24 @@ int storage_save_data(storage_pcb_t* storage_pcb, const sand_prop_save_t* reg_li
 int storage_data_changed_check(storage_pcb_t* storage_pcb, const sand_prop_save_t* reg_list, u16 reg_list_len){
     int result = 0;
 
+    u32 crc = storage_calc_data_crc(reg_list, reg_list_len);
+    if(crc != storage_pcb->current_data_crc){
+        storage_pcb->data_changed = 1;
+    }
+
     return result;
+}
+
+void storage_mutex_wait(void){
+    if(regs_storage_mutex != NULL){
+        osMutexWait(regs_storage_mutex, STORAGE_MUTEX_TIMEOUT);
+    }
+}
+
+void storage_mutex_release(void){
+    if(regs_storage_mutex != NULL){
+        osMutexRelease(regs_storage_mutex);
+    }
 }
 
 //-------Static functions----------
@@ -60,6 +223,222 @@ static int storage_crc_init(CRC_HandleTypeDef* hcrc){
     hcrc->Instance = CRC;
     HAL_CRC_Init(hcrc);
     __HAL_CRC_DR_RESET(hcrc);
+
+    return result;
+}
+
+/**
+ * @brief Calculate CRC of registers names from list
+ * @param reg_list - pointer to list
+ * @param reg_list_len - regs list length
+ * @ingroup storage
+ * @return CRC of registers names from list
+ */
+static u32 storage_calc_names_crc(const sand_prop_save_t* reg_list, u16 reg_list_len){
+    u32 crc = 0;
+    u16 name_len = 0;
+    u8* char_ptr = NULL;
+
+    sand_prop_base_t* reg = NULL;
+    // Reset CRC hardware
+    __HAL_CRC_DR_RESET(&hcrc);
+    for(u16 i = 0; i < reg_list_len; i++){
+        // Get register from list
+        reg = (sand_prop_base_t*)reg_list[i].header.header_base;
+        name_len = strlen(reg->name);
+        char_ptr = (u8*)reg->name;
+        for(u16 ptr = 0; ptr < name_len; ptr++){
+            // Add symbol to CRC data register
+            hcrc.Instance->DR = *char_ptr++;
+        }
+    }
+    crc = hcrc.Instance->DR;
+
+    return crc;
+}
+
+/**
+ * @brief Calculate CRC of registers values from list
+ * @param reg_list - pointer to list
+ * @param reg_list_len - regs list length
+ * @ingroup storage
+ * @return CRC of registers values from list
+ */
+static u32 storage_calc_data_crc(const sand_prop_save_t* reg_list, u16 reg_list_len){
+    u32 crc = 0;
+    u16 bytes_nmb = 0;
+    u8* val_ptr = NULL;
+
+    sand_prop_base_t* reg = NULL;
+    // Reset CRC hardware
+    __HAL_CRC_DR_RESET(&hcrc);
+    for(u16 i = 0; i < reg_list_len; i++){
+        // Get register from list
+        reg = (sand_prop_base_t*)reg_list[i].header.header_base;
+        bytes_nmb = reg_base_get_byte_size(reg) * reg->array_len;
+        val_ptr = reg->p_value;
+        for(u16 ptr = 0; ptr < bytes_nmb; ptr++){
+            // Add value byte to CRC data register
+            hcrc.Instance->DR = *val_ptr++;
+        }
+    }
+    crc = hcrc.Instance->DR;
+
+    return crc;
+}
+
+/**
+ * @brief Find last dump in storage
+ * @ingroup storage
+ * @return  - pointer to dump,\n
+ *          NULL - dump not found,\n
+ */
+static storage_dump_t* storage_dump_find(void){
+    storage_dump_t* dump = NULL;
+    u32 addr = STORAGE_FLASH_START;
+    while(*(u32*)addr != 0xFFFFFFFF){
+        dump = (storage_dump_t*)addr;
+        addr = *(u32*)addr;
+    }
+
+    return dump;
+}
+
+/**
+ * @brief Erase storage FLASH with read number of erases from last dump
+ * @param erase_cnt - pointer to erase counter in
+ * @return  0 - ok,\n
+ *          -1 Erase error,\n
+ */
+static int storage_erase(u32* erase_cnt){
+    int result = 0;
+
+    storage_dump_t* dump = storage_dump_find();
+    if(dump != NULL){
+        *erase_cnt = dump->header.erase_cnt + 1;
+    }
+
+    FLASH_EraseInitTypeDef erase = {0};
+    erase.TypeErase = FLASH_TYPEERASE_PAGES;
+    erase.Banks = FLASH_BANK_1;
+    erase.PageAddress = STORAGE_FLASH_START;
+    erase.NbPages = STORAGE_FLASH_PAGE_NMB;
+    u32 page_error = 0;
+
+    HAL_FLASH_Unlock();
+    HAL_FLASHEx_Erase(&erase, (uint32_t*)&page_error);
+    HAL_FLASH_Lock();
+
+    if(page_error != 0xFFFFFFFF){
+        result = -1;
+    }
+
+    return result;
+}
+
+/**
+ * @brief Validate data in dump
+ * @param dump - pointer to dump for validate
+ * @ingroup storage
+ * @return  0 - ok,\n
+ *          -1 - dump pointer is NULL,\n
+ *          -2 - data_crc mismatch,\n
+ */
+static int storage_dump_data_validation(storage_dump_t* dump){
+    int result = 0;
+
+    u8* val_ptr = 0;
+    u32 crc_calc = 0;
+    if(dump != NULL){
+        // Reset CRC hardware
+        __HAL_CRC_DR_RESET(&hcrc);
+        val_ptr = &dump->data;
+        for(u16 i = 0; i < dump->header.data_len; i++){
+            // Add value byte to CRC data register
+            hcrc.Instance->DR = *val_ptr++;
+        }
+        crc_calc = hcrc.Instance->DR;
+        if(crc_calc != dump->header.data_crc){
+            // data_crc mismatch
+            result = -2;
+        }
+    }else{
+        // Dump pointer is NULL
+        result = -1;
+    }
+
+    return result;
+}
+
+/**
+ * @brief Init storage_fifo buffer and reset buf_ptr
+ * @param storage_fifo - pointer to FIFO control block
+ * @param flash_addr - start flash address for data writing
+ * @ingroup storage
+ * @return  0
+ */
+static int storage_fifo_init(storage_fifo_pcb_t* storage_fifo_pcb, u32 flash_addr){
+    int result = 0;
+
+    memset(storage_fifo_pcb->buf, 0, STORAGE_SAVE_DATA_BUF_LEN);
+    storage_fifo_pcb->buf_ptr = 0;
+    storage_fifo_pcb->addr_ptr = flash_addr;
+    storage_fifo_pcb->flash_write_cnt = 0;
+
+    return result;
+}
+
+/**
+ * @brief Write data to FIFO buffer for writing into storage FLASH
+ * @param storage_fifo_pcb - pointer to FIFO control block
+ * @param data - pointer to data for writing
+ * @param len - data length in bytes
+ * @ingroup storage
+ * @return  0 - ok,\n
+ *          negative value if error,\n
+ */
+static int storage_fifo_push(storage_fifo_pcb_t* storage_fifo_pcb, u8* data, u16 len){
+    int result = 0;
+
+    u16 write_size = STORAGE_SAVE_DATA_BUF_LEN - storage_fifo_pcb->buf_ptr;
+    // Fill buffer and write it into FLASH
+    while(len >= write_size){
+        memcpy(&storage_fifo_pcb->buf[storage_fifo_pcb->buf_ptr], data, write_size);
+        flash_write(storage_fifo_pcb->addr_ptr, (u16*)storage_fifo_pcb->buf, STORAGE_SAVE_DATA_BUF_LEN/2);
+        storage_fifo_pcb->flash_write_cnt++;
+        storage_fifo_pcb->addr_ptr += STORAGE_SAVE_DATA_BUF_LEN;
+        len -= write_size;
+        data += STORAGE_SAVE_DATA_BUF_LEN;
+        storage_fifo_pcb->buf_ptr = 0;
+        write_size = STORAGE_SAVE_DATA_BUF_LEN - storage_fifo_pcb->buf_ptr;
+    }
+    // Write tail of data to buffer
+    if(len > 0){
+        memcpy(&storage_fifo_pcb->buf[storage_fifo_pcb->buf_ptr], data, len);
+        storage_fifo_pcb->buf_ptr += len;
+    }
+
+    return result;
+}
+
+/**
+ * @brief Write tail of FIFO buffer into storage FLASH
+ * @param storage_fifo_pcb - pointer to FIFO control block
+ * @ingroup storage
+ * @return  0
+ *
+ * @note If tail length is odd, the null adds
+ */
+static int storage_fifo_write_tail(storage_fifo_pcb_t* storage_fifo_pcb){
+    int result = 0;
+
+    if(storage_fifo_pcb->buf_ptr % 2 == 1){
+        storage_fifo_pcb->buf[storage_fifo_pcb->buf_ptr++] = 0;
+    }
+    flash_write(storage_fifo_pcb->addr_ptr, (u16*)storage_fifo_pcb->buf, storage_fifo_pcb->buf_ptr/2);
+    storage_fifo_pcb->flash_write_cnt++;
+    storage_fifo_pcb->addr_ptr += storage_fifo_pcb->buf_ptr;
+    storage_fifo_pcb->buf_ptr = 0;
 
     return result;
 }

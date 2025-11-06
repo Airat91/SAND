@@ -31,8 +31,13 @@ extern "C" {
 #define STORAGE_FLASH_SIZE          0x00001000  // 4K bytes
 #define STORAGE_FLASH_START         FLASH_START + FLASH_TOTAL_SIZE - STORAGE_FLASH_SIZE
 #define STORAGE_FLASH_END           STORAGE_FLASH_START + STORAGE_FLASH_SIZE
-#define STORAGE_FLASH_PAGE_NMB      FLASH_SAVE_AREA_SIZE / FLASH_PAGE_SIZE
+#define STORAGE_FLASH_PAGE_NMB      STORAGE_FLASH_SIZE / FLASH_PAGE_SIZE
 #define STORAGE_MUTEX_TIMEOUT       100
+#define STORAGE_SAVE_DATA_BUF_LEN   4 * 2 // Storage buffer for saving operation
+
+#if(STORAGE_SAVE_DATA_BUF_LEN%2 == 1)
+    #error "STORAGE: Please define RS_485_RATE_0_PIN"
+#endif // STORAGE_SAVE_DATA_BUF_LEN
 
 //--------Macro--------
 
@@ -40,10 +45,10 @@ extern "C" {
 
 typedef struct{
     u32* next_header;               // Pointer to next storage header
-    u16 data_crc;                   // CRC of storage data without header, used for storage data validation
+    u32 data_crc;                   // CRC of storage data without header, used for storage data validation
     u32 names_crc;                  // CRC of all saved registers names, used for restore
-    u16 data_len;                   // Storage data lenght in bytes
-    u16 erase_cnt;                  // Full erase of storage area counter
+    u16 data_len;                   // Storage data length in bytes
+    u32 erase_cnt;                  // Full erase of storage area counter
 }storage_header_t;
 
 typedef struct{
@@ -55,8 +60,17 @@ typedef struct{
     u8 data_changed;                // Set this flag after regs change
     u32 last_save_time_ms;          // Time of last data save
     storage_dump_t* dump;           // Pointer to last actual damp in storage area
-    u32 current_names_crc;
+    u32 current_names_crc;          //
+    u32 current_data_crc;           //
+    u32 erase_cnt;                  // Full erase of storage area counter
 }storage_pcb_t;
+
+typedef struct{
+    u8 buf[STORAGE_SAVE_DATA_BUF_LEN];  // FIFO buffer for write data to storage FLASH
+    u16 buf_ptr;                        // Buffer pointer
+    u32 addr_ptr;                       // FLASH address value
+    u16 flash_write_cnt;                // Counter of flash writing operations
+}storage_fifo_pcb_t;
 
 //-------External variables------
 
@@ -69,10 +83,16 @@ extern osMutexId regs_storage_mutex;
  * @brief Init storage control block
  * @param storage_pcb - pointer to storage process control block
  * @param reg_list - pointer to list of regs
- * @param reg_list_len - lenght of reg_list
+ * @param reg_list_len - length of reg_list
  * @ingroup storage
  * @return  0 - ok,\n
- *          negative value if error,\n
+ *          -1 - storage_crc_init() error,\n
+ *
+ * @details
+ * 1. Init CRC module
+ * 2. Reset storage_pcb
+ * 3. Calculate actual names_crc
+ * 4. Get last dump from storage
  */
 int storage_init(storage_pcb_t* storage_pcb, const sand_prop_save_t* reg_list, u16 reg_list_len);
 
@@ -80,7 +100,7 @@ int storage_init(storage_pcb_t* storage_pcb, const sand_prop_save_t* reg_list, u
  * @brief Restore data from storage
  * @param storage_pcb - pointer to storage process control block
  * @param reg_list - pointer to list of regs
- * @param reg_list_len - lenght of reg_list
+ * @param reg_list_len - length of reg_list
  * @ingroup storage
  * @return  0 - ok,\n
  *          negative value if error,\n
@@ -94,7 +114,7 @@ int storage_restore_data(storage_pcb_t* storage_pcb, const sand_prop_save_t* reg
  * @brief Save all values of regs in storage
  * @param storage_pcb - pointer to storage process control block
  * @param reg_list - pointer to list of regs
- * @param reg_list_len - lenght of reg_list
+ * @param reg_list_len - length of reg_list
  * @ingroup storage
  * @return  0 - ok,\n
  *          negative value if error,\n
@@ -108,7 +128,7 @@ int storage_save_data(storage_pcb_t* storage_pcb, const sand_prop_save_t* reg_li
  * @brief Check current regs values change
  * @param storage_pcb - pointer to storage process control block
  * @param reg_list - pointer to list of regs
- * @param reg_list_len - lenght of reg_list
+ * @param reg_list_len - length of reg_list
  * @ingroup storage
  * @return  0 - ok,\n
  *          negative value if error,\n
@@ -118,6 +138,10 @@ int storage_save_data(storage_pcb_t* storage_pcb, const sand_prop_save_t* reg_li
  * If change found, sets storage_pcb.data_changed flag
  */
 int storage_data_changed_check(storage_pcb_t* storage_pcb, const sand_prop_save_t* reg_list, u16 reg_list_len);
+
+void storage_mutex_wait(void);
+
+void storage_mutex_release(void);
 
 #ifdef __cplusplus
 }

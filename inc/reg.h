@@ -91,7 +91,6 @@ sand_prop_base_t* reg_base_get_by_ind(u16 ind);
  *          -3 - array index out of lenght,\n
  *          -4 - value type mismatch,\n
  *          -5 - register read only,\n
- *          -6 - register storage busy time is out,\n
  */
 int reg_base_write(sand_prop_base_t* reg, u16 array_ind, reg_var_t* value);
 
@@ -155,14 +154,14 @@ int reg_range_min_max_correct(sand_prop_base_t* reg, reg_var_t* value);
 //=======Regs prop_save functions=======
 
 /**
- * @brief Check register busy in storage operations and wait when register will free
+ * @brief Check register is saveable
  * @param reg - pointer to register
  * @ingroup reg
- * @return  0 - ready for use,\n
- *          -1 - register storage busy time is out,\n
+ * @return  0 - register is saveable,\n
+ *          -1 - register is not saveable,\n
  * @details
  */
-int reg_save_busy_wait(sand_prop_base_t* reg);
+int reg_save_check(sand_prop_base_t* reg);
 
 //=======Regs prop_access functions=======
 

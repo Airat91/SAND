@@ -44,7 +44,7 @@ const sand_prop_base_t sand_prop_base_list[SAND_PROP_BASE_REG_NUM]={
 {{SAND_PROP_BASE,	(void*)&sand_prop_mdb_list[6], 	(void*)&sand_prop_base_list[6]}, 	3,       	(u8*)&os.vars.reset_num,         	"reset_num",     	"Number of resets",             	VAR_TYPE_U16,   	1,        	6,  	1},
 {{SAND_PROP_BASE,	(void*)&sand_prop_mdb_list[7], 	(void*)&sand_prop_base_list[7]}, 	2,       	(u8*)&os.vars.runtime,           	"runtime",       	"Runtime from last reset (sec)",	VAR_TYPE_U32,   	1,        	7,  	1},
 {{SAND_PROP_BASE,	(void*)&sand_prop_mdb_list[8], 	(void*)&sand_prop_base_list[8]}, 	2,       	(u8*)&os.vars.runtime_total,     	"runtime_total", 	"Total runtime (sec)",          	VAR_TYPE_U32,   	1,        	8,  	1},
-{{SAND_PROP_BASE,	(void*)&sand_prop_mdb_list[9], 	(void*)&sand_prop_base_list[9]}, 	3,       	(u8*)&os.vars.cpu_load,          	"cpu_load",      	"CPU load (%)",                 	VAR_TYPE_FLOAT, 	1,        	9,  	1},
+{{SAND_PROP_BASE,	(void*)&sand_prop_mdb_list[9], 	(void*)&sand_prop_base_list[9]}, 	2,       	(u8*)&os.vars.cpu_load,          	"cpu_load",      	"CPU load (%)",                 	VAR_TYPE_FLOAT, 	1,        	9,  	1},
 {{SAND_PROP_BASE,	(void*)&sand_prop_mdb_list[10],	(void*)&sand_prop_base_list[10]},	2,       	(u8*)&time.vars.year,            	"year",          	"Year",                         	VAR_TYPE_U16,   	1,        	10, 	0},
 {{SAND_PROP_BASE,	(void*)&sand_prop_mdb_list[11],	(void*)&sand_prop_base_list[11]},	3,       	(u8*)&time.vars.month,           	"month",         	"Month [1..12]",                	VAR_TYPE_U16,   	1,        	11, 	0},
 {{SAND_PROP_BASE,	(void*)&sand_prop_mdb_list[12],	(void*)&sand_prop_base_list[12]},	3,       	(u8*)&time.vars.day,             	"day",           	"Day [1..31]",                  	VAR_TYPE_U16,   	1,        	12, 	0},
@@ -88,7 +88,7 @@ const sand_prop_base_t sand_prop_base_list[SAND_PROP_BASE_REG_NUM]={
 {{SAND_PROP_BASE,	(void*)&sand_prop_mdb_list[50],	(void*)&sand_prop_base_list[50]},	2,       	(u8*)&test.vars.arr_s64,         	"arr_s64",       	"None",                         	VAR_TYPE_S64,   	20,       	50, 	0},
 {{SAND_PROP_BASE,	(void*)&sand_prop_mdb_list[51],	(void*)&sand_prop_base_list[51]},	2,       	(u8*)&test.vars.arr_float,       	"arr_float",     	"None",                         	VAR_TYPE_FLOAT, 	20,       	51, 	0},
 {{SAND_PROP_BASE,	(void*)&sand_prop_mdb_list[52],	(void*)&sand_prop_base_list[52]},	2,       	(u8*)&test.vars.arr_double,      	"arr_double",    	"None",                         	VAR_TYPE_DOUBLE,	20,       	52, 	0},
-{{SAND_PROP_BASE,	(void*)&sand_prop_mdb_list[53],	(void*)&sand_prop_base_list[53]},	2,       	(u8*)&test.vars.arr_char,        	"arr_char",      	"None",                         	VAR_TYPE_CHAR,  	20,       	53, 	0},
+{{SAND_PROP_BASE,	(void*)&sand_prop_mdb_list[53],	(void*)&sand_prop_base_list[53]},	2,       	(u8*)&test.vars.arr_char,        	"arr_char",      	"None",                         	VAR_TYPE_CHAR,  	30,       	53, 	0},
 };
 
 const sand_prop_mdb_t sand_prop_mdb_list[SAND_PROP_MDB_REG_NUM]={
@@ -102,7 +102,7 @@ const sand_prop_mdb_t sand_prop_mdb_list[SAND_PROP_MDB_REG_NUM]={
 {{SAND_PROP_MDB,	(void*)&sand_prop_save_list[1], 	(void*)&sand_prop_base_list[6]}, 	37},        // reset_num
 {{SAND_PROP_MDB,	NULL,                           	(void*)&sand_prop_base_list[7]}, 	38},        // runtime
 {{SAND_PROP_MDB,	NULL,                           	(void*)&sand_prop_base_list[8]}, 	40},        // runtime_total
-{{SAND_PROP_MDB,	(void*)&sand_prop_save_list[3], 	(void*)&sand_prop_base_list[9]}, 	42},        // cpu_load
+{{SAND_PROP_MDB,	NULL,                           	(void*)&sand_prop_base_list[9]}, 	42},        // cpu_load
 {{SAND_PROP_MDB,	NULL,                           	(void*)&sand_prop_base_list[10]},	44},        // year
 {{SAND_PROP_MDB,	(void*)&sand_prop_range_list[0],	(void*)&sand_prop_base_list[11]},	45},        // month
 {{SAND_PROP_MDB,	(void*)&sand_prop_range_list[1],	(void*)&sand_prop_base_list[12]},	46},        // day
@@ -113,13 +113,13 @@ const sand_prop_mdb_t sand_prop_mdb_list[SAND_PROP_MDB_REG_NUM]={
 {{SAND_PROP_MDB,	NULL,                           	(void*)&sand_prop_base_list[17]},	51},        // unix
 {{SAND_PROP_MDB,	(void*)&sand_prop_range_list[6],	(void*)&sand_prop_base_list[18]},	53},        // utc
 {{SAND_PROP_MDB,	NULL,                           	(void*)&sand_prop_base_list[19]},	54},        // device_name
-{{SAND_PROP_MDB,	(void*)&sand_prop_save_list[4], 	(void*)&sand_prop_base_list[20]},	74},        // user_name
-{{SAND_PROP_MDB,	(void*)&sand_prop_save_list[5], 	(void*)&sand_prop_base_list[21]},	94},        // configuration
+{{SAND_PROP_MDB,	(void*)&sand_prop_save_list[3], 	(void*)&sand_prop_base_list[20]},	74},        // user_name
+{{SAND_PROP_MDB,	(void*)&sand_prop_save_list[4], 	(void*)&sand_prop_base_list[21]},	94},        // configuration
 {{SAND_PROP_MDB,	NULL,                           	(void*)&sand_prop_base_list[22]},	114},       // mcu_info
 {{SAND_PROP_MDB,	NULL,                           	(void*)&sand_prop_base_list[23]},	134},       // mcu_id
 {{SAND_PROP_MDB,	NULL,                           	(void*)&sand_prop_base_list[24]},	140},       // device_type
-{{SAND_PROP_MDB,	(void*)&sand_prop_save_list[6], 	(void*)&sand_prop_base_list[25]},	141},       // board_ver
-{{SAND_PROP_MDB,	(void*)&sand_prop_save_list[7], 	(void*)&sand_prop_base_list[26]},	142},       // serial
+{{SAND_PROP_MDB,	(void*)&sand_prop_save_list[5], 	(void*)&sand_prop_base_list[25]},	141},       // board_ver
+{{SAND_PROP_MDB,	(void*)&sand_prop_save_list[6], 	(void*)&sand_prop_base_list[26]},	142},       // serial
 {{SAND_PROP_MDB,	NULL,                           	(void*)&sand_prop_base_list[27]},	144},       // temperature
 {{SAND_PROP_MDB,	NULL,                           	(void*)&sand_prop_base_list[28]},	146},       // v_bat
 {{SAND_PROP_MDB,	NULL,                           	(void*)&sand_prop_base_list[29]},	148},       // v_pwr
@@ -158,8 +158,8 @@ const sand_prop_range_t sand_prop_range_list[SAND_PROP_RANGE_REG_NUM]={
 {{SAND_PROP_RANGE,	NULL,                          	(void*)&sand_prop_base_list[15]},	NULL,                     	(void*)&u16_0,  	(void*)&u16_59},   // sec
 {{SAND_PROP_RANGE,	NULL,                          	(void*)&sand_prop_base_list[16]},	NULL,                     	(void*)&u16_0,  	(void*)&u16_999},  // msec
 {{SAND_PROP_RANGE,	NULL,                          	(void*)&sand_prop_base_list[18]},	NULL,                     	(void*)&s16__12,	(void*)&s16_14},   // utc
-{{SAND_PROP_RANGE,	(void*)&sand_prop_save_list[8],	(void*)&sand_prop_base_list[39]},	(void*)&float_16_0f_16_0f,	NULL,           	NULL},             // ai_calib_a
-{{SAND_PROP_RANGE,	(void*)&sand_prop_save_list[9],	(void*)&sand_prop_base_list[40]},	(void*)&float_0_0f_0_0f,  	NULL,           	NULL},             // ai_calib_b
+{{SAND_PROP_RANGE,	(void*)&sand_prop_save_list[7],	(void*)&sand_prop_base_list[39]},	(void*)&float_16_0f_16_0f,	NULL,           	NULL},             // ai_calib_a
+{{SAND_PROP_RANGE,	(void*)&sand_prop_save_list[8],	(void*)&sand_prop_base_list[40]},	(void*)&float_0_0f_0_0f,  	NULL,           	NULL},             // ai_calib_b
 };
 
 const sand_prop_save_t sand_prop_save_list[SAND_PROP_SAVE_REG_NUM]={
@@ -167,13 +167,12 @@ const sand_prop_save_t sand_prop_save_list[SAND_PROP_SAVE_REG_NUM]={
 {{SAND_PROP_SAVE,	NULL,       	(void*)&sand_prop_base_list[2]}, 	0,        	0},     // lang
 {{SAND_PROP_SAVE,	NULL,       	(void*)&sand_prop_base_list[6]}, 	2,        	0},     // reset_num
 {{SAND_PROP_SAVE,	NULL,       	(void*)&sand_prop_base_list[32]},	4,        	0},     // addr
-{{SAND_PROP_SAVE,	NULL,       	(void*)&sand_prop_base_list[9]}, 	6,        	0},     // cpu_load
-{{SAND_PROP_SAVE,	NULL,       	(void*)&sand_prop_base_list[20]},	10,       	0},     // user_name
-{{SAND_PROP_SAVE,	NULL,       	(void*)&sand_prop_base_list[21]},	50,       	0},     // configuration
-{{SAND_PROP_SAVE,	NULL,       	(void*)&sand_prop_base_list[25]},	90,       	0},     // board_ver
-{{SAND_PROP_SAVE,	NULL,       	(void*)&sand_prop_base_list[26]},	92,       	0},     // serial
-{{SAND_PROP_SAVE,	NULL,       	(void*)&sand_prop_base_list[39]},	96,       	0},     // ai_calib_a
-{{SAND_PROP_SAVE,	NULL,       	(void*)&sand_prop_base_list[40]},	104,      	0},     // ai_calib_b
+{{SAND_PROP_SAVE,	NULL,       	(void*)&sand_prop_base_list[20]},	6,        	0},     // user_name
+{{SAND_PROP_SAVE,	NULL,       	(void*)&sand_prop_base_list[21]},	46,       	0},     // configuration
+{{SAND_PROP_SAVE,	NULL,       	(void*)&sand_prop_base_list[25]},	86,       	0},     // board_ver
+{{SAND_PROP_SAVE,	NULL,       	(void*)&sand_prop_base_list[26]},	88,       	0},     // serial
+{{SAND_PROP_SAVE,	NULL,       	(void*)&sand_prop_base_list[39]},	92,       	0},     // ai_calib_a
+{{SAND_PROP_SAVE,	NULL,       	(void*)&sand_prop_base_list[40]},	100,      	0},     // ai_calib_b
 };
 
 const sand_prop_access_t sand_prop_access_list[SAND_PROP_ACCESS_REG_NUM]={

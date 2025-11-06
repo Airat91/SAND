@@ -116,8 +116,10 @@ int main(void){
     SystemClock_Config();
     us_tim_init();
     debug_init();
+    // Init storage after regs_storage_mutex create
+    storage_init(&storage_pcb, sand_prop_save_list, SAND_PROP_SAVE_REG_NUM);
+    storage_restore_data(&storage_pcb, sand_prop_save_list, SAND_PROP_SAVE_REG_NUM);
     //dcts_init();
-    //restore_params();
     main_gpio_init();
     //menu_init();
 #if RELEASE_FLAG
@@ -131,7 +133,7 @@ int main(void){
     }
 
     osMutexDef(regs_storage_mutex);
-    regs_storage_mutex = osMutexCreate(osMutex(regs_storage_mutex));
+    //regs_storage_mutex = osMutexCreate(osMutex(regs_storage_mutex));
     if(regs_storage_mutex == NULL){
         debug_msg(__func__, DBG_MSG_ERR, "Can't create regs_storage_mutex");
     }
@@ -202,9 +204,6 @@ void main_task(void const * argument){
     uint32_t last_wake_time = osKernelSysTick();
     u32 tick = 0;
     debug_msg(__func__, DBG_MSG_INFO, "MAIN_task started");
-    if(storage_restore_data(&storage_pcb, sand_prop_save_list, SAND_PROP_SAVE_REG_NUM) != 0){
-        // Print error message
-    }
 
     main_write_device_info();
     while(1){
@@ -1441,7 +1440,7 @@ static int main_write_device_info(void){
     sprintf(os.vars.build_date, BUILD_DATE);
 
     //debug only
-    FLASH_EraseInitTypeDef erase = {0};
+    /*FLASH_EraseInitTypeDef erase = {0};
     erase.TypeErase = FLASH_TYPEERASE_PAGES;
     erase.Banks = FLASH_BANK_1;
     erase.PageAddress = STORAGE_FLASH_START;
@@ -1468,7 +1467,7 @@ static int main_write_device_info(void){
     };
     err = flash_write(STORAGE_FLASH_START + 2, test_buf, 11);
     memset(test_buf, 0, 22);
-    err = flash_read(STORAGE_FLASH_START + 2, test_buf, 11);
+    err = flash_read(STORAGE_FLASH_START + 2, test_buf, 11);*/
     //
 
     return result;

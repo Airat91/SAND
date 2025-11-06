@@ -32,13 +32,19 @@ extern "C" {
 
 #if(STM32F103xB)    // STM32F103CBT6
     #define FLASH_TOTAL_SIZE        0x00020000  // 128 Kbytes
-    #define FLASH_PAGE_SIZE         0x00000400  // 1 Kbytes
+    #ifndef FLASH_PAGE_SIZE
+        #define FLASH_PAGE_SIZE     0x00000400  // 1 Kbytes
+    #endif // FLASH_PAGE_SIZE
 #elif(STM32F103x8)  // STM32F103C8T6
     #define FLASH_TOTAL_SIZE        0x00010000  // 64 Kbytes
-    #define FLASH_PAGE_SIZE         0x00000400  // 1 Kbytes
+    #ifndef FLASH_PAGE_SIZE
+        #define FLASH_PAGE_SIZE     0x00000400  // 1 Kbytes
+    #endif // FLASH_PAGE_SIZE
 #elif(K1986BE92FI)  // K1986BE92FI (Milandr)
-    #define FLASH_TOTAL_SIZE        0x0020000   // 128 Kbytes
-    #define FLASH_PAGE_SIZE         0x0001000   // 4K bytes
+        #define FLASH_TOTAL_SIZE        0x0020000   // 128 Kbytes
+    #ifndef FLASH_PAGE_SIZE
+        #define FLASH_PAGE_SIZE     0x0001000   // 4K bytes
+    #endif // FLASH_PAGE_SIZE
 #endif // MCU_target
 
 #define FLASH_START                 0x08000000  // Start address of FLASH
@@ -54,9 +60,9 @@ extern "C" {
 //--------Typedefs-------
 
 typedef enum{
-    FLASH_WRITE_HALFWORD    = 1,    // Half-word (16-bit)
-    FLASH_WRITE_WORD        = 2,    // Word (32 bit)
-    FLASH_WRITE_DOUBLEWORD     = 4,    // Double-word (64 bit)
+    FLASH_HALFWORD    = 1,          // Half-word (16-bit)
+    FLASH_WORD        = 2,          // Word (32 bit)
+    FLASH_DOUBLEWORD  = 4,          // Double-word (64 bit)
 }flash_write_size_t;
 
 //-------External variables------
@@ -67,13 +73,13 @@ typedef enum{
  * @brief Read data from device FLASH memory
  * @param addr - global address of FLASH
  * @param buf - pointer for read
- * @param len - data lenght in 16-bit words
+ * @param bytes_len - data lenght in bytes
  * @ingroup flash
  * @return  0 - ok,\n
  *          -1 - Address not in FLASH area,\n
  *          -2 - End of read data out of FLASH area,\n
  */
-int flash_read(u32 addr, u16* buf, u16 len);
+int flash_read(u32 addr, void* buf, u16 bytes_len);
 
 /**
  * @brief Write data into device FLASH memory

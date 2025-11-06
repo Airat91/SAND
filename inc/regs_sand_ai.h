@@ -27,18 +27,20 @@
 // This part of file generated automatically, don't change it
 #define DEVICE_NAME              	"SAND_AI"
 
+#define SAND_SAVE_DATA_SIZE      	108
+
 #define OS_STRUCT_SIZE           	88
 #define TIME_STRUCT_SIZE         	20
 #define DEVICE_STRUCT_SIZE       	200
 #define MODBUS_STRUCT_SIZE       	2
 #define SERVICE_STRUCT_SIZE      	20
 #define AI_STRUCT_SIZE           	36
-#define TEST_STRUCT_SIZE         	860
+#define TEST_STRUCT_SIZE         	870
 
 #define SAND_PROP_BASE_REG_NUM   	54
 #define SAND_PROP_MDB_REG_NUM    	54
 #define SAND_PROP_RANGE_REG_NUM  	9
-#define SAND_PROP_SAVE_REG_NUM   	10
+#define SAND_PROP_SAVE_REG_NUM   	9
 #define SAND_PROP_ACCESS_REG_NUM 	0
 //#generator_message{"msg":"sand_struct_define", "action":"insert_end"}
 
@@ -139,7 +141,7 @@ typedef union{
 		s64    arr_s64[20];        // "None"
 		float  arr_float[20];      // "None"
 		double arr_double[20];     // "None"
-		char   arr_char[20];       // "None"
+		char   arr_char[30];       // "None"
 	}vars;
 	u8 bytes[TEST_STRUCT_SIZE];
 }test_struct;

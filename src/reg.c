@@ -53,11 +53,15 @@ int reg_base_write(sand_prop_base_t* reg, u16 array_ind, reg_var_t* value){
     int result = 0;
     u16 reg_size = 0;
     u8* value_ptr = NULL;
+    u8 in_storage = 0;
 
     if(reg == NULL){
         result = -1;
     }else{
         value_ptr = reg->p_value;
+        if(reg_save_check(reg) == 0){
+            in_storage = 1;
+        }
         if(reg->read_only == 1){
             result = -5;
         }else if(reg_access_blocked(reg)){
@@ -71,10 +75,12 @@ int reg_base_write(sand_prop_base_t* reg, u16 array_ind, reg_var_t* value){
                 value_ptr += array_ind * reg_size;
                 if(value->var_type == reg->type){
                     // Check storage mutex
-                    if(reg_save_busy_check(reg) == 0){
-                        memcpy(value_ptr, &value->var.var_u8, reg_size);
-                    }else{
-                        result = -6;
+                    if(in_storage){
+                        storage_mutex_wait();
+                    }
+                    memcpy(value_ptr, &value->var.var_u8, reg_size);
+                    if(in_storage){
+                        storage_mutex_release();
                     }
                 }else{
                     result = -4;
@@ -316,8 +322,13 @@ int reg_range_min_max_correct(sand_prop_base_t* reg, reg_var_t* value){
 
 //=======Regs prop_save functions=======
 
-int reg_save_busy_check(sand_prop_base_t* reg){
+int reg_save_check(sand_prop_base_t* reg){
     int result = 0;
+
+    sand_prop_save_t* prop = (sand_prop_save_t*)reg_base_get_prop(reg, SAND_PROP_SAVE);
+    if(prop == NULL){
+        result = -1;
+    }
 
     return result;
 }
