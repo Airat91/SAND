@@ -31,8 +31,8 @@ def regs_handler(Proj):
             name = reg.prop_list["sand_prop_base_t"]["name"]["value"]
             if len(name) > sand_reg.SAND_LIMITS["name_max_len"]:
                 shorted_name = name[0:sand_reg.SAND_LIMITS["name_max_len"]]
-                print(Fore.YELLOW + Style.BRIGHT + "WARNING: register \"{}\" in struct \"{}\" name is too long and shorted "
-                                                   "to {}".format(name, struct_name, shorted_name))
+                print(Fore.YELLOW + "WARNING: register \"{}\" in struct \"{}\" name is too long and shorted to {}"
+                                    "".format(name, struct_name, shorted_name) + Style.RESET_ALL)
                 name = shorted_name
                 reg.name = shorted_name
                 reg.prop_list["sand_prop_base_t"]["name"]["value"] = "\"{}\"".format(name)
@@ -41,8 +41,8 @@ def regs_handler(Proj):
             if name not in reg_name_list:
                 reg_name_list.append(name)
             else:
-                print(Fore.YELLOW + Style.BRIGHT + "WARNING: register \"{}\" in struct \"{}\" already exist, therefore "
-                                                   "renamed to \"{}_{}\"".format(name, struct_name, name, reg_index))
+                print(Fore.YELLOW + "WARNING: register \"{}\" in struct \"{}\" already exist, therefore renamed to \""
+                                    "{}_{}\"".format(name, struct_name, name, reg_index) + Style.RESET_ALL)
                 name = "{}_{}".format(name, reg_index)
                 reg.name = name
                 reg.prop_list["sand_prop_base_t"]["name"]["value"] = "\"{}\"".format(name)
@@ -79,53 +79,146 @@ def regs_handler(Proj):
                     prop_reg_list.pop(reg.name)
 
     #2. Appoint regs parameters for each prop_list
+
     #2.1 sand_prop_base_t
+    sand_prop_base_handle(Proj)
+
+    #2.2 sand_prop_mdb_t
+    sand_prop_mdb_handle(Proj)
+
+    #2.3 sand_prop_range_t
+    sand_prop_range_handle(Proj)
+
+    #2.4 sand_prop_save_t
+    sand_prop_save_handle(Proj)
+
+    #2.5 sand_prop_access_t
+    sand_prop_access_handle(Proj)
+
+    #3. Appoint property headers links
+    #3.1 Add header_t struct to property headers for all regs and properties
+    for struct_name in Proj.struct_list:
+        struct = Proj.struct_list[struct_name]
+        for reg_name in struct["reg_list"]:
+            reg = struct["reg_list"][reg_name]
+            for prop_name in reg.prop_list:
+                prop = reg.prop_list[prop_name]
+                prop["header"]["header_t"] = {}
+                for header_param in sand_reg.sand_header_t:
+                    prop["header"]["header_t"][header_param] = "NULL"
+    #3.2 Appoint links
+    for reg_name in Proj.prop_list["sand_prop_base_t"]["reg_list"]:
+        reg = Proj.prop_list["sand_prop_base_t"]["reg_list"][reg_name]
+        reg.prop_list["sand_prop_base_t"]["prop_num"]["value"] = 0
+        header_base = "(void*)&sand_prop_base_list[{}]".format(list(Proj.prop_list["sand_prop_base_t"]["reg_list"]).index(reg_name))
+        # Create exist_prop_list
+        exist_prop_list = []
+        for prop_name in reg.prop_list:
+            prop = reg.prop_list[prop_name]
+            if "is_exist" in prop:
+                if prop["is_exist"] == True:
+                    exist_prop_list.append(prop_name)
+                    reg.prop_list["sand_prop_base_t"]["prop_num"]["value"] += 1
+        for prop_name in exist_prop_list:
+            #prop_name = exist_prop_list[i]
+            header_prop = prop_name.replace("_t", "").upper()
+            if prop_name == exist_prop_list[-1]:
+                # if it last property
+                header_next = "NULL"
+            else:
+                next_prop_name = exist_prop_list[exist_prop_list.index(prop_name) + 1]
+                next_prop = Proj.prop_list[next_prop_name]["reg_list"]
+                next_prop_ind = list(next_prop).index(reg_name)
+                header_next = "(void*)&{}[{}]".format(next_prop_name.replace("_t", "_list"),next_prop_ind)
+            header_t = {}
+            header_t["prop"] = header_prop
+            header_t["header_next"] = header_next
+            header_t["header_base"] = header_base
+            reg.prop_list[prop_name]["header"]["header_t"] = header_t
+
+    print(Fore.GREEN + "Regs_handler done. Handled {} registers".format(reg_index) + Style.RESET_ALL)
+
+def get_struct_of_reg(reg_name, Proj):
+    found = False
+    for struct_name in Proj.struct_list:
+        struct = Proj.struct_list[struct_name]
+        if reg_name in struct["reg_list"]:
+            found = True
+            return struct_name
+    if found == False:
+        return "Unknown"
+
+def get_range_const(reg, value, const_type):
+    replace_symbols = ",./\\!@#$%^&*-+= "
+    remove_symbols = "{}\""
+    # Make name from type and value
+    name = "{}_{}".format(reg.type, value)
+    # Get array len of reg
+    array_len = reg.prop_list["sand_prop_base_t"]["array_len"]["value"]
+    # Replace and remove unacceptable symbols
+    for i in range(len(replace_symbols)):
+        symbol = replace_symbols[i]
+        name = name.replace(symbol, "_")
+    for i in range(len(remove_symbols)):
+        symbol = remove_symbols[i]
+        name = name.replace(symbol, "")
+    const = {
+        "name": name,
+        "decl_name": name,
+        "type": reg.type,
+        "value": str(value),
+    }
+    # Special handle for p_def
+    if const_type == "p_def":
+        if array_len > 1:
+            const["decl_name"] += "[]"
+
+    return const
+
+def sand_prop_base_handle(Proj):
     for reg_name in Proj.prop_list["sand_prop_base_t"]["reg_list"]:
         reg = Proj.prop_list["sand_prop_base_t"]["reg_list"][reg_name]
         struct_name = get_struct_of_reg(reg_name, Proj)
-        #2.1.1 A pointer to value
+        # 2.1.1 A pointer to value
         reg.prop_list["sand_prop_base_t"]["p_value"]["value"] = "(u8*)&{}.vars.{}".format(struct_name, reg.name)
-        #2.1.2 Check reg description
+        # 2.1.2 Check reg description
         description = reg.prop_list["sand_prop_base_t"]["description"]["value"]
         if isinstance(description, str):
             if len(description) > sand_reg.SAND_LIMITS["descr_max_len"]:
                 shorted_description = description[0:sand_reg.SAND_LIMITS["descr_max_len"]]
-                print(
-                    Fore.YELLOW + Style.BRIGHT + "WARNING: register \"{}\" in struct \"{}\" description is too long and shorted "
-                                                 "to {}".format(reg_name, struct_name, shorted_description))
+                print(Fore.YELLOW + "WARNING: register \"{}\" in struct \"{}\" description is too long and shorted to {}"
+                      .format(reg_name, struct_name, shorted_description) + Style.RESET_ALL)
                 reg.prop_list["sand_prop_base_t"]["description"]["value"] = shorted_description
         description = reg.prop_list["sand_prop_base_t"]["description"]["value"]
         reg.prop_list["sand_prop_base_t"]["description"]["value"] = "\"{}\"".format(description)
-        #2.1.3 Check array len
+        # 2.1.3 Check array len
         array_len = reg.prop_list["sand_prop_base_t"]["array_len"]["value"]
         if isinstance(array_len, int):
             array_len = array_len
         else:
             array_len = 1
             reg.prop_list["sand_prop_base_t"]["array_len"]["value"] = array_len
-            print(
-                Fore.YELLOW + Style.BRIGHT + "WARNING: register \"{}\" in struct \"{}\" array len is undefined so setted "
-                                             "to 1".format(reg_name, struct_name))
-        reg.size_in_bytes = array_len * sand_reg.sand_var_t[reg.prop_list["sand_prop_base_t"]["type"]["value"]]["byte_num"]
+            print(Fore.YELLOW + "WARNING: register \"{}\" in struct \"{}\" array len is undefined so setted to 1"
+                  .format(reg_name, struct_name) + Style.RESET_ALL)
+        reg.size_in_bytes = array_len * sand_reg.sand_var_t[reg.prop_list["sand_prop_base_t"]["type"]["value"]][
+            "byte_num"]
         Proj.struct_list[struct_name]["byte_size"] += reg.size_in_bytes
-        #2.1.4 Check read_only flag
+        # 2.1.4 Check read_only flag
         read_only = reg.prop_list["sand_prop_base_t"]["read_only"]["value"]
         if read_only == None:
             reg.prop_list["sand_prop_base_t"]["read_only"]["value"] = 0
-            print(
-                Fore.YELLOW + Style.BRIGHT + "WARNING: register \"{}\" in struct \"{}\" read_only is undefined so setted "
-                                             "to 0".format(reg_name, struct_name))
+            print(Fore.YELLOW + "WARNING: register \"{}\" in struct \"{}\" read_only is undefined so setted to 0"
+                  .format(reg_name, struct_name) + Style.RESET_ALL)
         elif (read_only == 1) or (read_only.lower() == "true"):
             reg.prop_list["sand_prop_base_t"]["read_only"]["value"] = 1
         elif (read_only == 0) or (read_only.lower() == "false"):
             reg.prop_list["sand_prop_base_t"]["read_only"]["value"] = 0
         else:
             reg.prop_list["sand_prop_base_t"]["read_only"]["value"] = 0
-            print(
-                Fore.YELLOW + Style.BRIGHT + "WARNING: register \"{}\" in struct \"{}\" read_only is undefined so setted "
-                                             "to 0".format(reg_name, struct_name))
+            print(Fore.YELLOW + "WARNING: register \"{}\" in struct \"{}\" read_only is undefined so setted to 0"
+                  .format(reg_name, struct_name) + Style.RESET_ALL)
 
-    #2.2 sand_prop_mdb_t
+def sand_prop_mdb_handle(Proj):
     mdb_addr_list = []      # ModBUS addresses
     #2.2.1 Manual setted ModBUS address check
     for reg_name in Proj.prop_list["sand_prop_mdb_t"]["reg_list"]:
@@ -199,7 +292,7 @@ def regs_handler(Proj):
                 Proj.prop_list["sand_prop_mdb_t"]["reg_list"][reg_name] = reg
                 break
 
-    #2.3 sand_prop_range_t
+def sand_prop_range_handle(Proj):
     Proj.prop_list["sand_prop_range_t"]["range_const_list"] = {}
     range_const_list = Proj.prop_list["sand_prop_range_t"]["range_const_list"]
     range_const_names = ["p_def", "p_min", "p_max"]
@@ -216,10 +309,9 @@ def regs_handler(Proj):
                 if const["name"] not in range_const_list:
                     range_const_list[const["name"]] = const
 
-
-    #2.4 sand_prop_save_t
-    #2.4.1 Manual setted save address check
-    save_addr_list = []     # Save addresses
+def sand_prop_save_handle(Proj):
+    # 2.4.1 Manual setted save address check
+    save_addr_list = []  # Save addresses
     for reg_name in Proj.prop_list["sand_prop_save_t"]["reg_list"]:
         reg = Proj.prop_list["sand_prop_save_t"]["reg_list"][reg_name]
         struct_name = get_struct_of_reg(reg_name, Proj)
@@ -234,13 +326,13 @@ def regs_handler(Proj):
                 else:
                     Proj.errors["err_msg"].append(
                         "register \"{}\" in struct \"{}\" save address conflict".format(reg_name,
-                                                                                          struct_name))
+                                                                                        struct_name))
                     Proj.errors["err_cnt"] += 1
                     break
                 save_addr += 1
         # busy flag value add
         reg.prop_list["sand_prop_save_t"]["busy"]["value"] = 0
-    #2.4.2 Appoint save address
+    # 2.4.2 Appoint save address
     save_ind = 0
     for reg_name in Proj.prop_list["sand_prop_save_t"]["reg_list"]:
         reg = Proj.prop_list["sand_prop_save_t"]["reg_list"][reg_name]
@@ -286,7 +378,7 @@ def regs_handler(Proj):
                         save_addr_head += 1
                     save_addr_list.sort()
 
-    #2.4.3 Sort prop_list in Proj by save address
+    # 2.4.3 Sort prop_list in Proj by save address
     prop_list = deepcopy(Proj.prop_list["sand_prop_save_t"]["reg_list"])
     Proj.prop_list["sand_prop_save_t"]["reg_list"] = {}
     for save_ind in save_addr_list:
@@ -296,7 +388,21 @@ def regs_handler(Proj):
                 Proj.prop_list["sand_prop_save_t"]["reg_list"][reg_name] = reg
                 break
 
-    #2.5 sand_prop_access_t
+    # 2.4.4 Add save_addr_list into Proj.prop_list
+    Proj.prop_list["sand_prop_save_t"]["save_info"] = {
+        "save_addr_list": save_addr_list,
+        "save_area_size": save_addr_list[-1] + 1,
+        "start_addr": save_addr_list[0],
+        "end_addr": save_addr_list[-1],
+        "regs_num": len(prop_list),
+    }
+    save_info = Proj.prop_list["sand_prop_save_t"]["save_info"]
+    # Print save info
+    print(Fore.GREEN + "Save data info:" + Style.RESET_ALL)
+    print(Fore.GREEN + "\tregisters number\t= {}".format(save_info["regs_num"]) + Style.RESET_ALL)
+    print(Fore.GREEN + "\tsave are size   \t= {} bytes".format(save_info["save_area_size"]) + Style.RESET_ALL)
+
+def sand_prop_access_handle(Proj):
     for reg_name in Proj.prop_list["sand_prop_access_t"]["reg_list"]:
         reg = Proj.prop_list["sand_prop_access_t"]["reg_list"][reg_name]
         struct_name = get_struct_of_reg(reg_name, Proj)
@@ -306,102 +412,19 @@ def regs_handler(Proj):
             if access_lvl < sand_reg.SAND_LIMITS["access_lvl_min"]:
                 access_lvl = sand_reg.SAND_LIMITS["access_lvl_min"]
                 reg.prop_list["sand_prop_access_t"]["access_lvl"]["value"] = access_lvl
-                print(
-                    Fore.YELLOW + Style.BRIGHT + "WARNING: register \"{}\" in struct \"{}\" access_lvl is too low and changed "
-                                                 "to {}".format(reg_name, struct_name, access_lvl))
+                print(Fore.YELLOW + "WARNING: register \"{}\" in struct \"{}\" access_lvl is too low and changed to {}"
+                      .format(reg_name, struct_name, access_lvl) + Style.RESET_ALL)
             elif access_lvl > sand_reg.SAND_LIMITS["access_lvl_max"]:
                 access_lvl = sand_reg.SAND_LIMITS["access_lvl_max"]
                 reg.prop_list["sand_prop_access_t"]["access_lvl"]["value"] = access_lvl
-                print(
-                    Fore.YELLOW + Style.BRIGHT + "WARNING: register \"{}\" in struct \"{}\" access_lvl is too high and changed "
-                                                 "to {}".format(reg_name, struct_name, access_lvl))
+                print(Fore.YELLOW + "WARNING: register \"{}\" in struct \"{}\" access_lvl is too high and changed to {}"
+                      .format(reg_name, struct_name, access_lvl) + Style.RESET_ALL)
         elif isinstance(access_lvl, str):
             # access_lvl is define
             if access_lvl.upper() not in sand_reg.sand_access_lvl_t:
                 access_lvl_new = list(sand_reg.sand_access_lvl_t.keys())[-1]
                 reg.prop_list["sand_prop_access_t"]["access_lvl"]["value"] = access_lvl_new
-                print(
-                    Fore.YELLOW + Style.BRIGHT + "WARNING: register \"{}\" in struct \"{}\" access_lvl \"{}\" is "
-                                                 "undefined and changed to \"{}\"".format(reg_name, struct_name,
-                                                                                          access_lvl, access_lvl_new))
+                print(Fore.YELLOW + "WARNING: register \"{}\" in struct \"{}\" access_lvl \"{}\" is undefined and "
+                                    "changed to \"{}\"".format(reg_name, struct_name, access_lvl, access_lvl_new)
+                      + Style.RESET_ALL)
         reg.prop_list["sand_prop_access_t"]["access_en_timer_ms"]["value"] = 0
-
-    #3. Appoint property headers links
-    #3.1 Add header_t struct to property headers for all regs and properties
-    for struct_name in Proj.struct_list:
-        struct = Proj.struct_list[struct_name]
-        for reg_name in struct["reg_list"]:
-            reg = struct["reg_list"][reg_name]
-            for prop_name in reg.prop_list:
-                prop = reg.prop_list[prop_name]
-                prop["header"]["header_t"] = {}
-                for header_param in sand_reg.sand_header_t:
-                    prop["header"]["header_t"][header_param] = "NULL"
-    #3.2 Appoint links
-    for reg_name in Proj.prop_list["sand_prop_base_t"]["reg_list"]:
-        reg = Proj.prop_list["sand_prop_base_t"]["reg_list"][reg_name]
-        reg.prop_list["sand_prop_base_t"]["prop_num"]["value"] = 0
-        header_base = "(void*)&sand_prop_base_list[{}]".format(list(Proj.prop_list["sand_prop_base_t"]["reg_list"]).index(reg_name))
-        # Create exist_prop_list
-        exist_prop_list = []
-        for prop_name in reg.prop_list:
-            prop = reg.prop_list[prop_name]
-            if "is_exist" in prop:
-                if prop["is_exist"] == True:
-                    exist_prop_list.append(prop_name)
-                    reg.prop_list["sand_prop_base_t"]["prop_num"]["value"] += 1
-        for prop_name in exist_prop_list:
-            #prop_name = exist_prop_list[i]
-            header_prop = prop_name.replace("_t", "").upper()
-            if prop_name == exist_prop_list[-1]:
-                # if it last property
-                header_next = "NULL"
-            else:
-                next_prop_name = exist_prop_list[exist_prop_list.index(prop_name) + 1]
-                next_prop = Proj.prop_list[next_prop_name]["reg_list"]
-                next_prop_ind = list(next_prop).index(reg_name)
-                header_next = "(void*)&{}[{}]".format(next_prop_name.replace("_t", "_list"),next_prop_ind)
-            header_t = {}
-            header_t["prop"] = header_prop
-            header_t["header_next"] = header_next
-            header_t["header_base"] = header_base
-            reg.prop_list[prop_name]["header"]["header_t"] = header_t
-
-    print("Regs_handler done. Handled {} registers".format(reg_index))
-
-def get_struct_of_reg(reg_name, Proj):
-    found = False
-    for struct_name in Proj.struct_list:
-        struct = Proj.struct_list[struct_name]
-        if reg_name in struct["reg_list"]:
-            found = True
-            return struct_name
-    if found == False:
-        return "Unknown"
-
-def get_range_const(reg, value, const_type):
-    replace_symbols = ",./\\!@#$%^&*-+= "
-    remove_symbols = "{}\""
-    # Make name from type and value
-    name = "{}_{}".format(reg.type, value)
-    # Get array len of reg
-    array_len = reg.prop_list["sand_prop_base_t"]["array_len"]["value"]
-    # Replace and remove unacceptable symbols
-    for i in range(len(replace_symbols)):
-        symbol = replace_symbols[i]
-        name = name.replace(symbol, "_")
-    for i in range(len(remove_symbols)):
-        symbol = remove_symbols[i]
-        name = name.replace(symbol, "")
-    const = {
-        "name": name,
-        "decl_name": name,
-        "type": reg.type,
-        "value": str(value),
-    }
-    # Special handle for p_def
-    if const_type == "p_def":
-        if array_len > 1:
-            const["decl_name"] += "[]"
-
-    return const

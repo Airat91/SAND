@@ -76,7 +76,7 @@ sand_prop_list = {
 	"sand_prop_save_t" :{
 		# opt_name		# opt_type						# comment for header-file
 		"header":		{"type":	"sand_header_t",	"comment":	"Header of property"},
-		"save_addr":	{"type": 	"u16",				"comment":	"Address like byte number in contiguous save array"},
+		"save_addr":	{"type": 	"u16",				"comment":	"Address like byte number in continuous save array"},
 		"busy":			{"type": 	"u8",				"comment":	"Register is busy in saving operation flag"},
 	},
 	"sand_prop_access_t":{

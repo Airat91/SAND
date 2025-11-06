@@ -96,8 +96,8 @@ class Project():
             compiled_original = self.compiled
             compiled_short = self.compiled[0:compilation_max_len-1]
             self.compiled = compiled_short
-            print(Fore.YELLOW + Style.BRIGHT + "WARNING: Compilation info length is too long and sliced from \"{} to {}".format(
-                    compiled_original, self.compiled))
+            print(Fore.YELLOW + "WARNING: Compilation info length is too long and sliced from \"{} to {}"
+                  .format(compiled_original, self.compiled) + Style.RESET_ALL)
 
         #read version tag
         tags = []
@@ -109,23 +109,25 @@ class Project():
             temp = str(tags[-1]).split(".")
             for num in temp:
                 self.version.append(int(num))
-            print("Project version: {}.{}.{}".format(self.version[0], self.version[1], self.version[2]))
+            print(Fore.GREEN + "Project version: {}.{}.{}".format(self.version[0], self.version[1],
+                                                                  self.version[2]) + Style.RESET_ALL)
 
         else:
             # tags not found so set version to 0.0.0
             self.version = [0, 0, 0]
-            print(Fore.YELLOW + Style.BRIGHT + "WARNING: Don't found tags in project's git repository.\n\tPlease check it"
-                                             " by 'git pull origin --tags' command.\n\tAt now version resets to: {}.{}.{}".format(                    self.version[0], self.version[1], self.version[2]))
+            print(Fore.YELLOW + "WARNING: Don't found tags in project's git repository.\n\tPlease check it by 'git pull"
+                                " origin --tags' command.\n\tAt now version resets to: {}.{}.{}".
+                  format(self.version[0], self.version[1], self.version[2]) + Style.RESET_ALL)
         self.version_str = "{"+"{}, {}, {}".format(self.version[0], self.version[1], self.version[2])+"}"
 
     def print_new_errors(self):
         for i in range(self.errors["err_cnt"], len(self.errors["err_msg"])):
-            print(Fore.RED + Style.BRIGHT + "GENERATOR ERROR: {}".format(self.errors["err_msg"][i]))
+            print(Fore.RED + "GENERATOR ERROR: {}".format(self.errors["err_msg"][i]) + Style.RESET_ALL)
             self.errors["err_cnt"] += 1
 
     def print_all_errors(self):
         for i in range(len(self.errors["err_msg"])):
-            print(Fore.RED + Style.BRIGHT + "GENERATOR ERROR: {}".format(self.errors["err_msg"][i]))
+            print(Fore.RED + "GENERATOR ERROR: {}".format(self.errors["err_msg"][i]) + Style.RESET_ALL)
 
 def main():
     """
@@ -183,20 +185,19 @@ def main():
             device_type_list = []
             for module in DEVICE:
                 device_type_list.append(DEVICE[module]["device_type"])
-            quit(Fore.RED + Style.BRIGHT + "Device_type \"{}\" is unknown.\nPlease select device_type from list: {}".format(
+            quit(Fore.RED + "Device_type \"{}\" is unknown.\nPlease select device_type from list: {}".format(
                 args.device_type, device_type_list))
     if args.module == False:
-        quit(Fore.RED + Style.BRIGHT + "Expected -m MODULE_NAME or -d DEVICE_TYPE")
+        quit(Fore.RED + "Expected -m MODULE_NAME or -d DEVICE_TYPE")
     elif args.module not in DEVICE:
-        quit(Fore.RED + Style.BRIGHT + "Module \"{}\" is unknown.\nPlease select module from list: {}".format(args.module, list(DEVICE)))
+        quit(Fore.RED + "Module \"{}\" is unknown.\nPlease select module from list: {}".format(args.module, list(DEVICE)))
 
     #2. Read repo information
     PROJECT = Project(os.path.abspath(__file__).replace("generator\project_generator.py",""), args.module)
-    #print("Project version; {}.{}.{}".format(PROJECT.version[0], PROJECT.version[1], PROJECT.version[2]))
     PROJECT.name = args.module.upper()
     PROJECT.module = args.module
-    print("Project \"{}\"".format(PROJECT.name))
-    print("Compilation info string: {}".format(PROJECT.compiled))
+    print(Fore.GREEN + "Project \"{}\"".format(PROJECT.name) + Style.RESET_ALL)
+    print(Fore.GREEN + "Compilation info string: {}".format(PROJECT.compiled) + Style.RESET_ALL)
 
     #3. Check errors
     if len(PROJECT.errors["err_msg"]) > 0:
@@ -224,7 +225,7 @@ def main():
                 hash_json = open(PROJECT.path["hash_json"], "r", encoding='UTF-8')
                 hash_data = json.load(hash_json)
             except:
-                print("Can't found hash.json. Create new file...")
+                print(Fore.YELLOW + "Can't found hash.json. Create new file..." + Style.RESET_ALL)
                 hash_json = open(PROJECT.path["hash_json"], "w", encoding='UTF-8')
                 hash_data = {}
                 for file_name in PROJECT.generated_list:
@@ -235,7 +236,7 @@ def main():
                 if hash_calc(PROJECT.path[file_name]) != hash_data[file_name]:
                     PROJECT.was_changed_list.append(file_name)
             if len(PROJECT.was_changed_list) > 0:
-                print("Files {} was changed".format(PROJECT.was_changed_list))
+                print(Fore.GREEN + "Files {} was changed".format(PROJECT.was_changed_list) + Style.RESET_ALL)
 
         #4.3 If sand_reg.py in changed list
         if "sand_reg_py" in PROJECT.was_changed_list:
@@ -344,7 +345,7 @@ def main():
         origin_file.close()
         new_file.close()
 
-        print("Output file: {}".format(file_name))
+        print(Fore.GREEN + "Output file: {}".format(file_name) + Style.RESET_ALL)
 
 
 def replace_define(file_path, define_str, define_value):

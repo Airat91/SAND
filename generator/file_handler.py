@@ -17,8 +17,8 @@ def sand_reg_h_processing(Proj):
         property = sand_reg.sand_prop_list[prop_name]
         if "header" in property:
             if property["header"]["type"] != "sand_header_t":
-                print(Fore.YELLOW + Style.BRIGHT + "WARNING: generator/sand_reg.py: '{}' header is '{}' (expected "
-                                                   "'sand_header_t')\n".format(prop_name, property["header"]["type"]))
+                print(Fore.YELLOW + "WARNING: generator/sand_reg.py: '{}' header is '{}' (expected 'sand_header_t')"
+                                    "\n".format(prop_name, property["header"]["type"]) + Style.RESET_ALL)
             else:
                 Proj.sand_properties["prop_name"].append(prop_name)
                 Proj.sand_properties[prop_name] = property
@@ -178,9 +178,9 @@ def reg_map_module_xls_processing(Proj):
         struct_list_xls.append(worksheet.cell(row, column).value)
     for struct in struct_list_xls:
         if struct not in file_xls.sheetnames:
-            print(Fore.YELLOW + Style.BRIGHT + "WARNING: \"reg_map_{}.xls\": struct \"{}\" define in struct_list but "
-                                               "don't found in sheets\nStruct \"{}\" excluded from project"
-                                               "".format(Proj.module, struct, struct))
+            print(Fore.YELLOW + "WARNING: \"reg_map_{}.xls\": struct \"{}\" define in struct_list but don't found in "
+                                "sheets\nStruct \"{}\" excluded from project".format(Proj.module, struct, struct)
+                  + Style.RESET_ALL)
             struct_list_xls.remove(struct)
     # Add properties to project
     for prop in sand_reg.sand_prop_list:
@@ -216,10 +216,9 @@ def reg_map_module_xls_processing(Proj):
                     if param not in property_list[property]:
                         avl_list = list(property_list[property].keys())
                         avl_list.remove("header")
-                        print(Fore.YELLOW + Style.BRIGHT + "WARNING: \"reg_map_{}.xls\" struct \"{}\" property \"{}\" "
-                                                           "param \"{}\" is unknown.\nAvailable parameters defined in "
-                                                           "\"sand_reg.py\": {}".format(Proj.module, struct_name, property,
-                                                                                        param, avl_list))
+                        print(Fore.YELLOW + "WARNING: \"reg_map_{}.xls\" struct \"{}\" property \"{}\" param \"{}\" is "
+                                            "unknown.\nAvailable parameters defined in \"sand_reg.py\": {}".format(
+                            Proj.module, struct_name, property, param, avl_list) + Style.RESET_ALL)
                     else:
                         property_headers[column] = {
                             "property": property,
@@ -232,10 +231,9 @@ def reg_map_module_xls_processing(Proj):
                             avl_list = list(property_list[property].keys())
                             avl_list.remove("header")
                             print(
-                                Fore.YELLOW + Style.BRIGHT + "WARNING: \"reg_map_{}.xls\" struct \"{}\" property \"{}\" "
-                                                             "param \"{}\" is unknown.\nAvailable parameters defined in "
-                                                             "\"sand_reg.py\": {}".format(Proj.module, struct_name, property,
-                                                                                          param, avl_list))
+                                Fore.YELLOW + "WARNING: \"reg_map_{}.xls\" struct \"{}\" property \"{}\" param \"{}\" "
+                                              "is unknown.\nAvailable parameters defined in \"sand_reg.py\": {}".format(
+                                    Proj.module, struct_name, property, param, avl_list) + Style.RESET_ALL)
                         else:
                             property_headers[column] = {
                                 "property": property,
@@ -258,7 +256,9 @@ def reg_map_module_xls_processing(Proj):
             reg.type = reg.prop_list["sand_prop_base_t"]["type"]["value"]
             reg.struct = struct_name
             Proj.struct_list[struct_name]["reg_list"][reg_name] = reg
-        print("Struct \"{}\" found {} registers".format(struct_name, len(Proj.struct_list[struct_name]["reg_list"])))
+        print(Fore.GREEN + "Struct \"{}\" found {} registers".format(struct_name,
+                                                                     len(Proj.struct_list[struct_name]["reg_list"]))
+              + Style.RESET_ALL)
         for reg_name in Proj.struct_list[struct_name]["reg_list"]:
             reg = Proj.struct_list[struct_name]["reg_list"][reg_name]
             for property_name in reg.prop_list:
@@ -268,7 +268,7 @@ def reg_map_module_xls_processing(Proj):
                     if property["is_exist"] == True:
                         #reg["struct_name"] = struct_name
                         Proj.prop_list[property_name]["reg_list"][reg_name] = reg
-    print("reg_map_module_xls_processing done")
+    print(Fore.GREEN + "reg_map_module_xls_processing done" + Style.RESET_ALL)
 
 def regs_module_h_processing(Proj):
     """
