@@ -315,11 +315,22 @@ def regs_module_h_processing(Proj):
 
             step = "1.1.3 Write device name define"
             define_str = "DEVICE_NAME"
+            if len(define_str) > max_spaces[0]:
+                max_spaces[0] = len(define_str)
             space_0 = " " * (max_spaces[0] - len(define_str) + 1)
             buffer_define.append("#define {}{}\t\"{}\"\n".format(define_str, space_0, Proj.name))
             buffer_define.append("\n")
 
-            step = "1.1.4 Write defines to buffer_define"
+            step = "1.1.4 Write save_data_size"
+            define_str = "SAND_SAVE_DATA_SIZE"
+            if len(define_str) > max_spaces[0]:
+                max_spaces[0] = len(define_str)
+            space_0 = " " * (max_spaces[0] - len(define_str) + 1)
+            save_info = Proj.prop_list["sand_prop_save_t"]["save_info"]
+            buffer_define.append("#define {}{}\t{}\n".format(define_str, space_0, save_info["save_area_size"]))
+            buffer_define.append("\n")
+
+            step = "1.1.5 Write defines to buffer_define"
             for struct_name in Proj.struct_list:
                 struct = Proj.struct_list[struct_name]
                 struct_byte_size = struct["byte_size"]
