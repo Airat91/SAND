@@ -210,7 +210,9 @@ int storage_handle(storage_pcb_t* storage_pcb, u16 period_ms){
         // Time to data check
         storage_data_changed_check(storage_pcb);
 #if(STORAGE_AUTOSAVE_EN == 1)
-        storage_save_data(storage_pcb);
+        if(storage_pcb->data_changed == 1){
+            storage_save_data(storage_pcb);
+        }
 #endif // STORAGE_AUTOSAVE_EN
 
         tick = 0;
