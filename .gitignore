@@ -4,6 +4,7 @@ cmake_arm/
 CMakeLists.txt.user
 generator/hash.json
 generator/__pycache__
+generator/output
 ~$*
 *.a
 *.*-pre1
