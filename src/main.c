@@ -86,7 +86,7 @@ static const char data_pin_description[3][20] = {
 
 //-------Static functions declaration-----------
 
-static int SystemClock_Config(void);
+static int main_system_clock_config(void);
 static void main_IWDG_Init(void);
 static void main_gpio_init(void);
 static void main_IWDG_refresh(void);
@@ -113,15 +113,12 @@ static void print_value(u8 tick);
 int main(void){
 
     HAL_Init();
-    SystemClock_Config();
+    main_system_clock_config();
+    main_gpio_init();
     us_tim_init();
     debug_init();
-    // Init storage after regs_storage_mutex create
-    storage_init(&storage_pcb, sand_prop_save_list, SAND_PROP_SAVE_REG_NUM);
-    storage_restore_data(&storage_pcb, sand_prop_save_list, SAND_PROP_SAVE_REG_NUM);
-    //dcts_init();
-    main_gpio_init();
-    //menu_init();
+    storage_init(&storage_pcb);
+    storage_restore_data(&storage_pcb);
 #if RELEASE_FLAG
     main_IWDG_Init();
 #endif //RELEASE
@@ -133,10 +130,11 @@ int main(void){
     }
 
     osMutexDef(regs_storage_mutex);
-    //regs_storage_mutex = osMutexCreate(osMutex(regs_storage_mutex));
+    // @todo: using regs_storage_mutex is incorrect
+    /*regs_storage_mutex = osMutexCreate(osMutex(regs_storage_mutex));
     if(regs_storage_mutex == NULL){
         debug_msg(__func__, DBG_MSG_ERR, "Can't create regs_storage_mutex");
-    }
+    }*/
 
     osThreadDef(main_task, main_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
     main_task_handle = osThreadCreate(osThread(main_task), NULL);
@@ -220,6 +218,9 @@ void main_task(void const * argument){
         }
         // Blinks LEDs control
         main_leds_handle(MAIN_TASK_PERIOD);
+
+        // Storage handle
+        storage_handle(&storage_pcb, MAIN_TASK_PERIOD);
 
         // Refresh IWDG
         main_IWDG_refresh();
@@ -1207,7 +1208,7 @@ uint32_t uint32_pow(uint16_t x, uint8_t pow){
   *         -2 - HAL_RCC_ClockConfig() error,\n
   *         -3 - HAL_SYSTICK_Config() error,\n
   */
-static int SystemClock_Config(void){
+static int main_system_clock_config(void){
     int result = 0;
     HAL_StatusTypeDef stat = HAL_OK;
 

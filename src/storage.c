@@ -20,8 +20,8 @@ static storage_fifo_pcb_t storage_fifo_pcb = {0};   // Storage FIFO process cont
 //-------Static functions declaration-----------
 
 static int storage_crc_init(CRC_HandleTypeDef* hcrc);
-static u32 storage_calc_names_crc(const sand_prop_save_t* reg_list, u16 reg_list_len);
-static u32 storage_calc_data_crc(const sand_prop_save_t* reg_list, u16 reg_list_len);
+static u32 storage_calc_names_crc(void);
+static u32 storage_calc_data_crc(void);
 static storage_dump_t* storage_dump_find(void);
 static int storage_erase(u32* erase_cnt);
 static int storage_fifo_init(storage_fifo_pcb_t* storage_fifo, u32 flash_addr);
@@ -30,7 +30,7 @@ static int storage_fifo_write_tail(storage_fifo_pcb_t* storage_fifo);
 
 //-------Functions----------
 
-int storage_init(storage_pcb_t* storage_pcb, const sand_prop_save_t* reg_list, u16 reg_list_len){
+int storage_init(storage_pcb_t* storage_pcb){
     int result = 0;
     if(storage_crc_init(&hcrc) != 0){
         result = -1;
@@ -39,7 +39,7 @@ int storage_init(storage_pcb_t* storage_pcb, const sand_prop_save_t* reg_list, u
     // Reset storage_pcb
     memset(storage_pcb, 0, sizeof(storage_pcb_t));
     // Calculate actual names_crc
-    storage_pcb->current_names_crc = storage_calc_names_crc(reg_list, reg_list_len);
+    storage_pcb->current_names_crc = storage_calc_names_crc();
     // Get last dump from storage
     storage_pcb->dump = storage_dump_find();
     if(storage_pcb->dump != NULL){
@@ -49,7 +49,7 @@ int storage_init(storage_pcb_t* storage_pcb, const sand_prop_save_t* reg_list, u
     return result;
 }
 
-int storage_restore_data(storage_pcb_t* storage_pcb, const sand_prop_save_t* reg_list, u16 reg_list_len){
+int storage_restore_data(storage_pcb_t* storage_pcb){
     int result = 0;
 
     sand_prop_base_t* reg = NULL;
@@ -62,16 +62,16 @@ int storage_restore_data(storage_pcb_t* storage_pcb, const sand_prop_save_t* reg
 
     if(storage_pcb->dump != NULL){
         // If dump is exist, restore last values from dump
-        for(u16 i = 0; i < reg_list_len; i++){
-            reg = (sand_prop_base_t*)reg_list[i].header.header_base;
+        for(u16 i = 0; i < SAND_PROP_SAVE_REG_NUM; i++){
+            reg = (sand_prop_base_t*)sand_prop_save_list[i].header.header_base;
             bytes_nmb = reg_base_get_byte_size(reg) * reg->array_len;
-            addr = storage_pcb->dump->data + reg_list[i].save_addr;
+            addr = (u32)&storage_pcb->dump->data + sand_prop_save_list[i].save_addr;
             flash_read(addr, (u16*)reg->p_value, bytes_nmb);
         }
     }else{
         // If dump doesn't exist, set default values or null
-        for(u16 i = 0; i < reg_list_len; i++){
-            reg = (sand_prop_base_t*)reg_list[i].header.header_base;
+        for(u16 i = 0; i < SAND_PROP_SAVE_REG_NUM; i++){
+            reg = (sand_prop_base_t*)sand_prop_save_list[i].header.header_base;
             prop_range = (sand_prop_range_t*)reg_base_get_prop(reg, SAND_PROP_RANGE);
             if(reg->type == VAR_TYPE_CHAR){
                 // Get length of def-string
@@ -92,7 +92,7 @@ int storage_restore_data(storage_pcb_t* storage_pcb, const sand_prop_save_t* reg
         storage_pcb->data_changed = 1;
     }
     // Update data_crc
-    storage_pcb->current_data_crc = storage_calc_data_crc(reg_list, reg_list_len);
+    storage_pcb->current_data_crc = storage_calc_data_crc();
 
     // Release regs_storage_mutex
     storage_mutex_release();
@@ -100,73 +100,58 @@ int storage_restore_data(storage_pcb_t* storage_pcb, const sand_prop_save_t* reg
     return result;
 }
 
-int storage_save_data(storage_pcb_t* storage_pcb, const sand_prop_save_t* reg_list, u16 reg_list_len){
+int storage_save_data(storage_pcb_t* storage_pcb){
     int result = 0;
 
     sand_prop_base_t* reg = NULL;
-    sand_prop_save_t* prop_save = NULL;
     storage_header_t dump_header = {0};
     const u16 dump_size = SAND_SAVE_DATA_SIZE + sizeof(storage_header_t);
-    const u16 header_size = sizeof(storage_header_t);
-    static u8 buf[STORAGE_SAVE_DATA_BUF_LEN] = {0}; // Buffer for write data to flash like FIFO
-    u16 buf_ptr = 0;        // Buffer element index
-    u16 bytes_nmb = 0;      // Total data size for copy into buf
     u16 reg_size = 0;       // Register size in bytes
-    u32 save_addr_glob = 0; // Address value for save into storage FLASH
-    u16 byte_shift = 0;     // Unused
-    u8 need_erase = 0;      // Flag for erase
+    u32 flash_addr = 0;     // Address value for save into storage FLASH
     u16 reg_nmb = 0;        // Register counter for reg_list
-    u8* data_ptr = NULL;    // Pointer to data value for copy into buf
     u16 save_addr_ptr = 0;  // Save address index
     u8 null_value = 0;      // Null value for fill unused addresses
-
-    // debug vars
-    u32 temp = 0;
-    u32* temp_ptr = NULL;
 
     // Take regs_storage_mutex
     storage_mutex_wait();
 
     // Fill new_dump header
-    dump_header.data_crc = storage_calc_data_crc(reg_list, reg_list_len);
+    dump_header.data_crc = storage_calc_data_crc();
     dump_header.names_crc = storage_pcb->current_names_crc;
     dump_header.data_len = SAND_SAVE_DATA_SIZE;
     // Check available storage empty area for new dump
     if(storage_pcb->dump != NULL){
-        temp = (u32)storage_pcb->dump->header.next_header;
         if((u32)storage_pcb->dump->header.next_header + dump_size > STORAGE_FLASH_END){
             // If new dump doesn't fit in free area
-            save_addr_glob = STORAGE_FLASH_START;                                   // Start address of new dump
-            dump_header.next_header = &*(u32*)(STORAGE_FLASH_START + dump_size);    // Set pointer address value
+            flash_addr = STORAGE_FLASH_START;                                   // Start address of new dump
+            dump_header.next_header = &*(u32*)(STORAGE_FLASH_START + dump_size);// Set pointer address value
             dump_header.erase_cnt = storage_pcb->erase_cnt;
-            storage_erase(&dump_header.erase_cnt);                                  // Erase storage FLASH and increase erase counter
+            storage_erase(&dump_header.erase_cnt);                              // Erase storage FLASH and increase erase counter
         }else{
-            save_addr_glob = (u32)storage_pcb->dump->header.next_header;            // Start address of new dump
-            dump_header.next_header = &*(u32*)(save_addr_glob + dump_size);         // Set pointer address value
+            flash_addr = (u32)storage_pcb->dump->header.next_header;            // Start address of new dump
+            dump_header.next_header = &*(u32*)(flash_addr + dump_size);         // Set pointer address value
             dump_header.erase_cnt = storage_pcb->erase_cnt;
         }
     }else{
-        save_addr_glob = STORAGE_FLASH_START;                                   // Start address of new dump
+        flash_addr = STORAGE_FLASH_START;                                       // Start address of new dump
         dump_header.next_header = &*(u32*)(STORAGE_FLASH_START + dump_size);    // Set pointer address value
         dump_header.erase_cnt = storage_pcb->erase_cnt;
     }
 
     // Init storage FIFO
-    storage_fifo_init(&storage_fifo_pcb, save_addr_glob);
+    storage_fifo_init(&storage_fifo_pcb, flash_addr);
 
     // Push dump_header to FIFO
     storage_fifo_push(&storage_fifo_pcb, (u8*)&dump_header, sizeof(storage_header_t));
 
     // Push data to FIFO
-    bytes_nmb = SAND_SAVE_DATA_SIZE;
     save_addr_ptr = 0;
-    for(reg_nmb = 0; reg_nmb < reg_list_len; reg_nmb++){
-        reg = (sand_prop_base_t*)reg_base_get_prop(reg_list[reg_nmb].header.header_base, SAND_PROP_BASE);
-        data_ptr = reg->p_value;
+    for(reg_nmb = 0; reg_nmb < SAND_PROP_SAVE_REG_NUM; reg_nmb++){
+        reg = (sand_prop_base_t*)reg_base_get_prop(sand_prop_save_list[reg_nmb].header.header_base, SAND_PROP_BASE);
         reg_size = reg_base_get_byte_size(reg) * reg->array_len;
-        if(reg_list[reg_nmb].save_addr > save_addr_ptr){
+        if(sand_prop_save_list[reg_nmb].save_addr > save_addr_ptr){
             // Fill unused addresses by nulls
-            while(reg_list[reg_nmb].save_addr > save_addr_ptr){
+            while(sand_prop_save_list[reg_nmb].save_addr > save_addr_ptr){
                 storage_fifo_push(&storage_fifo_pcb, &null_value, 1);
                 save_addr_ptr++;
             }
@@ -178,16 +163,26 @@ int storage_save_data(storage_pcb_t* storage_pcb, const sand_prop_save_t* reg_li
     // Write tail of FIFO
     storage_fifo_write_tail(&storage_fifo_pcb);
 
+    // Validate written data of dump
+
     // Release regs_storage_mutex
     storage_mutex_release();
+
+    // After-saving routine
+    storage_pcb->current_data_crc = dump_header.data_crc;
+    storage_pcb->erase_cnt = dump_header.erase_cnt;
+    storage_pcb->data_changed = 0;
+    storage_pcb->dump = &*(storage_dump_t*)flash_addr;
+    storage_pcb->last_save_time_ms = HAL_GetTick();
+    // @todo: add write data to storage.vars
 
     return result;
 }
 
-int storage_data_changed_check(storage_pcb_t* storage_pcb, const sand_prop_save_t* reg_list, u16 reg_list_len){
+int storage_data_changed_check(storage_pcb_t* storage_pcb){
     int result = 0;
 
-    u32 crc = storage_calc_data_crc(reg_list, reg_list_len);
+    u32 crc = storage_calc_data_crc();
     if(crc != storage_pcb->current_data_crc){
         storage_pcb->data_changed = 1;
     }
@@ -205,6 +200,24 @@ void storage_mutex_release(void){
     if(regs_storage_mutex != NULL){
         osMutexRelease(regs_storage_mutex);
     }
+}
+
+int storage_handle(storage_pcb_t* storage_pcb, u16 period_ms){
+    int result = 0;
+
+    static u16 tick = 0;
+    if(tick / 1000 > STORAGE_CHECK_PERIOD_SEC){
+        // Time to data check
+        storage_data_changed_check(storage_pcb);
+#if(STORAGE_AUTOSAVE_EN == 1)
+        storage_save_data(storage_pcb);
+#endif // STORAGE_AUTOSAVE_EN
+
+        tick = 0;
+    }
+    tick += period_ms;
+
+    return result;
 }
 
 //-------Static functions----------
@@ -234,7 +247,7 @@ static int storage_crc_init(CRC_HandleTypeDef* hcrc){
  * @ingroup storage
  * @return CRC of registers names from list
  */
-static u32 storage_calc_names_crc(const sand_prop_save_t* reg_list, u16 reg_list_len){
+static u32 storage_calc_names_crc(){
     u32 crc = 0;
     u16 name_len = 0;
     u8* char_ptr = NULL;
@@ -242,9 +255,9 @@ static u32 storage_calc_names_crc(const sand_prop_save_t* reg_list, u16 reg_list
     sand_prop_base_t* reg = NULL;
     // Reset CRC hardware
     __HAL_CRC_DR_RESET(&hcrc);
-    for(u16 i = 0; i < reg_list_len; i++){
+    for(u16 i = 0; i < SAND_PROP_SAVE_REG_NUM; i++){
         // Get register from list
-        reg = (sand_prop_base_t*)reg_list[i].header.header_base;
+        reg = (sand_prop_base_t*)sand_prop_save_list[i].header.header_base;
         name_len = strlen(reg->name);
         char_ptr = (u8*)reg->name;
         for(u16 ptr = 0; ptr < name_len; ptr++){
@@ -259,12 +272,10 @@ static u32 storage_calc_names_crc(const sand_prop_save_t* reg_list, u16 reg_list
 
 /**
  * @brief Calculate CRC of registers values from list
- * @param reg_list - pointer to list
- * @param reg_list_len - regs list length
  * @ingroup storage
  * @return CRC of registers values from list
  */
-static u32 storage_calc_data_crc(const sand_prop_save_t* reg_list, u16 reg_list_len){
+static u32 storage_calc_data_crc(void){
     u32 crc = 0;
     u16 bytes_nmb = 0;
     u8* val_ptr = NULL;
@@ -272,9 +283,9 @@ static u32 storage_calc_data_crc(const sand_prop_save_t* reg_list, u16 reg_list_
     sand_prop_base_t* reg = NULL;
     // Reset CRC hardware
     __HAL_CRC_DR_RESET(&hcrc);
-    for(u16 i = 0; i < reg_list_len; i++){
+    for(u16 i = 0; i < SAND_PROP_SAVE_REG_NUM; i++){
         // Get register from list
-        reg = (sand_prop_base_t*)reg_list[i].header.header_base;
+        reg = (sand_prop_base_t*)sand_prop_save_list[i].header.header_base;
         bytes_nmb = reg_base_get_byte_size(reg) * reg->array_len;
         val_ptr = reg->p_value;
         for(u16 ptr = 0; ptr < bytes_nmb; ptr++){
@@ -298,7 +309,10 @@ static storage_dump_t* storage_dump_find(void){
     u32 addr = STORAGE_FLASH_START;
     while(*(u32*)addr != 0xFFFFFFFF){
         dump = (storage_dump_t*)addr;
-        addr = *(u32*)addr;
+        addr = (u32)dump->header.next_header;
+        if(addr >= STORAGE_FLASH_END){
+            break;
+        }
     }
 
     return dump;
