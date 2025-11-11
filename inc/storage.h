@@ -36,6 +36,7 @@ extern "C" {
 #define STORAGE_SAVE_DATA_BUF_LEN   4 * 2       // Storage buffer for saving operation
 #define STORAGE_CHECK_PERIOD_SEC    60          // Check data change period (1 minute)
 #define STORAGE_AUTOSAVE_EN         1           // Enable autosave if data changed
+#define STORAGE_RESAVE_PERIOD_MS    2000        // Save retry period if save data error
 
 #if(STORAGE_SAVE_DATA_BUF_LEN%2 == 1)
     #error "STORAGE: Please define RS_485_RATE_0_PIN"
@@ -45,7 +46,7 @@ extern "C" {
 
 //--------Typedefs-------
 
-typedef struct{
+typedef struct MCU_PACK{
     u32* next_header;               // Pointer to next storage header
     u32 data_crc;                   // CRC of storage data without header, used for storage data validation
     u32 names_crc;                  // CRC of all saved registers names, used for restore
@@ -53,7 +54,7 @@ typedef struct{
     u32 erase_cnt;                  // Full erase of storage area counter
 }storage_header_t;
 
-typedef struct{
+typedef struct MCU_PACK{
     storage_header_t header;        // Storage header
     u8 data;                        // Storage data first element
 }storage_dump_t;
@@ -113,7 +114,9 @@ int storage_restore_data(storage_pcb_t* storage_pcb);
  * @param storage_pcb - pointer to storage process control block
  * @ingroup storage
  * @return  0 - ok,\n
- *          negative value if error,\n
+ *          -1 - Saved dump next_header is not valid, need full storage FLASH erasing,\n
+ *          -2 - Saved dump header is not valid, need resave dump,\n
+ *          -3 - Saved dump data is not valid, need resave dump,\n
  *
  * @details
  * During saving time sets save_busy flags and block regs for changing via reg_base_write()
@@ -151,13 +154,22 @@ void storage_mutex_release(void);
  * @param period_ms - time between function calls
  * @ingroup storage
  * @return  0 - ok,\n
- *          negative value if error,\n
+ *          -1 - storage_save_data() error,\n
  *
  * @details
  * 1. Check data change every STORAGE_CHECK_PERIOD_SEC and set data_change flag
  * 2. If STORAGE_AUTOSAVE_EN enable save data by setting data_change flag
  */
 int storage_handle(storage_pcb_t* storage_pcb, u16 period_ms);
+
+/**
+ * @brief Set default values or nulls for regs from sand_prop_save_list
+ * @param storage_pcb - pointer to storage process control block
+ * @ingroup storage
+ * @return  0 - ok,\n
+ *          negative value if error,\n
+ */
+int storage_set_defaults(storage_pcb_t* storage_pcb);
 
 #ifdef __cplusplus
 }
