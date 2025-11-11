@@ -524,7 +524,7 @@ static int storage_fifo_push(storage_fifo_pcb_t* storage_fifo_pcb, u8* data, u16
         storage_fifo_pcb->flash_write_cnt++;
         storage_fifo_pcb->addr_ptr += STORAGE_SAVE_DATA_BUF_LEN;
         len -= write_size;
-        data += STORAGE_SAVE_DATA_BUF_LEN;
+        data += write_size;
         storage_fifo_pcb->buf_ptr = 0;
         write_size = STORAGE_SAVE_DATA_BUF_LEN - storage_fifo_pcb->buf_ptr;
     }
