@@ -243,7 +243,7 @@ static void mdb_sand_gpio_deinit(void){
 //=======ModBUS functions realisation=======
 
 /**
- * @brief Write error value to output buffer
+ * @brief Write exception response to output buffer
  * @param packet - pointer to input packet
  * @param out_buf - pointer to output buffer
  * @param out_len - pointer to output buffer lenght
@@ -253,8 +253,26 @@ static void mdb_sand_gpio_deinit(void){
 static int mdb_sand_unsupport_funct(mdb_packet_t* packet, u8* out_buf, u16* out_len){
     int result = 0;
 
-    packet->function |= MDB_FNCT_ERR_FLAG;
-    out_buf[0] = MDB_ERR_FUNCT;
+    packet->function |= MDB_EXCP_FUNC_FLAG;
+    out_buf[0] = MDB_EXCP_ILL_FUNCT;
+    *out_len = 1;
+
+    return result;
+}
+
+/**
+ * @brief Write exception response to output buffer
+ * @param packet - pointer to input packet
+ * @param out_buf - pointer to output buffer
+ * @param out_len - pointer to output buffer lenght
+ * @ingroup mdb
+ * @return 0
+ */
+static int mdb_sand_illegal_addr(mdb_packet_t* packet, u8* out_buf, u16* out_len){
+    int result = 0;
+
+    packet->function |= MDB_EXCP_FUNC_FLAG;
+    out_buf[0] = MDB_EXCP_ILL_DATA_ADDR;
     *out_len = 1;
 
     return result;
@@ -777,3 +795,4 @@ static int mdb_sand_read_fifo(mdb_packet_t* packet, u8* out_buf, u16* out_len){
     return result;
 }
 
+static int mdb_sand_check_addr()
