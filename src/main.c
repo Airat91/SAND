@@ -228,19 +228,6 @@ void main_task(void const * argument){
 
         // Checks other tasks state and restart them if error or suspend
 
-        // Debug functions
-
-        /*os.vars.runtime = 0x1456789;
-        sofi_prop_base_t* reg = NULL;
-        reg_var_t var = {0};
-        reg = reg_base_get_by_name("runtime");
-        var = reg_base_read(reg, 0);
-        reg = reg_base_get_by_name("build");
-        var = reg_base_read(reg, 12);
-        reg_base_write(reg_base_get_by_name("uniq_id"), 2, &var);*/
-
-
-
         osDelayUntil(&last_wake_time, MAIN_TASK_PERIOD);
         tick++;
         if(tick == MAIN_TASK_TICK_MAX){
