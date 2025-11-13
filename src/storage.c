@@ -244,11 +244,12 @@ void storage_mutex_release(void){
 
 int storage_handle(storage_pcb_t* storage_pcb, u16 period_ms){
     int result = 0;
-
     static u16 tick = 0;
+
+    // Check data change every call
+    storage_data_changed_check(storage_pcb);
     if(tick / 1000 >= storage.vars.autosave_period){
-        // Time to data check
-        storage_data_changed_check(storage_pcb);
+        // Check autosave flag
         if(storage.vars.autosave_en == 1){
             if(storage_pcb->data_changed == 1){
                 result = storage_save_data(storage_pcb);

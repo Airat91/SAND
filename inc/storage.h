@@ -33,7 +33,7 @@ extern "C" {
 #define STORAGE_FLASH_END           STORAGE_FLASH_START + STORAGE_FLASH_SIZE
 #define STORAGE_FLASH_PAGE_NMB      STORAGE_FLASH_SIZE / FLASH_PAGE_SIZE
 #define STORAGE_MUTEX_TIMEOUT       100         // Timeout for wait flash write operations
-#define STORAGE_SAVE_DATA_BUF_LEN   4 * 2       // Storage buffer for saving operation
+#define STORAGE_SAVE_DATA_BUF_LEN   50 * 2      // Storage buffer for saving operation
 #define STORAGE_CHECK_PERIOD_SEC    60          // Check data change period (1 minute)
 #define STORAGE_AUTOSAVE_EN         1           // Enable autosave if data changed
 #define STORAGE_RESAVE_PERIOD_MS    2000        // Save retry period if save data error
