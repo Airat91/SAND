@@ -27,10 +27,10 @@
 // This part of file generated automatically, don't change it
 #define DEVICE_NAME              	"SAND_AI"
 
-#define SAND_SAVE_DATA_SIZE      	8
+#define SAND_SAVE_DATA_SIZE      	86
 
 #define OS_STRUCT_SIZE           	88
-#define DEVICE_STRUCT_SIZE       	200
+#define DEVICE_STRUCT_SIZE       	170
 #define SERVICE_STRUCT_SIZE      	20
 #define TIME_STRUCT_SIZE         	20
 #define STORAGE_STRUCT_SIZE      	20
@@ -41,7 +41,7 @@
 #define SAND_PROP_BASE_REG_NUM   	65
 #define SAND_PROP_MDB_REG_NUM    	65
 #define SAND_PROP_RANGE_REG_NUM  	13
-#define SAND_PROP_SAVE_REG_NUM   	4
+#define SAND_PROP_SAVE_REG_NUM   	13
 #define SAND_PROP_ACCESS_REG_NUM 	0
 //#generator_message{"msg":"sand_struct_define", "action":"insert_end"}
 
@@ -71,7 +71,7 @@ typedef union{
 	struct MCU_PACK{
 		char   device_name[40];     // "Device name"
 		char   user_note[40];       // "User device name"
-		char   configuration[40];   // "Hardware configuration"
+		char   configuration[10];   // "Hardware configuration"
 		char   mcu_info[40];        // "MCU information"
 		u8     mcu_id[12];          // "Unique MCU ID number"
 		u16    device_type;         // "Device type code"
