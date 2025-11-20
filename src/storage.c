@@ -270,6 +270,7 @@ void storage_mutex_release(void){
 int storage_handle(storage_pcb_t* storage_pcb, u16 period_ms){
     int result = 0;
     static u16 tick = 0;
+    u32 temp = 0;
 
     // Check data change every call
     storage_data_changed_check(storage_pcb);
@@ -303,7 +304,11 @@ int storage_handle(storage_pcb_t* storage_pcb, u16 period_ms){
     storage.vars.erase_cnt      = storage_pcb->erase_cnt;
     storage.vars.last_save_time = storage_pcb->last_save_time_ms;
     storage.vars.dump_addr      = (u32)storage_pcb->dump;
+    temp = storage.vars.dump_addr;
+    temp -= STORAGE_FLASH_START;
+    storage.vars.dump_position  = (u16)(temp);
     storage.vars.dump_size      = sizeof(storage_header_t) + SAND_SAVE_DATA_SIZE;
+    storage.vars.storage_size   = STORAGE_FLASH_SIZE;
     storage.vars.data_changed   = storage_pcb->data_changed;
 
     tick += period_ms;

@@ -90,7 +90,7 @@ static int main_system_clock_config(void);
 static void main_IWDG_Init(void);
 static void main_gpio_init(void);
 static void main_IWDG_refresh(void);
-static int  main_leds_handle(u32 call_period);
+static int main_leds_handle(u32 call_period);
 static int main_write_device_info(void);
 static int main_read_reset_reason(void);
 
@@ -225,6 +225,9 @@ void main_task(void const * argument){
 
         // Refresh IWDG
         main_IWDG_refresh();
+
+        // Command handle
+        cmd_sand_execute(&os.vars.command);
 
         // Checks other tasks state and restart them if error or suspend
 
