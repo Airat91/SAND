@@ -333,7 +333,7 @@ static int adc_int_handle_results(adc_int_pcb_t* adc_int_pcb){
 
 #if(ADC_INT_PWR_EN == 1)
         value = ADC_INT_VREF_VALUE * adc_int_get_result_avg(adc_int_pcb, ADC_INT_CH_PWR) / *adc_int_vref_code_avg *
-                ADC_INT_PWR_A + ADC_INT_PWR_B;
+                device.vars.v_pwr_mul + device.vars.v_pwr_add;
         device.vars.v_pwr = value;
 #endif // ADC_INT_PWR_EN
 
@@ -345,7 +345,7 @@ static int adc_int_handle_results(adc_int_pcb_t* adc_int_pcb){
 
 #if(ADC_INT_TEMP_EN == 1)
         value = ADC_INT_VREF_VALUE * adc_int_get_result_avg(adc_int_pcb, ADC_INT_CH_TEMP) / *adc_int_vref_code_avg *
-                ADC_INT_TEMP_A + ADC_INT_TEMP_B;
+                ADC_INT_TEMP_A + ADC_INT_TEMP_B + device.vars.tmpr_add;
         device.vars.temperature = value;
 #endif // ADC_INT_TEMP_EN
 

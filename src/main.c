@@ -92,6 +92,7 @@ static void main_gpio_init(void);
 static void main_IWDG_refresh(void);
 static int  main_leds_handle(u32 call_period);
 static int main_write_device_info(void);
+static int main_read_reset_reason(void);
 
 static void RTC_Init(void);
 static void tim2_init(void);
@@ -119,6 +120,7 @@ int main(void){
     debug_init();
     storage_init(&storage_pcb);
     storage_restore_data(&storage_pcb);
+    main_write_device_info();
 #if RELEASE_FLAG
     main_IWDG_Init();
 #endif //RELEASE
@@ -203,7 +205,6 @@ void main_task(void const * argument){
     u32 tick = 0;
     debug_msg(__func__, DBG_MSG_INFO, "MAIN_task started");
 
-    main_write_device_info();
     while(1){
         // Every 1 second
         if(((tick)%(1000/MAIN_TASK_PERIOD))==0u){
@@ -226,19 +227,6 @@ void main_task(void const * argument){
         main_IWDG_refresh();
 
         // Checks other tasks state and restart them if error or suspend
-
-        // Debug functions
-
-        /*os.vars.runtime = 0x1456789;
-        sofi_prop_base_t* reg = NULL;
-        reg_var_t var = {0};
-        reg = reg_base_get_by_name("runtime");
-        var = reg_base_read(reg, 0);
-        reg = reg_base_get_by_name("build");
-        var = reg_base_read(reg, 12);
-        reg_base_write(reg_base_get_by_name("uniq_id"), 2, &var);*/
-
-
 
         osDelayUntil(&last_wake_time, MAIN_TASK_PERIOD);
         tick++;
@@ -1440,6 +1428,9 @@ static int main_write_device_info(void){
     sprintf(os.vars.build, BUILD_INFO);
     sprintf(os.vars.build_date, BUILD_DATE);
 
+    os.vars.reset_num++;
+    main_read_reset_reason();
+
     //debug only
     /*FLASH_EraseInitTypeDef erase = {0};
     erase.TypeErase = FLASH_TYPEERASE_PAGES;
@@ -1470,6 +1461,12 @@ static int main_write_device_info(void){
     memset(test_buf, 0, 22);
     err = flash_read(STORAGE_FLASH_START + 2, test_buf, 11);*/
     //
+
+    return result;
+}
+
+static int main_read_reset_reason(void){
+    int result = 0;
 
     return result;
 }
