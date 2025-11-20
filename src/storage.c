@@ -20,8 +20,8 @@ static storage_fifo_pcb_t storage_fifo_pcb = {0};   // Storage FIFO process cont
 //-------Static functions declaration-----------
 
 static int storage_crc_init(CRC_HandleTypeDef* hcrc);
-static u32 storage_calc_names_crc(void);
-static u32 storage_calc_data_crc(void);
+static u32 storage_calc_names_crc(const sand_prop_save_t* reg_list, u16 reg_list_len);
+static u32 storage_calc_data_crc(const sand_prop_save_t* reg_list, u16 reg_list_len);
 static storage_dump_t* storage_dump_find(void);
 static int storage_erase(u32* erase_cnt);
 static int storage_dump_data_validation(storage_dump_t* dump);
@@ -40,7 +40,7 @@ int storage_init(storage_pcb_t* storage_pcb){
     // Reset storage_pcb
     memset(storage_pcb, 0, sizeof(storage_pcb_t));
     // Calculate actual names_crc
-    storage_pcb->current_names_crc = storage_calc_names_crc();
+    storage_pcb->current_names_crc = storage_calc_names_crc(&sand_prop_save_list[0], SAND_PROP_SAVE_REG_NUM);
     // Get last dump from storage
     storage_pcb->dump = storage_dump_find();
     if(storage_pcb->dump != NULL){
@@ -58,6 +58,7 @@ int storage_restore_data(storage_pcb_t* storage_pcb){
     sand_prop_base_t* reg = NULL;
     u16 bytes_nmb = 0;
     u32 addr = 0;
+    u16 regs_cnt = 0;
 
     // Take regs_storage_mutex
     storage_mutex_wait();
@@ -65,6 +66,11 @@ int storage_restore_data(storage_pcb_t* storage_pcb){
     if(storage_pcb->dump != NULL){
         // If dump is exist, validate his data
         if(storage_dump_data_validation(storage_pcb->dump) == 0){
+            // Read registers number in dump and compare with registers number in project
+            if(storage_pcb->dump->header.regs_num <= SAND_PROP_SAVE_REG_NUM){
+
+            }
+
             // Compare names_crc
             if(storage_pcb->current_names_crc == storage_pcb->dump->header.names_crc){
                 // Restore last values from dump
@@ -124,8 +130,9 @@ int storage_save_data(storage_pcb_t* storage_pcb){
     storage_mutex_wait();
 
     // Fill new_dump header
-    dump_header.data_crc = storage_calc_data_crc();
+    dump_header.data_crc = storage_calc_data_crc(&sand_prop_save_list[0], SAND_PROP_SAVE_REG_NUM);
     dump_header.names_crc = storage_pcb->current_names_crc;
+    dump_header.regs_num = SAND_PROP_SAVE_REG_NUM;
     dump_header.data_len = SAND_SAVE_DATA_SIZE;
     // Check available storage empty area for new dump
     if(storage_pcb->dump != NULL){
@@ -203,6 +210,10 @@ int storage_save_data(storage_pcb_t* storage_pcb){
             result = -2;
             debug_msg(__func__, DBG_MSG_ERR, "Saved dump data_len is not valid, need resave dump");
         }
+        if(saved_dump->header.regs_num != dump_header.regs_num){
+            result = -2;
+            debug_msg(__func__, DBG_MSG_ERR, "Saved dump regs_num is not valid, need resave dump");
+        }
         if(saved_dump->header.erase_cnt != dump_header.erase_cnt){
             result = -2;
             debug_msg(__func__, DBG_MSG_ERR, "Saved dump erase_cnt is not valid, need resave dump");
@@ -222,7 +233,7 @@ int storage_save_data(storage_pcb_t* storage_pcb){
 int storage_data_changed_check(storage_pcb_t* storage_pcb){
     int result = 0;
 
-    u32 crc = storage_calc_data_crc();
+    u32 crc = storage_calc_data_crc(&sand_prop_save_list[0], SAND_PROP_SAVE_REG_NUM);
     if(crc != storage_pcb->current_data_crc){
         storage_pcb->data_changed = 1;
     }
@@ -342,7 +353,7 @@ static int storage_crc_init(CRC_HandleTypeDef* hcrc){
  * @ingroup storage
  * @return CRC of registers names from list
  */
-static u32 storage_calc_names_crc(){
+static u32 storage_calc_names_crc(const sand_prop_save_t* reg_list, u16 reg_list_len){
     u32 crc = 0;
     u16 name_len = 0;
     u8* char_ptr = NULL;
@@ -350,9 +361,9 @@ static u32 storage_calc_names_crc(){
     sand_prop_base_t* reg = NULL;
     // Reset CRC hardware
     __HAL_CRC_DR_RESET(&hcrc);
-    for(u16 i = 0; i < SAND_PROP_SAVE_REG_NUM; i++){
+    for(u16 i = 0; i < reg_list_len; i++){
         // Get register from list
-        reg = (sand_prop_base_t*)sand_prop_save_list[i].header.header_base;
+        reg = (sand_prop_base_t*)reg_list[i].header.header_base;
         name_len = strlen(reg->name);
         char_ptr = (u8*)reg->name;
         for(u16 ptr = 0; ptr < name_len; ptr++){
@@ -367,10 +378,12 @@ static u32 storage_calc_names_crc(){
 
 /**
  * @brief Calculate CRC of registers values from list
+ * @param reg_list - pointer to list
+ * @param reg_list_len - regs list length
  * @ingroup storage
  * @return CRC of registers values from list
  */
-static u32 storage_calc_data_crc(void){
+static u32 storage_calc_data_crc(const sand_prop_save_t* reg_list, u16 reg_list_len){
     u32 crc = 0;
     u16 bytes_nmb = 0;
     u8* val_ptr = NULL;
@@ -379,9 +392,9 @@ static u32 storage_calc_data_crc(void){
     sand_prop_base_t* reg = NULL;
     // Reset CRC hardware
     __HAL_CRC_DR_RESET(&hcrc);
-    for(u16 i = 0; i < SAND_PROP_SAVE_REG_NUM; i++){
+    for(u16 i = 0; i < reg_list_len; i++){
         // Get register from list
-        reg = (sand_prop_base_t*)sand_prop_save_list[i].header.header_base;
+        reg = (sand_prop_base_t*)reg_list[i].header.header_base;
         bytes_nmb = reg_base_get_byte_size(reg) * reg->array_len;
         val_ptr = reg->p_value;
         for(u16 ptr = 0; ptr < bytes_nmb; ptr++){

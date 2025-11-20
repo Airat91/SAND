@@ -51,6 +51,7 @@ typedef struct MCU_PACK{
     u32 data_crc;                   // CRC of storage data without header, used for storage data validation
     u32 names_crc;                  // CRC of all saved registers names, used for restore
     u16 data_len;                   // Storage data length in bytes
+    u16 regs_num;                   // Number of registers in storage dump
     u32 erase_cnt;                  // Full erase of storage area counter
 }storage_header_t;
 
