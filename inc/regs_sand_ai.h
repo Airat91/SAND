@@ -33,13 +33,13 @@
 #define DEVICE_STRUCT_SIZE       	214
 #define SERVICE_STRUCT_SIZE      	20
 #define TIME_STRUCT_SIZE         	20
-#define STORAGE_STRUCT_SIZE      	20
+#define STORAGE_STRUCT_SIZE      	24
 #define MODBUS_STRUCT_SIZE       	10
 #define AI_STRUCT_SIZE           	36
 #define TEST_STRUCT_SIZE         	870
 
-#define SAND_PROP_BASE_REG_NUM   	69
-#define SAND_PROP_MDB_REG_NUM    	69
+#define SAND_PROP_BASE_REG_NUM   	71
+#define SAND_PROP_MDB_REG_NUM    	71
 #define SAND_PROP_RANGE_REG_NUM  	18
 #define SAND_PROP_SAVE_REG_NUM   	16
 #define SAND_PROP_ACCESS_REG_NUM 	0
@@ -123,7 +123,9 @@ typedef union{
 		u16    autosave_period;     // "Autosave period (sec)"
 		u32    last_save_time;      // "Time of last save"
 		u32    dump_addr;           // "Save dump FLASH address"
+		u16    dump_position;       // "Save dump FLASH position"
 		u16    dump_size;           // "Save dump size (bytes)"
+		u16    storage_size;        // "Storage FLASH size (bytes)"
 		u16    data_changed;        // "Data changed flag"
 	}vars;
 	u8 bytes[STORAGE_STRUCT_SIZE];

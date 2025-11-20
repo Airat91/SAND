@@ -68,6 +68,7 @@
 #include "rs485.h"
 #include "reg.h"
 #include "adc_int.h"
+#include "cmd_sand.h"
 
 #if MDB_EN
     #include "mdb_sand.h"
