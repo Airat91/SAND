@@ -59,6 +59,8 @@ int storage_restore_data(storage_pcb_t* storage_pcb){
     u16 bytes_nmb = 0;
     u32 addr = 0;
     u16 regs_cnt = 0;
+    //u16 regs_num = 0;
+    u32 names_crc = 0;
 
     // Take regs_storage_mutex
     storage_mutex_wait();
@@ -68,26 +70,37 @@ int storage_restore_data(storage_pcb_t* storage_pcb){
         if(storage_dump_data_validation(storage_pcb->dump) == 0){
             // Read registers number in dump and compare with registers number in project
             if(storage_pcb->dump->header.regs_num <= SAND_PROP_SAVE_REG_NUM){
+                // Compare names_crc for first regs_num in list
+                names_crc = storage_calc_names_crc(&sand_prop_save_list[0], storage_pcb->dump->header.regs_num);
+                if(names_crc == storage_pcb->dump->header.names_crc){
+                    // Restore last values from dump for first regs_num in list
+                    for(regs_cnt = 0; regs_cnt < storage_pcb->dump->header.regs_num; regs_cnt++){
+                        reg = (sand_prop_base_t*)sand_prop_save_list[regs_cnt].header.header_base;
+                        bytes_nmb = reg_base_get_byte_size(reg) * reg->array_len;
+                        addr = (u32)&storage_pcb->dump->data + sand_prop_save_list[regs_cnt].save_addr;
+                        flash_read(addr, (u16*)reg->p_value, bytes_nmb);
+                    }
+                    if(regs_cnt < SAND_PROP_SAVE_REG_NUM){
+                        // If regs_num is less than regs in the project, remaining registers set to default values
+                        storage_set_defaults(storage_pcb, &sand_prop_save_list[regs_cnt], SAND_PROP_SAVE_REG_NUM - regs_cnt);
+                        debug_msg(__func__, DBG_MSG_WARN, "Restored %d registers, remaining registers set to default values",
+                                  storage_pcb->dump->header.regs_num);
+                        // Set data changed flag
+                        storage_pcb->data_changed = 1;
+                    }else{
+                        // Update data_crc from dump
+                        storage_pcb->current_data_crc = storage_pcb->dump->header.data_crc;
 
-            }
-
-            // Compare names_crc
-            if(storage_pcb->current_names_crc == storage_pcb->dump->header.names_crc){
-                // Restore last values from dump
-                for(u16 i = 0; i < SAND_PROP_SAVE_REG_NUM; i++){
-                    reg = (sand_prop_base_t*)sand_prop_save_list[i].header.header_base;
-                    bytes_nmb = reg_base_get_byte_size(reg) * reg->array_len;
-                    addr = (u32)&storage_pcb->dump->data + sand_prop_save_list[i].save_addr;
-                    flash_read(addr, (u16*)reg->p_value, bytes_nmb);
+                        // Reset data changed flag
+                        storage_pcb->data_changed = 0;
+                    }
+                }else{
+                    result = -3;
+                    debug_msg(__func__, DBG_MSG_WARN, "Dump names_crc mismatch");
                 }
-                // Update data_crc from dump
-                storage_pcb->current_data_crc = storage_pcb->dump->header.data_crc;
-
-                // Reset data changed flag
-                storage_pcb->data_changed = 0;
             }else{
-                result = -3;
-                debug_msg(__func__, DBG_MSG_WARN, "Dump names_crc mismatch");
+                result = -4;
+                debug_msg(__func__, DBG_MSG_WARN, "Registers number in dump more than regs in project");
             }
         }else{
             result = -2;
@@ -99,7 +112,7 @@ int storage_restore_data(storage_pcb_t* storage_pcb){
 
     if(result != 0){
         // If dump doesn't exist or not valid, set default values or null
-        storage_set_defaults(storage_pcb);
+        storage_set_defaults(storage_pcb, &sand_prop_save_list[0], SAND_PROP_SAVE_REG_NUM);
         debug_msg(__func__, DBG_MSG_WARN, "Data can't be restored, setting default values");
 
         // Set data changed flag
@@ -141,7 +154,8 @@ int storage_save_data(storage_pcb_t* storage_pcb){
             flash_addr = STORAGE_FLASH_START;                                   // Start address of new dump
             dump_header.next_header = &*(u32*)(STORAGE_FLASH_START + dump_size);// Set pointer address value
             dump_header.erase_cnt = storage_pcb->erase_cnt;
-            storage_erase(&dump_header.erase_cnt);                              // Erase storage FLASH and increase erase counter
+            storage_erase(&dump_header.erase_cnt);                              // Erase storage FLASH and increase
+                                                                                // erase counter
         }else{
             // Write from dump.next_header address
             flash_addr = (u32)storage_pcb->dump->header.next_header;            // Start address of new dump
@@ -297,15 +311,15 @@ int storage_handle(storage_pcb_t* storage_pcb, u16 period_ms){
     return result;
 }
 
-int  storage_set_defaults(storage_pcb_t* storage_pcb){
+int  storage_set_defaults(storage_pcb_t* storage_pcb, const sand_prop_save_t* regs_list, u16 regs_list_len){
     int result = 0;
 
     sand_prop_base_t* reg = NULL;
     sand_prop_range_t* prop_range = NULL;
     u16 bytes_nmb = 0;
 
-    for(u16 i = 0; i < SAND_PROP_SAVE_REG_NUM; i++){
-        reg = (sand_prop_base_t*)sand_prop_save_list[i].header.header_base;
+    for(u16 i = 0; i < regs_list_len; i++){
+        reg = (sand_prop_base_t*)regs_list[i].header.header_base;
         prop_range = (sand_prop_range_t*)reg_base_get_prop(reg, SAND_PROP_RANGE);
         if(reg->type == VAR_TYPE_CHAR){
             // Get length of def-string

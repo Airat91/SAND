@@ -166,11 +166,13 @@ int storage_handle(storage_pcb_t* storage_pcb, u16 period_ms);
 /**
  * @brief Set default values or nulls for regs from sand_prop_save_list
  * @param storage_pcb - pointer to storage process control block
+ * @param reg_list - pointer to list
+ * @param reg_list_len - regs list length
  * @ingroup storage
  * @return  0 - ok,\n
  *          negative value if error,\n
  */
-int storage_set_defaults(storage_pcb_t* storage_pcb);
+int storage_set_defaults(storage_pcb_t* storage_pcb, const sand_prop_save_t* regs_list, u16 regs_list_len);
 
 #ifdef __cplusplus
 }

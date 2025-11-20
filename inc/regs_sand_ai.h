@@ -27,7 +27,7 @@
 // This part of file generated automatically, don't change it
 #define DEVICE_NAME              	"SAND_AI"
 
-#define SAND_SAVE_DATA_SIZE      	130
+#define SAND_SAVE_DATA_SIZE      	128
 
 #define OS_STRUCT_SIZE           	88
 #define DEVICE_STRUCT_SIZE       	214
@@ -41,7 +41,7 @@
 #define SAND_PROP_BASE_REG_NUM   	69
 #define SAND_PROP_MDB_REG_NUM    	69
 #define SAND_PROP_RANGE_REG_NUM  	18
-#define SAND_PROP_SAVE_REG_NUM   	17
+#define SAND_PROP_SAVE_REG_NUM   	16
 #define SAND_PROP_ACCESS_REG_NUM 	0
 //#generator_message{"msg":"sand_struct_define", "action":"insert_end"}
 
