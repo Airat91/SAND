@@ -39,7 +39,7 @@ extern "C" {
 //========Vref configuration========
 #define ADC_INT_VREF_INT            0x01    // Vref code for select
 #define ADC_INT_VREF_EXT            0x02    // Vref code for select
-#define ADC_INT_VREF_USE            ADC_INT_VREF_INT    // Select ADC_VREF_INT or ADC_VREF_EXT
+#define ADC_INT_VREF_USE            ADC_INT_VREF_EXT    // Select ADC_VREF_INT or ADC_VREF_EXT
 #define ADC_INT_VREF_INT_VALUE      1.2f    // Internal voltage reference value
 #define ADC_INT_VREF_EXT_VALUE      2.5f    // External voltage reference value
 #if(ADC_INT_VREF_USE == ADC_INT_VREF_INT)

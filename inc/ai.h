@@ -35,7 +35,7 @@ extern "C" {
 #define AI_SAMPLE_NUM               10      // Samples number for averaging
 #define AI_INIT_TIMEOUT_MS          2000    // 2 sec
 #define AI_ADC_MAX_RANGE            4096    // ADC code max value
-#define AI_TASK_PERIOD              50      // Equal measurement period in ms
+#define AI_TASK_PERIOD              10      // Equal measurement period in ms
 #define AI_CH_NUM                   2       // Module have 2 Analog Inputs
 
 //========Vref configuration========
