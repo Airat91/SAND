@@ -239,6 +239,299 @@ void main_task(void const * argument){
     }
 }
 
+int main_suspend(void){
+    int result = 0;
+
+    return result;
+}
+
+//-------Static functions----------
+
+/**
+  * @brief System Clock Configuration
+  * @ingroup main
+  * @return 0 - ok,\n
+  *         -1 - HAL_RCC_OscConfig() error,\n
+  *         -2 - HAL_RCC_ClockConfig() error,\n
+  *         -3 - HAL_SYSTICK_Config() error,\n
+  */
+static int main_system_clock_config(void){
+    int result = 0;
+    HAL_StatusTypeDef stat = HAL_OK;
+
+    // Initializes RCC Internal/External Oscillator (HSE, HSI, LSE and LSI) configuration structure definition
+    RCC_OscInitTypeDef RCC_OscInitStruct = {0};
+    RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;  // Use Ext 8MHz Osc
+
+    RCC_OscInitStruct.HSEState = RCC_HSE_ON;                    // Enable Ext 8MHz Osc
+    RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;     // Set Ext Osc divider
+    RCC_OscInitStruct.HSIState = RCC_HSI_ON;                    // Enable Int 8MHz RC
+    RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+
+    RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;                // Enable PLL
+    RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;        // Set PLL source = Ext 8MHz Osc
+    RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL9;                // Set PLLCLK = 8 * 9 = 72MHz
+
+    stat = HAL_RCC_OscConfig(&RCC_OscInitStruct);
+    if(stat != HAL_OK){
+        result = -1;
+        debug_msg(__func__, DBG_MSG_ERR, "HAL_RCC_OscConfig() %S", hal_status[stat]);
+    }
+
+    // Initializes RCC System, AHB and APB busses clock configuration structure definition
+    RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+    RCC_ClkInitStruct.ClockType |= RCC_CLOCKTYPE_HCLK;          // Config HCLK
+    RCC_ClkInitStruct.ClockType |= RCC_CLOCKTYPE_SYSCLK;        // Config SYSCLK
+    RCC_ClkInitStruct.ClockType |= RCC_CLOCKTYPE_PCLK1;         // Config PCLK1
+    RCC_ClkInitStruct.ClockType |= RCC_CLOCKTYPE_PCLK2;         // Config PCLK2
+
+    RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;   // Set SYSCLK = PLLCLK = 72MHz
+    RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;          // Set HCLK = SYSCLK = 72MHz
+    RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;           // Set APB1CLK = HCLK/2 = 36MHz
+    RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;           // Set APB1CLK = HCLK = 72MHz
+
+    stat = HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2);
+    if (stat != HAL_OK){
+        result = -2;
+        debug_msg(__func__, DBG_MSG_ERR, "HAL_RCC_ClockConfig() %S", hal_status[stat]);
+    }
+
+    // Configure the Systick interrupt time 1ms
+    stat = HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq()/1000);
+    if (stat != HAL_OK){
+        result = -3;
+        debug_msg(__func__, DBG_MSG_ERR, "HAL_SYSTICK_Config() %S", hal_status[stat]);
+    }
+
+    // Configure the Systick source
+    HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
+
+    // Set SysTick_IRQn interrupt configuration
+    HAL_NVIC_SetPriority(SysTick_IRQn, 15, 0);
+
+    return result;
+}
+
+/**
+ * @brief Watchdig timer initialisation
+ * @ingroup main
+ */
+static void main_IWDG_Init(void){
+    hiwdg.Instance = IWDG;
+    hiwdg.Init.Prescaler = IWDG_PRESCALER_128;
+    hiwdg.Init.Reload = MAIN_IWDG_PERIOD;
+    u32 stat = HAL_IWDG_Init(&hiwdg);
+    if (stat != HAL_OK){
+        debug_msg(__func__, DBG_MSG_ERR, "HAL_IWDG_Init() %S", hal_status[stat]);
+    }
+}
+
+/**
+ * @brief Init GPIO common for all modules
+ * @ingroup main
+ *
+ * Init SYS and CON LEDs
+ * Init MDB_ADDR switch pins
+ * Init MDB_RATE switch pins
+ */
+static void main_gpio_init(void){
+    __HAL_RCC_GPIOA_CLK_ENABLE();
+    __HAL_RCC_GPIOB_CLK_ENABLE();
+    __HAL_RCC_GPIOC_CLK_ENABLE();
+    GPIO_InitTypeDef GPIO_InitStruct;
+
+    // Init SYS and CON LEDs
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+
+    GPIO_InitStruct.Pin = LED_SYS_R_PIN;
+    HAL_GPIO_WritePin(LED_SYS_R_PORT, LED_SYS_R_PIN, GPIO_PIN_RESET);
+    HAL_GPIO_Init (LED_SYS_R_PORT, &GPIO_InitStruct);
+    GPIO_InitStruct.Pin = LED_SYS_G_PIN;
+    HAL_GPIO_WritePin(LED_SYS_G_PORT, LED_SYS_G_PIN, GPIO_PIN_RESET);
+    HAL_GPIO_Init (LED_SYS_G_PORT, &GPIO_InitStruct);
+    GPIO_InitStruct.Pin = LED_CON_R_PIN;
+    HAL_GPIO_WritePin(LED_CON_R_PORT, LED_CON_R_PIN, GPIO_PIN_RESET);
+    HAL_GPIO_Init (LED_CON_R_PORT, &GPIO_InitStruct);
+    GPIO_InitStruct.Pin = LED_CON_G_PIN;
+    HAL_GPIO_WritePin(LED_CON_G_PORT, LED_CON_G_PIN, GPIO_PIN_RESET);
+    HAL_GPIO_Init (LED_CON_G_PORT, &GPIO_InitStruct);
+}
+
+/**
+ * @brief Refresh IWDG
+ * @ingroup main
+ */
+static void main_IWDG_refresh(void){
+#if RELEASE_FLAG
+        HAL_IWDG_Refresh(&hiwdg);
+#endif //RELEASE_FLAG
+
+}
+
+/**
+ * @brief LEDs control
+ * @param call_period - function calling period in ms
+ * @ingroup main
+ * @return  0
+ *
+ * 1. Handle System OK LED (GREEN)
+ * 2. Handle System ERROR LED (RED)
+ * 3. Handle interfaces OK LED (GREEN)
+ * 3. Handle interfaces ERROR LED (RED)
+ */
+static int main_leds_handle(u32 call_period){
+    int result = 0;
+    // Handle System OK LED (GREEN)
+    if(led_sys_ok_time){
+        HAL_GPIO_WritePin(LED_SYS_G_PORT, LED_SYS_G_PIN, GPIO_PIN_SET);
+        if(led_sys_ok_time > call_period){
+            led_sys_ok_time -= call_period;
+        }else{
+            led_sys_ok_time = 0;
+        }
+    }else{
+        HAL_GPIO_WritePin(LED_SYS_G_PORT, LED_SYS_G_PIN, GPIO_PIN_RESET);
+    }
+
+    // Handle System ERROR LED (RED)
+    if(debug_led_err_on_time){
+        HAL_GPIO_WritePin(LED_SYS_R_PORT, LED_SYS_R_PIN, GPIO_PIN_SET);
+        if(debug_led_err_on_time > call_period){
+            debug_led_err_on_time -= call_period;
+        }else{
+            debug_led_err_on_time = 0;
+        }
+    }else{
+        HAL_GPIO_WritePin(LED_SYS_R_PORT, LED_SYS_R_PIN, GPIO_PIN_RESET);
+    }
+
+    // Handle interfaces OK LED (GREEN)
+#if RS485_EN
+    if(rs485_led_ok_on_time){
+        HAL_GPIO_WritePin(LED_CON_G_PORT, LED_CON_G_PIN, GPIO_PIN_SET);
+        if(rs485_led_ok_on_time > call_period){
+            rs485_led_ok_on_time -= call_period;
+        }else{
+            rs485_led_ok_on_time = 0;
+        }
+    }else{
+        HAL_GPIO_WritePin(LED_CON_G_PORT, LED_CON_G_PIN, GPIO_PIN_RESET);
+    }
+#endif // RS485_EN
+#if CAN_EN
+    if(can_led_ok_on_time){
+        HAL_GPIO_WritePin(LED_CON_G_PORT, LED_CON_G_PIN, GPIO_PIN_SET);
+        if(can_led_ok_on_time > call_period){
+            can_led_ok_on_time -= call_period;
+        }else{
+            can_led_ok_on_time = 0;
+        }
+    }else{
+        HAL_GPIO_WritePin(LED_CON_G_PORT, LED_CON_G_PIN, GPIO_PIN_RESET);
+    }
+#endif // CAN_EN
+
+    // Handle interfaces ERROR LED (RED)
+#if RS485_EN
+    if(rs485_led_err_on_time){
+        HAL_GPIO_WritePin(LED_CON_R_PORT, LED_CON_R_PIN, GPIO_PIN_SET);
+        if(rs485_led_err_on_time > call_period){
+            rs485_led_err_on_time -= call_period;
+        }else{
+            rs485_led_err_on_time = 0;
+        }
+    }else{
+        HAL_GPIO_WritePin(LED_CON_R_PORT, LED_CON_R_PIN, GPIO_PIN_RESET);
+    }
+#endif // RS485_EN
+#if CAN_EN
+    if(can_led_err_on_time){
+        HAL_GPIO_WritePin(LED_CON_R_PORT, LED_CON_R_PIN, GPIO_PIN_SET);
+        if(can_led_err_on_time > call_period){
+            can_led_err_on_time -= call_period;
+        }else{
+            can_led_err_on_time = 0;
+        }
+    }else{
+        HAL_GPIO_WritePin(LED_CON_R_PORT, LED_CON_R_PIN, GPIO_PIN_RESET);
+    }
+#endif // CAN_EN
+    return result;
+}
+
+/**
+ * @brief Write information about device into global registers
+ * @ingroup main
+ * @return 0
+ */
+static int main_write_device_info(void){
+    int result = 0;
+
+    u16 os_version[3] = BUILD_VERSION;
+    u16 flash_size = 0;
+
+    flash_read_global(FLASH_SIG_SIZE_ADDR, &flash_size, FLASH_SIG_SIZE_BYTE_LEN/2);
+    if(flash_size != FLASH_TOTAL_SIZE / 1024){
+        debug_msg(__func__, DBG_MSG_ERR, "MCU FLASH size mismatch: %d KB instead %d KB", flash_size, FLASH_TOTAL_SIZE / 1024);
+    }
+
+    sprintf(device.vars.device_name, DEVICE_NAME);
+    sprintf(device.vars.mcu_info, "MCU: %s / %d Kbyte", MCU_NAME, flash_size);
+    flash_read_global(FLASH_SIG_ID_ADDR, (u16*)&device.vars.mcu_id, FLASH_SIG_ID_BYTE_LEN/2); // Read data from Flash
+    device.vars.device_type = DEVICE_TYPE;
+
+    memcpy(&os.vars.os_version, &os_version, 6);
+    os.vars.num_of_vars = SAND_PROP_BASE_REG_NUM;
+    sprintf(os.vars.build, BUILD_INFO);
+    sprintf(os.vars.build_date, BUILD_DATE);
+
+    os.vars.reset_num++;
+    main_read_reset_reason();
+
+    //debug only
+    /*FLASH_EraseInitTypeDef erase = {0};
+    erase.TypeErase = FLASH_TYPEERASE_PAGES;
+    erase.Banks = FLASH_BANK_1;
+    erase.PageAddress = STORAGE_FLASH_START;
+    erase.NbPages = 1;
+    u32 page_error = 0;
+    int err = 0;
+
+    HAL_FLASH_Unlock();
+    HAL_FLASHEx_Erase(&erase, (uint32_t*)&page_error);
+    HAL_FLASH_Lock();
+
+    u16 test_buf[11] = {
+        0xAAAA,
+        0xBBBB,
+        0xCCCC,
+        0xDDDD,
+        0xEEEE,
+        0x1234,
+        0xA5A5,
+        0x5678,
+        0xEBCA,
+        0x0001,
+        0x0002,
+    };
+    err = flash_write(STORAGE_FLASH_START + 2, test_buf, 11);
+    memset(test_buf, 0, 22);
+    err = flash_read(STORAGE_FLASH_START + 2, test_buf, 11);*/
+    //
+
+    return result;
+}
+
+static int main_read_reset_reason(void){
+    int result = 0;
+
+    return result;
+}
+
+//------------Unrefactoried--------------
+
 /**
  * @brief display_task
  * @param argument
@@ -1186,290 +1479,5 @@ uint32_t uint32_pow(uint16_t x, uint8_t pow){
         result *= x;
         pow--;
     }
-    return result;
-}
-
-//-------Static functions----------
-
-/**
-  * @brief System Clock Configuration
-  * @ingroup main
-  * @return 0 - ok,\n
-  *         -1 - HAL_RCC_OscConfig() error,\n
-  *         -2 - HAL_RCC_ClockConfig() error,\n
-  *         -3 - HAL_SYSTICK_Config() error,\n
-  */
-static int main_system_clock_config(void){
-    int result = 0;
-    HAL_StatusTypeDef stat = HAL_OK;
-
-    // Initializes RCC Internal/External Oscillator (HSE, HSI, LSE and LSI) configuration structure definition
-    RCC_OscInitTypeDef RCC_OscInitStruct = {0};
-    RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;  // Use Ext 8MHz Osc
-
-    RCC_OscInitStruct.HSEState = RCC_HSE_ON;                    // Enable Ext 8MHz Osc
-    RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;     // Set Ext Osc divider
-    RCC_OscInitStruct.HSIState = RCC_HSI_ON;                    // Enable Int 8MHz RC
-    RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
-
-    RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;                // Enable PLL
-    RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;        // Set PLL source = Ext 8MHz Osc
-    RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL9;                // Set PLLCLK = 8 * 9 = 72MHz
-
-    stat = HAL_RCC_OscConfig(&RCC_OscInitStruct);
-    if(stat != HAL_OK){
-        result = -1;
-        debug_msg(__func__, DBG_MSG_ERR, "HAL_RCC_OscConfig() %S", hal_status[stat]);
-    }
-
-    // Initializes RCC System, AHB and APB busses clock configuration structure definition
-    RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
-    RCC_ClkInitStruct.ClockType |= RCC_CLOCKTYPE_HCLK;          // Config HCLK
-    RCC_ClkInitStruct.ClockType |= RCC_CLOCKTYPE_SYSCLK;        // Config SYSCLK
-    RCC_ClkInitStruct.ClockType |= RCC_CLOCKTYPE_PCLK1;         // Config PCLK1
-    RCC_ClkInitStruct.ClockType |= RCC_CLOCKTYPE_PCLK2;         // Config PCLK2
-
-    RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;   // Set SYSCLK = PLLCLK = 72MHz
-    RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;          // Set HCLK = SYSCLK = 72MHz
-    RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;           // Set APB1CLK = HCLK/2 = 36MHz
-    RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;           // Set APB1CLK = HCLK = 72MHz
-
-    stat = HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2);
-    if (stat != HAL_OK){
-        result = -2;
-        debug_msg(__func__, DBG_MSG_ERR, "HAL_RCC_ClockConfig() %S", hal_status[stat]);
-    }
-
-    // Configure the Systick interrupt time 1ms
-    stat = HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq()/1000);
-    if (stat != HAL_OK){
-        result = -3;
-        debug_msg(__func__, DBG_MSG_ERR, "HAL_SYSTICK_Config() %S", hal_status[stat]);
-    }
-
-    // Configure the Systick source
-    HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
-
-    // Set SysTick_IRQn interrupt configuration
-    HAL_NVIC_SetPriority(SysTick_IRQn, 15, 0);
-
-    return result;
-}
-
-/**
- * @brief Watchdig timer initialisation
- * @ingroup main
- */
-static void main_IWDG_Init(void){
-    hiwdg.Instance = IWDG;
-    hiwdg.Init.Prescaler = IWDG_PRESCALER_128;
-    hiwdg.Init.Reload = MAIN_IWDG_PERIOD;
-    u32 stat = HAL_IWDG_Init(&hiwdg);
-    if (stat != HAL_OK){
-        debug_msg(__func__, DBG_MSG_ERR, "HAL_IWDG_Init() %S", hal_status[stat]);
-    }
-}
-
-/**
- * @brief Init GPIO common for all modules
- * @ingroup main
- *
- * Init SYS and CON LEDs
- * Init MDB_ADDR switch pins
- * Init MDB_RATE switch pins
- */
-static void main_gpio_init(void){
-    __HAL_RCC_GPIOA_CLK_ENABLE();
-    __HAL_RCC_GPIOB_CLK_ENABLE();
-    __HAL_RCC_GPIOC_CLK_ENABLE();
-    GPIO_InitTypeDef GPIO_InitStruct;
-
-    // Init SYS and CON LEDs
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-
-    GPIO_InitStruct.Pin = LED_SYS_R_PIN;
-    HAL_GPIO_WritePin(LED_SYS_R_PORT, LED_SYS_R_PIN, GPIO_PIN_RESET);
-    HAL_GPIO_Init (LED_SYS_R_PORT, &GPIO_InitStruct);
-    GPIO_InitStruct.Pin = LED_SYS_G_PIN;
-    HAL_GPIO_WritePin(LED_SYS_G_PORT, LED_SYS_G_PIN, GPIO_PIN_RESET);
-    HAL_GPIO_Init (LED_SYS_G_PORT, &GPIO_InitStruct);
-    GPIO_InitStruct.Pin = LED_CON_R_PIN;
-    HAL_GPIO_WritePin(LED_CON_R_PORT, LED_CON_R_PIN, GPIO_PIN_RESET);
-    HAL_GPIO_Init (LED_CON_R_PORT, &GPIO_InitStruct);
-    GPIO_InitStruct.Pin = LED_CON_G_PIN;
-    HAL_GPIO_WritePin(LED_CON_G_PORT, LED_CON_G_PIN, GPIO_PIN_RESET);
-    HAL_GPIO_Init (LED_CON_G_PORT, &GPIO_InitStruct);
-}
-
-/**
- * @brief Refresh IWDG
- * @ingroup main
- */
-static void main_IWDG_refresh(void){
-#if RELEASE_FLAG
-        HAL_IWDG_Refresh(&hiwdg);
-#endif //RELEASE_FLAG
-
-}
-
-/**
- * @brief LEDs control
- * @param call_period - function calling period in ms
- * @ingroup main
- * @return  0
- *
- * 1. Handle System OK LED (GREEN)
- * 2. Handle System ERROR LED (RED)
- * 3. Handle interfaces OK LED (GREEN)
- * 3. Handle interfaces ERROR LED (RED)
- */
-static int main_leds_handle(u32 call_period){
-    int result = 0;
-    // Handle System OK LED (GREEN)
-    if(led_sys_ok_time){
-        HAL_GPIO_WritePin(LED_SYS_G_PORT, LED_SYS_G_PIN, GPIO_PIN_SET);
-        if(led_sys_ok_time > call_period){
-            led_sys_ok_time -= call_period;
-        }else{
-            led_sys_ok_time = 0;
-        }
-    }else{
-        HAL_GPIO_WritePin(LED_SYS_G_PORT, LED_SYS_G_PIN, GPIO_PIN_RESET);
-    }
-
-    // Handle System ERROR LED (RED)
-    if(debug_led_err_on_time){
-        HAL_GPIO_WritePin(LED_SYS_R_PORT, LED_SYS_R_PIN, GPIO_PIN_SET);
-        if(debug_led_err_on_time > call_period){
-            debug_led_err_on_time -= call_period;
-        }else{
-            debug_led_err_on_time = 0;
-        }
-    }else{
-        HAL_GPIO_WritePin(LED_SYS_R_PORT, LED_SYS_R_PIN, GPIO_PIN_RESET);
-    }
-
-    // Handle interfaces OK LED (GREEN)
-#if RS485_EN
-    if(rs485_led_ok_on_time){
-        HAL_GPIO_WritePin(LED_CON_G_PORT, LED_CON_G_PIN, GPIO_PIN_SET);
-        if(rs485_led_ok_on_time > call_period){
-            rs485_led_ok_on_time -= call_period;
-        }else{
-            rs485_led_ok_on_time = 0;
-        }
-    }else{
-        HAL_GPIO_WritePin(LED_CON_G_PORT, LED_CON_G_PIN, GPIO_PIN_RESET);
-    }
-#endif // RS485_EN
-#if CAN_EN
-    if(can_led_ok_on_time){
-        HAL_GPIO_WritePin(LED_CON_G_PORT, LED_CON_G_PIN, GPIO_PIN_SET);
-        if(can_led_ok_on_time > call_period){
-            can_led_ok_on_time -= call_period;
-        }else{
-            can_led_ok_on_time = 0;
-        }
-    }else{
-        HAL_GPIO_WritePin(LED_CON_G_PORT, LED_CON_G_PIN, GPIO_PIN_RESET);
-    }
-#endif // CAN_EN
-
-    // Handle interfaces ERROR LED (RED)
-#if RS485_EN
-    if(rs485_led_err_on_time){
-        HAL_GPIO_WritePin(LED_CON_R_PORT, LED_CON_R_PIN, GPIO_PIN_SET);
-        if(rs485_led_err_on_time > call_period){
-            rs485_led_err_on_time -= call_period;
-        }else{
-            rs485_led_err_on_time = 0;
-        }
-    }else{
-        HAL_GPIO_WritePin(LED_CON_R_PORT, LED_CON_R_PIN, GPIO_PIN_RESET);
-    }
-#endif // RS485_EN
-#if CAN_EN
-    if(can_led_err_on_time){
-        HAL_GPIO_WritePin(LED_CON_R_PORT, LED_CON_R_PIN, GPIO_PIN_SET);
-        if(can_led_err_on_time > call_period){
-            can_led_err_on_time -= call_period;
-        }else{
-            can_led_err_on_time = 0;
-        }
-    }else{
-        HAL_GPIO_WritePin(LED_CON_R_PORT, LED_CON_R_PIN, GPIO_PIN_RESET);
-    }
-#endif // CAN_EN
-    return result;
-}
-
-/**
- * @brief Write information about device into global registers
- * @ingroup main
- * @return 0
- */
-static int main_write_device_info(void){
-    int result = 0;
-
-    u16 os_version[3] = BUILD_VERSION;
-    u16 flash_size = 0;
-
-    flash_read_global(FLASH_SIG_SIZE_ADDR, &flash_size, FLASH_SIG_SIZE_BYTE_LEN/2);
-    if(flash_size != FLASH_TOTAL_SIZE / 1024){
-        debug_msg(__func__, DBG_MSG_ERR, "MCU FLASH size mismatch: %d KB instead %d KB", flash_size, FLASH_TOTAL_SIZE / 1024);
-    }
-
-    sprintf(device.vars.device_name, DEVICE_NAME);
-    sprintf(device.vars.mcu_info, "MCU: %s / %d Kbyte", MCU_NAME, flash_size);
-    flash_read_global(FLASH_SIG_ID_ADDR, (u16*)&device.vars.mcu_id, FLASH_SIG_ID_BYTE_LEN/2); // Read data from Flash
-    device.vars.device_type = DEVICE_TYPE;
-
-    memcpy(&os.vars.os_version, &os_version, 6);
-    os.vars.num_of_vars = SAND_PROP_BASE_REG_NUM;
-    sprintf(os.vars.build, BUILD_INFO);
-    sprintf(os.vars.build_date, BUILD_DATE);
-
-    os.vars.reset_num++;
-    main_read_reset_reason();
-
-    //debug only
-    /*FLASH_EraseInitTypeDef erase = {0};
-    erase.TypeErase = FLASH_TYPEERASE_PAGES;
-    erase.Banks = FLASH_BANK_1;
-    erase.PageAddress = STORAGE_FLASH_START;
-    erase.NbPages = 1;
-    u32 page_error = 0;
-    int err = 0;
-
-    HAL_FLASH_Unlock();
-    HAL_FLASHEx_Erase(&erase, (uint32_t*)&page_error);
-    HAL_FLASH_Lock();
-
-    u16 test_buf[11] = {
-        0xAAAA,
-        0xBBBB,
-        0xCCCC,
-        0xDDDD,
-        0xEEEE,
-        0x1234,
-        0xA5A5,
-        0x5678,
-        0xEBCA,
-        0x0001,
-        0x0002,
-    };
-    err = flash_write(STORAGE_FLASH_START + 2, test_buf, 11);
-    memset(test_buf, 0, 22);
-    err = flash_read(STORAGE_FLASH_START + 2, test_buf, 11);*/
-    //
-
-    return result;
-}
-
-static int main_read_reset_reason(void){
-    int result = 0;
-
     return result;
 }

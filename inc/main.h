@@ -240,6 +240,7 @@ extern saved_to_flash_t config;
  * @param argument - unused
  * @ingroup main
  *
+ * @details
  * 1. Blink System OK LED every 1 cecond
  * 2. Update os.vars.runtime counter every 1 second
  * 3. Call adc_service_meas() every 1 second
@@ -248,6 +249,18 @@ extern saved_to_flash_t config;
  * 6. Checks other tasks state and restart them if error or suspend
  */
 void main_task(void const * argument);
+
+/**
+ * @brief Save suspend device
+ * @ingroup main
+ * @return
+ *
+ * @details
+ * 1. Suspend all tasks
+ * 2. Deinit all periperals except flash
+ * 3. Save dump to storage
+ */
+int main_suspend(void);
 
 void display_task(void const * argument);
 void am2302_task(void const * argument);
