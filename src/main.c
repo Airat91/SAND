@@ -67,23 +67,6 @@ uint8_t irq_state = IRQ_NONE;
 
 static u32 led_sys_ok_time = 0;
 
-static edit_val_t edit_val = {0};
-static navigation_t navigation_style = MENU_NAVIGATION;
-saved_to_flash_t config;
-static const char skin_description[SKIN_NMB][20] = {
-    "T TIME",
-    "HIGH_T",
-    "TIME",
-    "AM2302",
-    "T AM2302",
-    "T 2302 TIME",
-};
-static const char data_pin_description[3][20] = {
-    "disable",
-    "AM2302",
-    "cloning",
-};
-
 //-------Static functions declaration-----------
 
 static int main_system_clock_config(void);
@@ -92,22 +75,6 @@ static void main_gpio_init(void);
 static void main_IWDG_refresh(void);
 static int main_leds_handle(u32 call_period);
 static int main_write_device_info(void);
-static int main_read_reset_reason(void);
-
-static void RTC_Init(void);
-static void tim2_init(void);
-static void save_to_bkp(u8 bkp_num, u8 var);
-static void save_float_to_bkp(u8 bkp_num, float var);
-static u8 read_bkp(u8 bkp_num);
-static float read_float_bkp(u8 bkp_num, u8 sign);
-static void led_lin_init(void);
-static void data_pin_irq_init(void);
-static void save_params(void);
-static void restore_params(void);
-
-static void print_main(void);
-static void print_menu(void);
-static void print_value(u8 tick);
 
 //-------Functions----------
 
@@ -118,12 +85,13 @@ int main(void){
     main_gpio_init();
     us_tim_init();
     debug_init();
+#if(RELEASE_FLAG == 1)
+    flash_rdp_enable();
+    main_IWDG_Init();
+#endif //RELEASE_FLAG
     storage_init(&storage_pcb);
     storage_restore_data(&storage_pcb);
     main_write_device_info();
-#if RELEASE_FLAG
-    main_IWDG_Init();
-#endif //RELEASE
 
     osMutexDef(regs_access_mutex);
     regs_access_mutex = osMutexCreate(osMutex(regs_access_mutex));
@@ -234,6 +202,8 @@ void main_task(void const * argument){
         osDelayUntil(&last_wake_time, MAIN_TASK_PERIOD);
         tick++;
         if(tick == MAIN_TASK_TICK_MAX){
+            // Increase runtime_total every hour
+            os.vars.runtime_total += MAIN_TASK_TICK_MAX * MAIN_TASK_PERIOD / 1000;
             tick = 0;
         }
     }
@@ -488,49 +458,47 @@ static int main_write_device_info(void){
     sprintf(os.vars.build_date, BUILD_DATE);
 
     os.vars.reset_num++;
-    main_read_reset_reason();
+    reset_get_reason((reset_sand_reason_t*)&os.vars.reset_reason);
 
-    //debug only
-    /*FLASH_EraseInitTypeDef erase = {0};
-    erase.TypeErase = FLASH_TYPEERASE_PAGES;
-    erase.Banks = FLASH_BANK_1;
-    erase.PageAddress = STORAGE_FLASH_START;
-    erase.NbPages = 1;
-    u32 page_error = 0;
-    int err = 0;
-
-    HAL_FLASH_Unlock();
-    HAL_FLASHEx_Erase(&erase, (uint32_t*)&page_error);
-    HAL_FLASH_Lock();
-
-    u16 test_buf[11] = {
-        0xAAAA,
-        0xBBBB,
-        0xCCCC,
-        0xDDDD,
-        0xEEEE,
-        0x1234,
-        0xA5A5,
-        0x5678,
-        0xEBCA,
-        0x0001,
-        0x0002,
-    };
-    err = flash_write(STORAGE_FLASH_START + 2, test_buf, 11);
-    memset(test_buf, 0, 22);
-    err = flash_read(STORAGE_FLASH_START + 2, test_buf, 11);*/
-    //
-
-    return result;
-}
-
-static int main_read_reset_reason(void){
-    int result = 0;
+#if(RELEASE_FLAG == 1)
+    os.vars.release = 1;
+#endif //RELEASE_FLAG
 
     return result;
 }
 
 //------------Unrefactoried--------------
+
+static edit_val_t edit_val = {0};
+static navigation_t navigation_style = MENU_NAVIGATION;
+saved_to_flash_t config;
+static const char skin_description[SKIN_NMB][20] = {
+    "T TIME",
+    "HIGH_T",
+    "TIME",
+    "AM2302",
+    "T AM2302",
+    "T 2302 TIME",
+};
+static const char data_pin_description[3][20] = {
+    "disable",
+    "AM2302",
+    "cloning",
+};
+
+static void RTC_Init(void);
+static void tim2_init(void);
+static void save_to_bkp(u8 bkp_num, u8 var);
+static void save_float_to_bkp(u8 bkp_num, float var);
+static u8 read_bkp(u8 bkp_num);
+static float read_float_bkp(u8 bkp_num, u8 sign);
+static void led_lin_init(void);
+static void data_pin_irq_init(void);
+static void save_params(void);
+static void restore_params(void);
+
+static void print_main(void);
+static void print_menu(void);
 
 /**
  * @brief display_task

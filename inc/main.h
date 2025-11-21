@@ -69,6 +69,7 @@
 #include "reg.h"
 #include "adc_int.h"
 #include "cmd_sand.h"
+#include "reset_sand.h"
 
 #if MDB_EN
     #include "mdb_sand.h"
@@ -81,18 +82,6 @@
 #endif // AI_EN
 
 /*add includes before */
-
-#include "dcts.h"
-#include "dcts_config.h"
-#include "portable.h"
-#include "am2302.h"
-#include "max7219.h"
-#include "buttons.h"
-#include "menu.h"
-#include "modbus.h"
-#include <string.h>
-#include "ds18b20.h"
-
 
 #ifdef __cplusplus
  extern "C" {
@@ -109,6 +98,57 @@
 #define MAIN_TASK_TICK_MAX      3600000/MAIN_TASK_PERIOD    // 1 Hour
 #define MAIN_IWDG_PERIOD        3124    // 10 second
 
+//--------Macro--------
+
+//--------Typedefs-------
+
+//-------External variables------
+
+extern IWDG_HandleTypeDef hiwdg;
+extern osThreadId main_task_handle;
+
+//-------Function prototypes----------
+
+/**
+ * @brief Main task for high control of other tasks and
+ * @param argument - unused
+ * @ingroup main
+ *
+ * @details
+ * 1. Blink System OK LED every 1 cecond
+ * 2. Update os.vars.runtime counter every 1 second
+ * 3. Call adc_service_meas() every 1 second
+ * 4. Blinks LEDs control
+ * 5. Refresh IWDG
+ * 6. Checks other tasks state and restart them if error or suspend
+ */
+void main_task(void const * argument);
+
+/**
+ * @brief Save suspend device
+ * @ingroup main
+ * @return
+ *
+ * @details
+ * 1. Suspend all tasks
+ * 2. Deinit all periperals except flash
+ * 3. Save dump to storage
+ */
+int main_suspend(void);
+
+//------------Unrefactoried--------------
+
+#include "dcts.h"
+#include "dcts_config.h"
+#include "portable.h"
+#include "am2302.h"
+#include "max7219.h"
+#include "buttons.h"
+#include "menu.h"
+#include "modbus.h"
+#include <string.h>
+#include "ds18b20.h"
+
 //#define MEAS_NUM                6
 #define SAVED_PARAMS_SIZE       7
 #define SKIN_NMB                6
@@ -116,11 +156,7 @@
 //#define RELEASE 1
 #define RESET_HOLD 3000
 
-//--------Macro--------
-
 #define Error_Handler() _Error_Handler(__FILE__, __LINE__)
-
-//--------Typedefs-------
 
 typedef enum {
     TMPR = 0,
@@ -213,12 +249,16 @@ typedef enum{
     READ_FLOAT_UNSIGNED,
 }read_float_bkp_sign_t;
 
-//-------External variables------
-
-extern IWDG_HandleTypeDef hiwdg;
-extern osThreadId main_task_handle;
-
 void _Error_Handler(char *, int);
+void display_task(void const * argument);
+void am2302_task(void const * argument);
+void rtc_task(void const * argument);
+void navigation_task(void const * argument);
+void uart_task(void const * argument);
+void refresh_watchdog(void);
+uint32_t uint32_pow(uint16_t x, uint8_t pow);
+u16 str_smb_num(char* string, char symbol);
+
 extern uint32_t us_cnt_H;
 extern RTC_HandleTypeDef hrtc;
 extern TIM_HandleTypeDef htim2;
@@ -232,47 +272,6 @@ extern osThreadId am2302TaskHandle;
 extern osThreadId navigationTaskHandle;
 extern uint8_t irq_state;
 extern saved_to_flash_t config;
-
-//-------Function prototypes----------
-
-/**
- * @brief Main task for high control of other tasks and
- * @param argument - unused
- * @ingroup main
- *
- * @details
- * 1. Blink System OK LED every 1 cecond
- * 2. Update os.vars.runtime counter every 1 second
- * 3. Call adc_service_meas() every 1 second
- * 4. Blinks LEDs control
- * 5. Refresh IWDG
- * 6. Checks other tasks state and restart them if error or suspend
- */
-void main_task(void const * argument);
-
-/**
- * @brief Save suspend device
- * @ingroup main
- * @return
- *
- * @details
- * 1. Suspend all tasks
- * 2. Deinit all periperals except flash
- * 3. Save dump to storage
- */
-int main_suspend(void);
-
-void display_task(void const * argument);
-void am2302_task(void const * argument);
-void rtc_task(void const * argument);
-void navigation_task(void const * argument);
-void uart_task(void const * argument);
-void refresh_watchdog(void);
-uint32_t uint32_pow(uint16_t x, uint8_t pow);
-u16 str_smb_num(char* string, char symbol);
-
-//uint32_t us_tim_get_value(void);
-//void us_tim_delay(uint32_t us);
 
 
 #ifdef __cplusplus

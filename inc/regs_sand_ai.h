@@ -29,7 +29,7 @@
 
 #define SAND_SAVE_DATA_SIZE      	128
 
-#define OS_STRUCT_SIZE           	88
+#define OS_STRUCT_SIZE           	92
 #define DEVICE_STRUCT_SIZE       	214
 #define SERVICE_STRUCT_SIZE      	20
 #define TIME_STRUCT_SIZE         	20
@@ -38,8 +38,8 @@
 #define AI_STRUCT_SIZE           	36
 #define TEST_STRUCT_SIZE         	870
 
-#define SAND_PROP_BASE_REG_NUM   	71
-#define SAND_PROP_MDB_REG_NUM    	71
+#define SAND_PROP_BASE_REG_NUM   	73
+#define SAND_PROP_MDB_REG_NUM    	73
 #define SAND_PROP_RANGE_REG_NUM  	18
 #define SAND_PROP_SAVE_REG_NUM   	16
 #define SAND_PROP_ACCESS_REG_NUM 	0
@@ -58,6 +58,8 @@ typedef union{
 		u16    lang;                // "Interface language"
 		u16    command;             // "Command register"
 		u16    reset_num;           // "Number of resets"
+		u16    reset_reason;        // "Reason of last reset"
+		u16    release;             // "Release flag"
 		u32    runtime;             // "Runtime from last reset (sec)"
 		u32    runtime_total;       // "Total runtime (sec)"
 		float  cpu_load;            // "CPU load (%)"

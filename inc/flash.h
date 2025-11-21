@@ -105,6 +105,17 @@ int flash_write(u32 addr, u16* buf, u16 len);
  */
 int flash_read_global(u32 addr, u16* buf, u16 len);
 
+/**
+ * @brief Enable read protection
+ * @ingroup flash
+ * @return 0
+ *
+ * @details
+ * 1. Read current RDP_level
+ * 2. If current RDP_level == 0, set RDP_level = 1 and reset system
+ */
+int flash_rdp_enable(void);
+
 #ifdef __cplusplus
 }
 #endif
