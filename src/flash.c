@@ -105,6 +105,32 @@ int flash_read_global(u32 addr, u16* buf, u16 len){
     return result;
 }
 
+int flash_rdp_enable(void){
+    int result = 0;
+    HAL_StatusTypeDef stat = HAL_OK;
+
+    FLASH_OBProgramInitTypeDef pOBInit = {0};
+
+    HAL_FLASHEx_OBGetConfig(&pOBInit);
+
+    // Read current RDP level
+    if(pOBInit.RDPLevel == OB_RDP_LEVEL_0){
+        pOBInit.RDPLevel = OB_RDP_LEVEL_1;
+        HAL_FLASH_Unlock();
+        HAL_FLASH_OB_Unlock();
+        stat = HAL_FLASHEx_OBProgram(&pOBInit);
+        if(stat != HAL_OK){
+            result = -1;
+            debug_msg(__func__, DBG_MSG_ERR, "HAL_FLASHEx_OBProgram() %S", hal_status[stat]);
+        }else{
+            // Reset system for implement RDP
+            HAL_FLASH_OB_Launch();
+        }
+    }
+
+    return result;
+}
+
 //-------Static functions----------
 
 /**
