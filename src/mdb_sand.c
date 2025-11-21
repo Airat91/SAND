@@ -19,6 +19,8 @@ mdb_sand_pcb_t mdb_sand_pcb = {0};
 static void mdb_sand_gpio_init(void);
 static void mdb_sand_gpio_deinit(void);
 static int mdb_sand_unsupport_funct(mdb_packet_t* packet, u8* out_buf, u16* out_len);
+static int mdb_sand_check_addr(mdb_packet_t* packet);
+static int mdb_sand_illegal_address(mdb_packet_t* packet, u8* out_buf, u16* out_len);
 
 static int mdb_sand_read_mul_coil(mdb_packet_t* packet, u8* out_buf, u16* out_len);
 static int mdb_sand_read_mul_discr(mdb_packet_t* packet, u8* out_buf, u16* out_len);
@@ -118,6 +120,7 @@ int mdb_sand_packet_handle(mdb_sand_pcb_t* mdb_sand_pcb, mdb_packet_t* packet){
     if(packet->slave_addr != self_addr){
         result = -1;
     }else{
+        modbus.vars.rx_cnt++;
         switch(packet->function){
         case MDB_FNCT_RD_MUL_COIL:
             result = mdb_sand_read_mul_coil(packet, resp_data, &resp_len);
@@ -177,7 +180,10 @@ int mdb_sand_packet_handle(mdb_sand_pcb_t* mdb_sand_pcb, mdb_packet_t* packet){
             result = mdb_sand_unsupport_funct(packet, resp_data, &resp_len);
         }
         if(result == 0){
-            if(mdb_make_response(packet, resp_data, &resp_len, mdb_sand_pcb->resp_buf, &mdb_sand_pcb->resp_len) != 0){
+            if(mdb_make_response(packet, resp_data, &resp_len, mdb_sand_pcb->resp_buf, &mdb_sand_pcb->resp_len) == 0){
+                // Increase TX counter
+                modbus.vars.tx_cnt++;
+            }else{
                 result = -2;
             }
         }
@@ -243,7 +249,7 @@ static void mdb_sand_gpio_deinit(void){
 //=======ModBUS functions realisation=======
 
 /**
- * @brief Write error value to output buffer
+ * @brief Write exception response to output buffer
  * @param packet - pointer to input packet
  * @param out_buf - pointer to output buffer
  * @param out_len - pointer to output buffer lenght
@@ -253,9 +259,62 @@ static void mdb_sand_gpio_deinit(void){
 static int mdb_sand_unsupport_funct(mdb_packet_t* packet, u8* out_buf, u16* out_len){
     int result = 0;
 
-    packet->function |= MDB_FNCT_ERR_FLAG;
-    out_buf[0] = MDB_ERR_FUNCT;
+    packet->function |= MDB_EXCP_FUNC_FLAG;
+    out_buf[0] = MDB_EXCP_ILL_FUNCT;
     *out_len = 1;
+
+    // Increase ModBUS error counter
+    modbus.vars.err_cnt++;
+
+    return result;
+}
+
+/**
+ * @brief Check register address in packet
+ * @param packet - pointer to input packet
+ * @ingroup mdb
+ * @return  0 - ok,\n
+ *          -1 - data address is unavailable,\n
+ *
+ * @note Always return 0 if modbus.vars.addr_err_ingore == 1
+ */
+static int mdb_sand_check_addr(mdb_packet_t* packet){
+    int result = 0;
+
+    sand_prop_base_t* reg = NULL;
+    u16 addr = packet->reg_addr;
+
+    if(modbus.vars.addr_err_ingore == 0){
+        for(u16 i = 0; i < packet->reg_nmb; i++){
+            reg = reg_mdb_get_by_addr(addr++);
+            if(reg == NULL){
+                // Register address is unavailable
+                result = -1;
+                break;
+            }
+        }
+    }
+
+    return result;
+}
+
+/**
+ * @brief Write exception response to output buffer
+ * @param packet - pointer to input packet
+ * @param out_buf - pointer to output buffer
+ * @param out_len - pointer to output buffer lenght
+ * @ingroup mdb
+ * @return 0
+ */
+static int mdb_sand_illegal_address(mdb_packet_t* packet, u8* out_buf, u16* out_len){
+    int result = 0;
+
+    packet->function |= MDB_EXCP_FUNC_FLAG;
+    out_buf[0] = MDB_EXCP_ILL_DATA_ADDR;
+    *out_len = 1;
+
+    // Increase ModBUS error counter
+    modbus.vars.err_cnt++;
 
     return result;
 }
@@ -341,49 +400,54 @@ static int mdb_sand_read_mul_input(mdb_packet_t* packet, u8* out_buf, u16* out_l
     // Vars for debug
     int err = 0;
 
-    // Add number of data bytes to response
-    out_buf[ptr++] = packet->reg_nmb*2;
-    // Add data bytes to response
-    for(u8 i = 0; i < packet->reg_nmb; i++){
-        // Get register by ModBUS address
-        reg = reg_mdb_get_by_addr(addr);
-        if(reg != NULL){
-            mdb_prop = (sand_prop_mdb_t*)reg_base_get_prop(reg, SAND_PROP_MDB);
-            reg_size = reg_base_get_byte_size(reg);
-            // Find array index and value shift for regs_size > 2
-            array_ind = (addr - mdb_prop->mdb_addr) * MDB_REG_BYTE_SIZE / reg_size;
-            value_shift = (addr - mdb_prop->mdb_addr) % (reg_size / MDB_REG_BYTE_SIZE) * MDB_REG_BIT_SIZE;
-            err = reg_base_read(reg, array_ind, &value);  // @todo: check errors
-            switch(reg_size){
-            case 1:
-                data = value.var.var_u16;
-                // Read neaxt element
-                err = reg_base_read(reg, array_ind + 1, &value);  // @todo: check errors
-                data += (u16)(value.var.var_u16 << 8);
-                break;
-            case 2:
-                data = value.var.var_u16;
-                break;
-            case 4:
-                data = (u16)(value.var.var_u32 >> value_shift);
-                break;
-            case 8:
-                data = (u16)(value.var.var_u64 >> value_shift);
-                break;
-            default:
+    // Check data address
+    if(mdb_sand_check_addr(packet) == 0){
+        // Add number of data bytes to response
+        out_buf[ptr++] = packet->reg_nmb*2;
+        // Add data bytes to response
+        for(u8 i = 0; i < packet->reg_nmb; i++){
+            // Get register by ModBUS address
+            reg = reg_mdb_get_by_addr(addr);
+            if(reg != NULL){
+                mdb_prop = (sand_prop_mdb_t*)reg_base_get_prop(reg, SAND_PROP_MDB);
+                reg_size = reg_base_get_byte_size(reg);
+                // Find array index and value shift for regs_size > 2
+                array_ind = (addr - mdb_prop->mdb_addr) * MDB_REG_BYTE_SIZE / reg_size;
+                value_shift = (addr - mdb_prop->mdb_addr) % (reg_size / MDB_REG_BYTE_SIZE) * MDB_REG_BIT_SIZE;
+                err = reg_base_read(reg, array_ind, &value);  // @todo: check errors
+                switch(reg_size){
+                case 1:
+                    data = value.var.var_u16;
+                    // Read neaxt element
+                    err = reg_base_read(reg, array_ind + 1, &value);  // @todo: check errors
+                    data += (u16)(value.var.var_u16 << 8);
+                    break;
+                case 2:
+                    data = value.var.var_u16;
+                    break;
+                case 4:
+                    data = (u16)(value.var.var_u32 >> value_shift);
+                    break;
+                case 8:
+                    data = (u16)(value.var.var_u64 >> value_shift);
+                    break;
+                default:
+                    data = 0;
+                }
+            }else{
+                // If register with given address does not exist
                 data = 0;
             }
-        }else{
-            // If register with given address does not exist
-            data = 0;
+            // Copy data to out buffer
+            out_buf[ptr++] = (u8)(data >> 8);
+            out_buf[ptr++] = (u8)data;
+            // Increase ModBUS register address
+            addr++;
         }
-        // Copy data to out buffer
-        out_buf[ptr++] = (u8)(data >> 8);
-        out_buf[ptr++] = (u8)data;
-        // Increase ModBUS register address
-        addr++;
+        *out_len = ptr;
+    }else{
+        result = mdb_sand_illegal_address(packet, out_buf, out_len);
     }
-    *out_len = ptr;
 
     return result;
 }
@@ -426,50 +490,55 @@ static int mdb_sand_write_sin_hold(mdb_packet_t* packet, u8* out_buf, u16* out_l
     // Vars for debug
     int err = 0;
 
-    // Move packet data pointer
-    packet->data -= 2;
+    // Check data address
+    if(mdb_sand_check_addr(packet) == 0){
+        // Move packet data pointer
+        packet->data -= 2;
 
-    // Get register by ModBUS address
-    reg = reg_mdb_get_by_addr(addr);
-    if(reg != NULL){
-        mdb_prop = (sand_prop_mdb_t*)reg_base_get_prop(reg, SAND_PROP_MDB);
-        reg_size = reg_base_get_byte_size(reg);
-        array_ind = (addr - mdb_prop->mdb_addr) * MDB_REG_BYTE_SIZE / reg_size;
-        if((addr + reg_size / MDB_REG_BYTE_SIZE) <= addr_end){
-            // Reset value struct
-            value.var.var_u64 = 0;
-            value.var_type = reg->type;
-            switch(reg_size){
-            case 1:
-                // If register size is 1 byte first write next index register
-                value.var.var_u8 = packet->data[ptr++];
-                err = reg_base_write(reg, array_ind + 1, &value);
-                value.var.var_u8 = packet->data[ptr++];
-                break;
-            case 2:
-                value.var.var_u16 += ((u16)packet->data[ptr++] << 8);
-                value.var.var_u16 += ((u16)packet->data[ptr++] << 0);
-                break;
-            default:
-                break;
+        // Get register by ModBUS address
+        reg = reg_mdb_get_by_addr(addr);
+        if(reg != NULL){
+            mdb_prop = (sand_prop_mdb_t*)reg_base_get_prop(reg, SAND_PROP_MDB);
+            reg_size = reg_base_get_byte_size(reg);
+            array_ind = (addr - mdb_prop->mdb_addr) * MDB_REG_BYTE_SIZE / reg_size;
+            if((addr + reg_size / MDB_REG_BYTE_SIZE) <= addr_end){
+                // Reset value struct
+                value.var.var_u64 = 0;
+                value.var_type = reg->type;
+                switch(reg_size){
+                case 1:
+                    // If register size is 1 byte first write next index register
+                    value.var.var_u8 = packet->data[ptr++];
+                    err = reg_base_write(reg, array_ind + 1, &value);
+                    value.var.var_u8 = packet->data[ptr++];
+                    break;
+                case 2:
+                    value.var.var_u16 += ((u16)packet->data[ptr++] << 8);
+                    value.var.var_u16 += ((u16)packet->data[ptr++] << 0);
+                    break;
+                default:
+                    break;
+                }
+                err = reg_base_write(reg, array_ind, &value);
+            }else{
+                // Don't write a part of register. Get out of handling cycle
             }
-            err = reg_base_write(reg, array_ind, &value);
         }else{
-            // Don't write a part of register. Get out of handling cycle
+            // Register doesn't exist
         }
-    }else{
-        // Register doesn't exist
-    }
 
-    // Make response
-    // Copy reg address to response
-    ptr = 0;
-    out_buf[ptr++] = (u8)(packet->reg_addr >> 8);
-    out_buf[ptr++] = (u8)packet->reg_addr;
-    // Copy reg value to response
-    out_buf[ptr++] = packet->data[0];
-    out_buf[ptr++] = packet->data[1];
-    *out_len = ptr;
+        // Make response
+        // Copy reg address to response
+        ptr = 0;
+        out_buf[ptr++] = (u8)(packet->reg_addr >> 8);
+        out_buf[ptr++] = (u8)packet->reg_addr;
+        // Copy reg value to response
+        out_buf[ptr++] = packet->data[0];
+        out_buf[ptr++] = packet->data[1];
+        *out_len = ptr;
+    }else{
+        result = mdb_sand_illegal_address(packet, out_buf, out_len);
+    }
 
     return result;
 }
@@ -587,80 +656,85 @@ static int mdb_sand_write_mul_hold(mdb_packet_t* packet, u8* out_buf, u16* out_l
     // Vars for debug
     int err = 0;
 
-    // Read packet data bytes number
-    data_bytes_nmb = packet->data[0];
-    // Increase packet data pointer
-    packet->data++;
+    // Check data address
+    if(mdb_sand_check_addr(packet) == 0){
+        // Read packet data bytes number
+        data_bytes_nmb = packet->data[0];
+        // Increase packet data pointer
+        packet->data++;
 
-    // Don't use while-loop in handling cycle
-    for(u16 i = 0; i < data_bytes_nmb; i++){
-        // Get register by ModBUS address
-        reg = reg_mdb_get_by_addr(addr);
-        if(reg != NULL){
-            mdb_prop = (sand_prop_mdb_t*)reg_base_get_prop(reg, SAND_PROP_MDB);
-            reg_size = reg_base_get_byte_size(reg);
-            array_ind = (addr - mdb_prop->mdb_addr) * MDB_REG_BYTE_SIZE / reg_size;
-            if((addr + reg_size / MDB_REG_BYTE_SIZE) <= addr_end){
-                // Reset value struct
-                value.var.var_u64 = 0;
-                value.var_type = reg->type;
-                switch(reg_size){
-                case 1:
-                    // If register size is 1 byte first write next index register
-                    value.var.var_u8 = packet->data[ptr++];
-                    err = reg_base_write(reg, array_ind + 1, &value);
-                    value.var.var_u8 = packet->data[ptr++];
-                    addr++;
-                    break;
-                case 2:
-                    value.var.var_u16 += ((u16)packet->data[ptr++] << 8);
-                    value.var.var_u16 += ((u16)packet->data[ptr++] << 0);
-                    addr += reg_size / MDB_REG_BYTE_SIZE;
-                    break;
-                case 4:
-                    value.var.var_u32 += ((u32)packet->data[ptr++] << 8);
-                    value.var.var_u32 += ((u32)packet->data[ptr++] << 0);
-                    value.var.var_u32 += ((u32)packet->data[ptr++] << 24);
-                    value.var.var_u32 += ((u32)packet->data[ptr++] << 16);
-                    addr += reg_size / MDB_REG_BYTE_SIZE;
-                    break;
-                case 8:
-                    value.var.var_u64 += ((u64)packet->data[ptr++] << 8);
-                    value.var.var_u64 += ((u64)packet->data[ptr++] << 0);
-                    value.var.var_u64 += ((u64)packet->data[ptr++] << 24);
-                    value.var.var_u64 += ((u64)packet->data[ptr++] << 16);
-                    value.var.var_u64 += ((u64)packet->data[ptr++] << 40);
-                    value.var.var_u64 += ((u64)packet->data[ptr++] << 32);
-                    value.var.var_u64 += ((u64)packet->data[ptr++] << 56);
-                    value.var.var_u64 += ((u64)packet->data[ptr++] << 48);
-                    addr += reg_size / MDB_REG_BYTE_SIZE;
-                    break;
-                default:
+        // Don't use while-loop in handling cycle
+        for(u16 i = 0; i < data_bytes_nmb; i++){
+            // Get register by ModBUS address
+            reg = reg_mdb_get_by_addr(addr);
+            if(reg != NULL){
+                mdb_prop = (sand_prop_mdb_t*)reg_base_get_prop(reg, SAND_PROP_MDB);
+                reg_size = reg_base_get_byte_size(reg);
+                array_ind = (addr - mdb_prop->mdb_addr) * MDB_REG_BYTE_SIZE / reg_size;
+                if((addr + reg_size / MDB_REG_BYTE_SIZE) <= addr_end){
+                    // Reset value struct
+                    value.var.var_u64 = 0;
+                    value.var_type = reg->type;
+                    switch(reg_size){
+                    case 1:
+                        // If register size is 1 byte first write next index register
+                        value.var.var_u8 = packet->data[ptr++];
+                        err = reg_base_write(reg, array_ind + 1, &value);
+                        value.var.var_u8 = packet->data[ptr++];
+                        addr++;
+                        break;
+                    case 2:
+                        value.var.var_u16 += ((u16)packet->data[ptr++] << 8);
+                        value.var.var_u16 += ((u16)packet->data[ptr++] << 0);
+                        addr += reg_size / MDB_REG_BYTE_SIZE;
+                        break;
+                    case 4:
+                        value.var.var_u32 += ((u32)packet->data[ptr++] << 8);
+                        value.var.var_u32 += ((u32)packet->data[ptr++] << 0);
+                        value.var.var_u32 += ((u32)packet->data[ptr++] << 24);
+                        value.var.var_u32 += ((u32)packet->data[ptr++] << 16);
+                        addr += reg_size / MDB_REG_BYTE_SIZE;
+                        break;
+                    case 8:
+                        value.var.var_u64 += ((u64)packet->data[ptr++] << 8);
+                        value.var.var_u64 += ((u64)packet->data[ptr++] << 0);
+                        value.var.var_u64 += ((u64)packet->data[ptr++] << 24);
+                        value.var.var_u64 += ((u64)packet->data[ptr++] << 16);
+                        value.var.var_u64 += ((u64)packet->data[ptr++] << 40);
+                        value.var.var_u64 += ((u64)packet->data[ptr++] << 32);
+                        value.var.var_u64 += ((u64)packet->data[ptr++] << 56);
+                        value.var.var_u64 += ((u64)packet->data[ptr++] << 48);
+                        addr += reg_size / MDB_REG_BYTE_SIZE;
+                        break;
+                    default:
+                        break;
+                    }
+                    err = reg_base_write(reg, array_ind, &value);
+                }else{
+                    // Don't write a part of register. Get out of handling cycle
                     break;
                 }
-                err = reg_base_write(reg, array_ind, &value);
             }else{
-                // Don't write a part of register. Get out of handling cycle
+                // Register doesn't exist, skip address
+                addr++;
+            }
+            if(addr >= addr_end){
+                // Get out of handling cycle
                 break;
             }
-        }else{
-            // Register doesn't exist, skip address
-            addr++;
         }
-        if(addr >= addr_end){
-            // Get out of handling cycle
-            break;
-        }
+        // Make response
+        // Copy reg address to response
+        ptr = 0;
+        out_buf[ptr++] = (u8)(packet->reg_addr >> 8);
+        out_buf[ptr++] = (u8)packet->reg_addr;
+        // Copy regs number to response
+        out_buf[ptr++] = (u8)(packet->reg_nmb >> 8);
+        out_buf[ptr++] = (u8)packet->reg_nmb;
+        *out_len = ptr;
+    }else{
+        result = mdb_sand_illegal_address(packet, out_buf, out_len);
     }
-    // Make response
-    // Copy reg address to response
-    ptr = 0;
-    out_buf[ptr++] = (u8)(packet->reg_addr >> 8);
-    out_buf[ptr++] = (u8)packet->reg_addr;
-    // Copy regs number to response
-    out_buf[ptr++] = (u8)(packet->reg_nmb >> 8);
-    out_buf[ptr++] = (u8)packet->reg_nmb;
-    *out_len = ptr;
 
     return result;
 }
@@ -776,4 +850,3 @@ static int mdb_sand_read_fifo(mdb_packet_t* packet, u8* out_buf, u16* out_len){
 
     return result;
 }
-

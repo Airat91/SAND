@@ -27,9 +27,9 @@ extern "C" {
 #define MDB_ASCII_START     0x3A    // Start-byte of ModBUS-ASCII packet
 #define MDB_ASCII_PREEND    0x0D    // Preend-byte of ModBUS-ASCII packet
 #define MDB_ASCII_END       0x0A    // End-byte of ModBUS-ASCII packet
-#define MDB_FNCT_ERR_FLAG   0x80    // Error flag added into function code
 #define MDB_REG_BYTE_SIZE   2       // One ModBUS register is 2 bytes
 #define MDB_REG_BIT_SIZE    16      // One ModBUS register is 16 bits
+#define MDB_EXCP_FUNC_FLAG  0x80    // Error flag added into function code
 
 //--------Macro--------
 
@@ -61,11 +61,24 @@ typedef enum{
 }mdb_function_t;
 
 typedef enum{
-    MDB_ERR_FUNCT           = 1,    // Unsupported function
-    MDB_ERR_ADDR            = 2,    // Register address error
-    MDB_ERR_VALUE           = 3,    // Unavailable value for write
-    MDB_ERR_PARITY          = 8,    // Parity error
-}mdb_err_t;
+    MDB_EXCP_ILL_FUNCT          = 0x01,     // The function code received in the query is not an allowable action
+                                            // for the slave
+    MDB_EXCP_ILL_DATA_ADDR      = 0x02,     // The data address received in the query is not an allowable address
+                                            // for the slave
+    MDB_EXCP_ILL_DATA_VAL       = 0x03,     // A value contained in the query data field is not an allowable value
+                                            // for the slave
+    MDB_EXCP_SLAVE_DEV_FAIL     = 0x04,     // An unrecoverable error occurred while the slave was attempting to
+                                            // perform the requested action
+    MDB_EXCP_ACKNOWLEDGE        = 0x05,     // The slave has accepted the request and is processing it, but a long
+                                            // duration of time will be required to do so
+    MDB_EXCP_SLAVE_DEV_BUSY     = 0x06,     // The slave is engaged in processing a long-duration program command
+    MDB_EXCP_ACKNOWLEDGE_NEG    = 0x07,     // The slave cannot perform the program function received in the query
+    MDB_EXCP_MEM_PARITY_ERR     = 0x08,     // The slave attempted to read extended memory or record file, but
+                                            // detected a parity error in memory
+    MDB_EXCP_GTWY_PATH_UNAVL    = 0x0A,     // The gateway was unable to allocate an internal communication path
+                                            // from the input port to the output port for processing the request
+    MDB_EXCP_GTWY_TRG_DEV_FAIL  = 0x0B,     // No response was obtained from the target device
+}mdb_excp_t;
 
 typedef enum{
     MDB_PROT_UNKNOWN        = 0,    // ModBUS protocol unknown
