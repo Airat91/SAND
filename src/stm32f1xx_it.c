@@ -258,6 +258,10 @@ void ADC1_2_IRQHandler(void){
     }
 }
 
+void PVD_IRQHandler(void){
+    reset_lowpower_irq_callback();
+}
+
 /* USER CODE BEGIN 1 */
 
 void EXTI9_5_IRQHandler(void) {
@@ -295,6 +299,7 @@ void EXTI9_5_IRQHandler(void) {
 }
 
 void EXTI15_10_IRQHandler(void){
+    /*
     HAL_GPIO_EXTI_IRQHandler(DATA_PIN);
     static u32 irq_time = 0;
     static u32 irq_start = 0;
@@ -310,7 +315,7 @@ void EXTI15_10_IRQHandler(void){
             irq_state = IRQ_READ_RTC;
         }
         irq_time = 0;
-    }
+    }*/
 }
 
 /* USER CODE END 1 */

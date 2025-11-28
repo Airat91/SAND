@@ -69,16 +69,110 @@ static u32 led_sys_ok_time = 0;
 
 //-------Static functions declaration-----------
 
+static int main_init(void);
+static int main_deinit(void);
 static int main_system_clock_config(void);
 static void main_IWDG_Init(void);
 static void main_gpio_init(void);
+static void main_gpio_deinit(void);
 static void main_IWDG_refresh(void);
 static int main_leds_handle(u32 call_period);
 static int main_write_device_info(void);
+static int main_save_before_reset(void);
 
 //-------Functions----------
 
 int main(void){
+
+    main_init();
+
+    /* Start scheduler */
+    osKernelStart();
+
+    while (1)  {
+
+    }
+
+}
+
+void main_task(void const * argument){
+    (void)argument;
+    uint32_t last_wake_time = osKernelSysTick();
+    u32 tick = 0;
+    debug_msg(__func__, DBG_MSG_INFO, "MAIN_task started");
+    //ready_for_shutdown = 1;
+
+    while(1){
+        // Every 1 second
+        if(((tick)%(1000/MAIN_TASK_PERIOD))==0u){
+            // Blink System OK LED
+            led_sys_ok_time = 100;
+
+            // Update os.vars.runtime counter
+            os.vars.runtime += 1;
+            os.vars.runtime_total = os.vars.runtime_storage + os.vars.runtime;
+
+            // Call adc_service_meas()
+            //adc_service_meas();
+        }
+
+        // Enable low power saving
+        if(((tick)%(1000/RESET_LOWPOWER_EN_DELAY_MS))==0u){
+            reset_lowpower_save_enable();
+        }
+
+        // Blinks LEDs control
+        main_leds_handle(MAIN_TASK_PERIOD);
+
+        // Storage handle
+        storage_handle(&storage_pcb, MAIN_TASK_PERIOD);
+
+        // Refresh IWDG
+        main_IWDG_refresh();
+
+        // Command handle
+        cmd_sand_execute(&os.vars.command);
+
+        // Checks other tasks state and restart them if error or suspend
+
+        osDelayUntil(&last_wake_time, MAIN_TASK_PERIOD);
+        tick++;
+        if(tick == MAIN_TASK_TICK_MAX){
+            // Increase runtime_total every hour
+            os.vars.runtime_total += MAIN_TASK_TICK_MAX * MAIN_TASK_PERIOD / 1000;
+            tick = 0;
+        }
+    }
+}
+
+int main_shutdown_system(void){
+    int result = 0;
+
+    main_deinit();
+    main_save_before_reset();
+    storage_save_data(&storage_pcb);
+
+    return result;
+}
+
+int main_discharge_pwr(void){
+    int result = 0;
+
+    // Turn-on SYS_R LED for discharge MCU power capacitor
+    HAL_GPIO_WritePin(LED_SYS_R_PORT, LED_SYS_R_PIN, GPIO_PIN_SET);
+
+    return result;
+}
+
+//-------Static functions----------
+
+/**
+ * @brief Init system peripherials and start services
+ * @ingroup main
+ * @return 0
+ */
+static int main_init(void){
+    int result = 0;
 
     HAL_Init();
     main_system_clock_config();
@@ -92,6 +186,7 @@ int main(void){
     storage_init(&storage_pcb);
     storage_restore_data(&storage_pcb);
     main_write_device_info();
+    reset_lowpower_init();
 
     osMutexDef(regs_access_mutex);
     regs_access_mutex = osMutexCreate(osMutex(regs_access_mutex));
@@ -158,64 +253,44 @@ int main(void){
         service.vars.adc_int_state |= SRV_ST_CREATED;
     }
 
-    /* Start scheduler */
-    osKernelStart();
-
-    while (1)  {
-
-    }
-
-}
-
-void main_task(void const * argument){
-    (void)argument;
-    uint32_t last_wake_time = osKernelSysTick();
-    u32 tick = 0;
-    debug_msg(__func__, DBG_MSG_INFO, "MAIN_task started");
-
-    while(1){
-        // Every 1 second
-        if(((tick)%(1000/MAIN_TASK_PERIOD))==0u){
-            // Blink System OK LED
-            led_sys_ok_time = 100;
-
-            // Update os.vars.runtime counter
-            os.vars.runtime += 1;
-
-            // Call adc_service_meas()
-            //adc_service_meas();
-        }
-        // Blinks LEDs control
-        main_leds_handle(MAIN_TASK_PERIOD);
-
-        // Storage handle
-        storage_handle(&storage_pcb, MAIN_TASK_PERIOD);
-
-        // Refresh IWDG
-        main_IWDG_refresh();
-
-        // Command handle
-        cmd_sand_execute(&os.vars.command);
-
-        // Checks other tasks state and restart them if error or suspend
-
-        osDelayUntil(&last_wake_time, MAIN_TASK_PERIOD);
-        tick++;
-        if(tick == MAIN_TASK_TICK_MAX){
-            // Increase runtime_total every hour
-            os.vars.runtime_total += MAIN_TASK_TICK_MAX * MAIN_TASK_PERIOD / 1000;
-            tick = 0;
-        }
-    }
-}
-
-int main_suspend(void){
-    int result = 0;
-
     return result;
 }
 
-//-------Static functions----------
+/**
+ * @brief Deinit system peripherials and stop services
+ * @ingroup main
+ * @return 0
+ */
+static int main_deinit(void){
+    int result = 0;
+
+    main_gpio_deinit();
+    osThreadSuspendAll();
+
+#if RTC_EN
+    rtc_deinit();
+    service.vars.rtc_state &= ~(u32)SRV_ST_CREATED;
+#endif // RTC_EN
+
+#if RS485_EN
+    rs485_deinit(&rs485_pcb);
+    service.vars.rs485_state &= ~(u32)SRV_ST_CREATED;
+#endif // RS485_EN
+
+#if MDB_EN
+    mdb_sand_deinit(&mdb_sand_pcb);
+#endif // MDB_EN
+
+#if AI_EN
+    ai_deinit(&ai_pcb);
+    service.vars.ai_state &= ~(u32)SRV_ST_CREATED;
+#endif // AI_EN
+
+    adc_int_deinit(&adc_int_pcb);
+    service.vars.adc_int_state &= ~(u32)SRV_ST_CREATED;
+
+    return result;
+}
 
 /**
   * @brief System Clock Configuration
@@ -327,6 +402,17 @@ static void main_gpio_init(void){
     GPIO_InitStruct.Pin = LED_CON_G_PIN;
     HAL_GPIO_WritePin(LED_CON_G_PORT, LED_CON_G_PIN, GPIO_PIN_RESET);
     HAL_GPIO_Init (LED_CON_G_PORT, &GPIO_InitStruct);
+}
+
+static void main_gpio_deinit(void){
+
+    // Turn-off SYS leds
+    HAL_GPIO_WritePin(LED_SYS_R_PORT, LED_SYS_R_PIN, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(LED_SYS_G_PORT, LED_SYS_G_PIN, GPIO_PIN_RESET);
+
+    // Deinit CON LEDs
+    HAL_GPIO_DeInit(LED_CON_R_PORT, LED_CON_R_PIN);
+    HAL_GPIO_DeInit(LED_CON_G_PORT, LED_CON_G_PIN);
 }
 
 /**
@@ -457,7 +543,6 @@ static int main_write_device_info(void){
     sprintf(os.vars.build, BUILD_INFO);
     sprintf(os.vars.build_date, BUILD_DATE);
 
-    os.vars.reset_num++;
     reset_get_reason((reset_sand_reason_t*)&os.vars.reset_reason);
 
 #if(RELEASE_FLAG == 1)
@@ -466,6 +551,21 @@ static int main_write_device_info(void){
 
     return result;
 }
+
+/**
+ * @brief Update needed vars before reset
+ * @ingroup main
+ * @return 0
+ */
+static int main_save_before_reset(void){
+    int result = 0;
+
+    os.vars.runtime_storage += os.vars.runtime;
+    os.vars.reset_num++;
+
+    return result;
+}
+
 
 //------------Unrefactoried--------------
 

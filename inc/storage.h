@@ -37,9 +37,11 @@ extern "C" {
 #define STORAGE_CHECK_PERIOD_SEC    60          // Check data change period (1 minute)
 #define STORAGE_AUTOSAVE_EN         1           // Enable autosave if data changed
 #define STORAGE_RESAVE_PERIOD_MS    2000        // Save retry period if save data error
+#define STORAGE_REG_NUM_MAX         STORAGE_FLASH_SIZE - sizeof(storage_header_t)   // Maximum value of storage registers
+#define STORAGE_DUMP_SIZE           SAND_SAVE_DATA_SIZE + sizeof(storage_header_t)
 
-#if(STORAGE_SAVE_DATA_BUF_LEN%2 == 1)
-    #error "STORAGE: Please define RS_485_RATE_0_PIN"
+#if(STORAGE_SAVE_DATA_BUF_LEN % 2 == 1)
+    #error "STORAGE: Please define STORAGE_SAVE_DATA_BUF_LEN multiple of 2"
 #endif // STORAGE_SAVE_DATA_BUF_LEN
 
 //--------Macro--------
@@ -67,6 +69,7 @@ typedef struct{
     u32 current_names_crc;          //
     u32 current_data_crc;           //
     u32 erase_cnt;                  // Full erase of storage area counter
+    u16 duration;                   // Duration of save operation
 }storage_pcb_t;
 
 typedef struct{

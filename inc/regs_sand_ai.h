@@ -27,21 +27,21 @@
 // This part of file generated automatically, don't change it
 #define DEVICE_NAME              	"SAND_AI"
 
-#define SAND_SAVE_DATA_SIZE      	128
+#define SAND_SAVE_DATA_SIZE      	132
 
-#define OS_STRUCT_SIZE           	92
+#define OS_STRUCT_SIZE           	96
 #define DEVICE_STRUCT_SIZE       	214
 #define SERVICE_STRUCT_SIZE      	20
 #define TIME_STRUCT_SIZE         	20
-#define STORAGE_STRUCT_SIZE      	24
+#define STORAGE_STRUCT_SIZE      	26
 #define MODBUS_STRUCT_SIZE       	10
 #define AI_STRUCT_SIZE           	36
 #define TEST_STRUCT_SIZE         	870
 
-#define SAND_PROP_BASE_REG_NUM   	73
-#define SAND_PROP_MDB_REG_NUM    	73
+#define SAND_PROP_BASE_REG_NUM   	75
+#define SAND_PROP_MDB_REG_NUM    	75
 #define SAND_PROP_RANGE_REG_NUM  	18
-#define SAND_PROP_SAVE_REG_NUM   	16
+#define SAND_PROP_SAVE_REG_NUM   	17
 #define SAND_PROP_ACCESS_REG_NUM 	0
 //#generator_message{"msg":"sand_struct_define", "action":"insert_end"}
 
@@ -61,6 +61,7 @@ typedef union{
 		u16    reset_reason;        // "Reason of last reset"
 		u16    release;             // "Release flag"
 		u32    runtime;             // "Runtime from last reset (sec)"
+		u32    runtime_storage;     // "Runtime before last reset (sec)"
 		u32    runtime_total;       // "Total runtime (sec)"
 		float  cpu_load;            // "CPU load (%)"
 		char   build[40];           // "Build info"
@@ -129,6 +130,7 @@ typedef union{
 		u16    dump_size;           // "Save dump size (bytes)"
 		u16    storage_size;        // "Storage FLASH size (bytes)"
 		u16    data_changed;        // "Data changed flag"
+		u16    duration_us;         // "Duration of save operation (us)"
 	}vars;
 	u8 bytes[STORAGE_STRUCT_SIZE];
 }storage_struct;

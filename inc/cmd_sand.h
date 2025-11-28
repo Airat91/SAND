@@ -10,6 +10,7 @@
 /*add includes below */
 #include "cmsis_os.h"
 #include "debug.h"
+#include "main.h"
 /*add includes before */
 
 #ifdef	__cplusplus
@@ -30,6 +31,7 @@ typedef enum{
     // SAND device commands
     CMD_SAND_RESET_DEVICE           = 0x2710,   // 10000    Software reset device
     CMD_SAND_SET_DEFAULT_VALUES     = 0x2711,   // 10001    Set default values
+    CMD_SAND_SAVE_DATA              = 0x2712,   // 10002    Save data to storage
 
     // SOFI device commands support
     CMD_SOFI_SW_RESET               = 0x5500,   // 21760    Software reset device

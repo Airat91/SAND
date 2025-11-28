@@ -1,7 +1,7 @@
 /*
  * File:        reset_sand.h
  * Authors:     Girfanov.Ayrat@yandex.ru
- * Description: Reset status reading
+ * Description: Reset functions
  * Revision history: 0.1
  */
 
@@ -11,7 +11,9 @@
 #include "type_def.h"
 #include "stm32f1xx_hal.h"
 #include "stm32f1xx_hal_rcc.h"
+#include "stm32f1xx_hal_pwr.h"
 #include "reg.h"
+#include "main.h"
 /*add includes before */
 
 #ifdef __cplusplus
@@ -20,10 +22,13 @@ extern "C" {
 
 /**
  * @defgroup reset
- * @brief Reset status reading
+ * @brief Reset functions
  */
 
 //--------Defines--------
+
+#define RESET_LOWPOWER_EN_DELAY_MS  1000    // Delay after power up (1 sec)
+#define RESET_SHUTDOWN_DELAY_MS     5000    // 5 second
 
 //--------Macro--------
 
@@ -49,6 +54,41 @@ typedef enum{
  * @return 0
  */
 int reset_get_reason(reset_sand_reason_t* reason);
+
+/**
+ * @brief Software reset
+ * @ingroup reset
+ * @return 0
+ *
+ * @details
+ * Disable all peripherials
+ * Stop all tasks
+ * Update total runtime and reset num in vars
+ * Save storage
+ */
+int reset_system(void);
+
+/**
+ * @brief Init low power monitor
+ * @ingroup reset
+ * @return  0 - ok,\n
+ *          negative value if error,\n
+ */
+int reset_lowpower_init(void);
+
+/**
+ * @brief Call this function from EXTI Low Power interrupt
+ * @ingroup reset
+ * @return 0
+ */
+int reset_lowpower_irq_callback(void);
+
+/**
+ * @brief Call this function over 1 second after power up
+ * @ingroup reset
+ * @return 0
+ */
+int reset_lowpower_save_enable(void);
 
 #ifdef __cplusplus
 }

@@ -78,6 +78,25 @@ extern rtc_ctrl_t rtc_ctrl;
 void rtc_task(void const * argument);
 
 /**
+ * @brief Init RTC peripherial
+ * @ingroup rtc
+ * @return  0 - Ok,\n
+ *          -1 - HAL_RCC_OscConfig() error,\n
+ *          -2 - HAL_RCCEx_PeriphCLKConfig() error,\n
+ *          -3 - HAL_RTC_Init() error,\n
+ *          -4 - HAL_RTC_SetTime() error,\n
+ *          -5 - HAL_RTC_SetDate() error,\n
+ */
+int rtc_init(void);
+
+/**
+ * @brief Deinit RTC peripherial
+ * @ingroup rtc
+ * @return  0
+ */
+int rtc_deinit(void);
+
+/**
  * @brief rtc_set_date
  * @param date
  * @ingroup rtc
@@ -106,6 +125,8 @@ int rtc_set_time(rtc_time_t time);
  * Call this function after regs write by ModBUS
  */
 int rtc_set_unix(u32 unix_timestamp);
+
+int rtc_update(void);
 
 #ifdef	__cplusplus
 }

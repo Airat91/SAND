@@ -17,6 +17,8 @@
 
 int cmd_sand_execute(u16* command_reg){
     int result = 0;
+    u32 temp_start = 0;
+    u32 temp_time = 0;
 
     cmd_sand_command_t cmd = *command_reg;
 
@@ -28,6 +30,17 @@ int cmd_sand_execute(u16* command_reg){
     case CMD_SAND_RESET_DEVICE:
     case CMD_SOFI_SW_RESET:
         debug_msg(__func__, DBG_MSG_INFO, "Reset device");
+        temp_start = us_tim_get_value();
+        main_shutdown_system();
+        temp_time = us_tim_get_value() - temp_start;
+        reset_system();
+        break;
+
+    case CMD_SAND_SAVE_DATA:
+    case CMD_SOFI_SAVE_ALL_RETAINS:
+    case CMD_SOFI_SAVE_BKRAM_TO_FLASH:
+        debug_msg(__func__, DBG_MSG_INFO, "Save data");
+        storage_save_data(&storage_pcb);
         break;
 
     case CMD_SAND_SET_DEFAULT_VALUES:

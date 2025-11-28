@@ -66,7 +66,7 @@ int mdb_sand_init(mdb_sand_pcb_t* mdb_sand_pcb){
     return result;
 }
 
-int mdb_deinit(mdb_sand_pcb_t* mdb_sand_pcb){
+int mdb_sand_deinit(mdb_sand_pcb_t* mdb_sand_pcb){
     int result = 0;
 
     mdb_sand_gpio_deinit();
