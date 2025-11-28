@@ -132,9 +132,17 @@ void main_task(void const * argument);
  * @details
  * 1. Suspend all tasks
  * 2. Deinit all periperals except flash
+ * 3. Update total_runtime and reset_num in os.vars
  * 3. Save dump to storage
  */
-int main_suspend(void);
+int main_shutdown_system(void);
+
+/**
+ * @brief Discharge MCU power capacitor for shutdown device
+ * @ingroup main
+ * @return 0
+ */
+int main_discharge_pwr(void);
 
 //------------Unrefactoried--------------
 

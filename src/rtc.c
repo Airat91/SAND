@@ -17,10 +17,6 @@ rtc_ctrl_t rtc_ctrl = 0;
 
 //-------Static functions declaration-----------
 
-static int rtc_init(void);
-static int rtc_deinit(void);
-static int rtc_update(void);
-
 //-------Functions----------
 
 void rtc_task(void const * argument){
@@ -41,68 +37,7 @@ void rtc_task(void const * argument){
     }
 }
 
-int rtc_set_date(rtc_date_t date){
-    int result = 0;
-    RTC_DateTypeDef sDate = {0};
-    HAL_StatusTypeDef stat = HAL_OK;
-
-    sDate.Date = date.day;
-    sDate.Month = date.month;
-    sDate.Year = (uint8_t)(date.year - 2000);
-
-    stat = HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
-    if(stat != HAL_OK){
-        result = -1;
-        debug_msg(__func__, DBG_MSG_ERR, "HAL_RTC_SetDate() %S", hal_status[stat]);
-    }
-
-    return result;
-}
-
-int rtc_set_time(rtc_time_t time){
-    int result = 0;
-    RTC_TimeTypeDef sTime = {0};
-    HAL_StatusTypeDef stat = HAL_OK;
-
-    sTime.Hours = time.hour;
-    sTime.Minutes = time.minute;
-    sTime.Seconds = time.sec;
-
-    stat = HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
-    if(stat != HAL_OK){
-        result = -1;
-        debug_msg(__func__, DBG_MSG_ERR, "HAL_RTC_SetTime() %S", hal_status[stat]);
-    }
-
-    return result;
-}
-
-int rtc_set_unix(u32 unix_timestamp){
-    int result = 0;
-
-
-    return result;
-}
-
-int rtc_irq_handler(HAL_RTCStateTypeDef* hrtc){
-    int result = 0;
-
-    return result;
-}
-
-//-------Static functions----------
-
-/**
- * @brief Init RTC peripherial
- * @ingroup rtc
- * @return  0 - Ok,\n
- *          -1 - HAL_RCC_OscConfig() error,\n
- *          -2 - HAL_RCCEx_PeriphCLKConfig() error,\n
- *          -3 - HAL_RTC_Init() error,\n
- *          -4 - HAL_RTC_SetTime() error,\n
- *          -5 - HAL_RTC_SetDate() error,\n
- */
-static int rtc_init(void){
+int rtc_init(void){
     int result = 0;
     rtc_osc_t rtc_osc;
     RTC_TimeTypeDef sTime = {0};
@@ -194,7 +129,7 @@ static int rtc_init(void){
     return result;
 }
 
-static int rtc_deinit(void){
+int rtc_deinit(void){
     int result = 0;
     __HAL_RCC_RTC_DISABLE();
     __HAL_RCC_LSE_CONFIG(RCC_LSE_OFF);
@@ -202,11 +137,63 @@ static int rtc_deinit(void){
     return result;
 }
 
-static int rtc_update(void){
+int rtc_set_date(rtc_date_t date){
+    int result = 0;
+    RTC_DateTypeDef sDate = {0};
+    HAL_StatusTypeDef stat = HAL_OK;
+
+    sDate.Date = date.day;
+    sDate.Month = date.month;
+    sDate.Year = (uint8_t)(date.year - 2000);
+
+    stat = HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
+    if(stat != HAL_OK){
+        result = -1;
+        debug_msg(__func__, DBG_MSG_ERR, "HAL_RTC_SetDate() %S", hal_status[stat]);
+    }
+
+    return result;
+}
+
+int rtc_set_time(rtc_time_t time){
+    int result = 0;
+    RTC_TimeTypeDef sTime = {0};
+    HAL_StatusTypeDef stat = HAL_OK;
+
+    sTime.Hours = time.hour;
+    sTime.Minutes = time.minute;
+    sTime.Seconds = time.sec;
+
+    stat = HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
+    if(stat != HAL_OK){
+        result = -1;
+        debug_msg(__func__, DBG_MSG_ERR, "HAL_RTC_SetTime() %S", hal_status[stat]);
+    }
+
+    return result;
+}
+
+int rtc_set_unix(u32 unix_timestamp){
+    int result = 0;
+
+
+    return result;
+}
+
+int rtc_irq_handler(HAL_RTCStateTypeDef* hrtc){
     int result = 0;
 
     return result;
 }
+
+int rtc_update(void){
+    int result = 0;
+
+    return result;
+}
+
+//-------Static functions----------
+
 
 static int rtc_datetime_to_unix(rtc_date_t* date, rtc_time_t* time, u8 utc, u32* unix){
     int result = 0;

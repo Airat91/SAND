@@ -33,5 +33,7 @@
 #define ADC_INT_SUBPRIO 0
 #define AI_PRIO         10
 #define AI_SUBPRIO      0
+#define PVD_PRIO        5
+#define PVD_SUBPRIO     0
 
 #endif // MAIN_CONFIG_H

@@ -129,10 +129,12 @@ int storage_restore_data(storage_pcb_t* storage_pcb){
 int storage_save_data(storage_pcb_t* storage_pcb){
     int result = 0;
 
+    u32 start_time = us_tim_get_value();
+    u32 duration_time = 0;
     sand_prop_base_t* reg = NULL;
     storage_header_t dump_header = {0};
     storage_dump_t* saved_dump = NULL;
-    const u16 dump_size = SAND_SAVE_DATA_SIZE + sizeof(storage_header_t);
+    //const u16 dump_size = SAND_SAVE_DATA_SIZE + sizeof(storage_header_t);
     u16 reg_size = 0;       // Register size in bytes
     u32 flash_addr = 0;     // Address value for save into storage FLASH
     u16 reg_nmb = 0;        // Register counter for reg_list
@@ -149,23 +151,23 @@ int storage_save_data(storage_pcb_t* storage_pcb){
     dump_header.data_len = SAND_SAVE_DATA_SIZE;
     // Check available storage empty area for new dump
     if(storage_pcb->dump != NULL){
-        if((u32)storage_pcb->dump->header.next_header + dump_size > STORAGE_FLASH_END){
+        if((u32)storage_pcb->dump->header.next_header + STORAGE_DUMP_SIZE > STORAGE_FLASH_END){
             // If new dump doesn't fit in free area, erase storage FLASH and write from STORAGE_FLASH_START
             flash_addr = STORAGE_FLASH_START;                                   // Start address of new dump
-            dump_header.next_header = &*(u32*)(STORAGE_FLASH_START + dump_size);// Set pointer address value
+            dump_header.next_header = &*(u32*)(STORAGE_FLASH_START + STORAGE_DUMP_SIZE);// Set pointer address value
             dump_header.erase_cnt = storage_pcb->erase_cnt;
             storage_erase(&dump_header.erase_cnt);                              // Erase storage FLASH and increase
                                                                                 // erase counter
         }else{
             // Write from dump.next_header address
             flash_addr = (u32)storage_pcb->dump->header.next_header;            // Start address of new dump
-            dump_header.next_header = &*(u32*)(flash_addr + dump_size);         // Set pointer address value
+            dump_header.next_header = &*(u32*)(flash_addr + STORAGE_DUMP_SIZE);         // Set pointer address value
             dump_header.erase_cnt = storage_pcb->erase_cnt;
         }
     }else{
         // Write from STORAGE_FLASH_START
         flash_addr = STORAGE_FLASH_START;                                       // Start address of new dump
-        dump_header.next_header = &*(u32*)(STORAGE_FLASH_START + dump_size);    // Set pointer address value
+        dump_header.next_header = &*(u32*)(STORAGE_FLASH_START + STORAGE_DUMP_SIZE);    // Set pointer address value
         dump_header.erase_cnt = storage_pcb->erase_cnt;
     }
 
@@ -241,6 +243,12 @@ int storage_save_data(storage_pcb_t* storage_pcb){
         }
     }
 
+    // Calculate duration
+    if(result == 0){
+        duration_time = us_tim_get_value() - start_time;
+        storage_pcb->duration = (u16)duration_time;
+    }
+
     return result;
 }
 
@@ -300,6 +308,12 @@ int storage_handle(storage_pcb_t* storage_pcb, u16 period_ms){
         }
     }
 
+    // Check space for next dump
+    if((u32)storage_pcb->dump->header.next_header + STORAGE_DUMP_SIZE > STORAGE_FLASH_END){
+        // Save data once more for exclude formatting of FLASH in save operation during shutdown
+        result = storage_save_data(storage_pcb);
+    }
+
     // Write storage parameters to storage.vars every call
     storage.vars.erase_cnt      = storage_pcb->erase_cnt;
     storage.vars.last_save_time = storage_pcb->last_save_time_ms;
@@ -307,9 +321,10 @@ int storage_handle(storage_pcb_t* storage_pcb, u16 period_ms){
     temp = storage.vars.dump_addr;
     temp -= STORAGE_FLASH_START;
     storage.vars.dump_position  = (u16)(temp);
-    storage.vars.dump_size      = sizeof(storage_header_t) + SAND_SAVE_DATA_SIZE;
+    storage.vars.dump_size      = STORAGE_DUMP_SIZE;
     storage.vars.storage_size   = STORAGE_FLASH_SIZE;
     storage.vars.data_changed   = storage_pcb->data_changed;
+    storage.vars.duration_us    = storage_pcb->duration;
 
     tick += period_ms;
 
@@ -498,19 +513,33 @@ static int storage_dump_data_validation(storage_dump_t* dump){
     u8* val_ptr = NULL;
     u32 crc_calc = 0;
     u16 data_len = 0;
+    u32 data_end_addr = 0;
     if(dump != NULL){
-        // Reset CRC hardware
-        __HAL_CRC_DR_RESET(&hcrc);
-        val_ptr = &dump->data;
-        data_len = dump->header.data_len;
-        for(u16 i = 0; i < data_len ; i++){
-            // Add value byte to CRC data register
-            hcrc.Instance->DR = (u8)*val_ptr++;
-        }
-        crc_calc = hcrc.Instance->DR;
-        if(crc_calc != dump->header.data_crc){
-            // data_crc mismatch
-            result = -2;
+        data_end_addr = (u32)&dump->data;
+        data_end_addr += dump->header.data_len;
+        // Check data length
+        if(data_end_addr == (u32)dump->header.next_header){
+            // Check registers number
+            if(dump->header.regs_num <= STORAGE_REG_NUM_MAX){
+                // Reset CRC hardware
+                __HAL_CRC_DR_RESET(&hcrc);
+                val_ptr = &dump->data;
+                data_len = dump->header.data_len;
+                for(u16 i = 0; i < data_len ; i++){
+                    // Add value byte to CRC data register
+                    hcrc.Instance->DR = (u8)*val_ptr++;
+                }
+                crc_calc = hcrc.Instance->DR;
+                if(crc_calc != dump->header.data_crc){
+                    // data_crc mismatch
+                    result = -2;
+                }
+            }else{
+
+            }
+        }else{
+            // data_len incorrect
+            result = -3;
         }
     }else{
         // Dump pointer is NULL
