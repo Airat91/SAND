@@ -1,13 +1,13 @@
 /*
- * File:        regs_sand_ai.c
+ * File:        regs_briom_2ai.c
  * Authors:     Girfanov.Ayrat@yandex.ru
- * Description: Global structs of SOFI module
+ * Description: Global structs of BRIOM module
  * Revision history: 0.1
  */
 
-#if(DEVICE_TYPE == SAND_AI)
+#if(DEVICE_TYPE == BRIOM_2AI)
 
-#include "regs_sand_ai.h"
+#include "regs_briom_2ai.h"
 
 //#generator_message{"msg":"sand_properties", "action":"insert_start"}
 // This part of file generated automatically, don't change it
@@ -246,6 +246,10 @@ const sand_prop_access_t sand_prop_access_list[SAND_PROP_ACCESS_REG_NUM]={
 //prop 	header_next 	header_base 	access_lvl 	access_en_timer_ms 	   reg_name
 };
 
+const sand_prop_callback_t sand_prop_callback_list[SAND_PROP_CALLBACK_REG_NUM]={
+//prop 	header_next 	header_base 	callback 	only_end 	   reg_name
+};
+
 //#generator_message{"msg":"sand_properties", "action":"insert_end"}
 
-#endif // (DEVICE_TYPE == SAND_AI)
+#endif // (DEVICE_TYPE == BRIOM_2AI)

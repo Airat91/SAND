@@ -35,6 +35,7 @@ typedef enum{
 	SAND_PROP_RANGE,
 	SAND_PROP_SAVE,
 	SAND_PROP_ACCESS,
+	SAND_PROP_CALLBACK,
 }sand_prop_enum_t;
 
 typedef enum{
@@ -101,6 +102,12 @@ typedef struct{
 	u8                 access_lvl;         // Access level (lower value is strongly protect)
 	u32                access_en_timer_ms; // Timer for access (if =0 the access disable)
 }sand_prop_access_t;
+
+typedef struct{
+	sand_header_t      header;             // Header of property
+	void*              callback;           // Pointer to callback-function
+	u8                 only_end;           // Call callback only if last array-element changed (if =0 any element changing will call callback)
+}sand_prop_callback_t;
 
 
 //#generator_message{"msg":"sand_properties", "action":"insert_end"}

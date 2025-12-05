@@ -34,7 +34,11 @@ DEVICE = {
     "sand_ai"   : {
         "device_type"   : 10,
         "device_name"   : "SAND_AI",
-    }
+    },
+    "briom_2ai"   : {
+        "device_type"   : 11,
+        "device_name"   : "BRIOM_2AI",
+    },
 }
 
 compilation_max_len = 40    #max length of compilation info string

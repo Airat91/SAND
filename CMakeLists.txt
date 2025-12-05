@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.6)
 set(PRJ_NAME SAND)
 set(RELEASE 0)
-set(BOARD_VER 0)
+set(BOARD_VER 1)
 include(STM32Toolchain.cmake)
-set(DEVICE_TYPE ${SAND_AI}) #select DEFPCB, SAND_AI for firmware compilation
+set(DEVICE_TYPE ${BRIOM_2AI}) #select DEFPCB, SAND_AI, BRIOM_2AI for firmware compilation
 
 set(MCU_FAMILY STM32F1xx)
 set(MCU_LINE STM32F103xx)

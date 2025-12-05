@@ -16,6 +16,8 @@
     #include "rergs_defpcb.h"
 #elif(DEVICE_TYPE == SAND_AI)
     #include "regs_sand_ai.h"
+#elif(DEVICE_TYPE == BRIOM_2AI)
+    #include "regs_briom_2ai.h"
 #endif // DEVICE_TYPE
 /*add includes before */
 

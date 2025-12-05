@@ -24,5 +24,7 @@ set(CMAKE_C_FLAGS "${COMMON_FLAGS} -std=gnu99")
 #DEVICE_TYPE enumeration
 set(DEFPCB 0)
 set(SAND_AI 10)
+set(BRIOM_2AI 11)
 add_definitions(-DDEFPCB=0)
 add_definitions(-DSAND_AI=10)
+add_definitions(-DBRIOM_2AI=11)
