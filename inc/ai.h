@@ -31,6 +31,7 @@ extern "C" {
 
 //--------Defines--------
 
+#define AI_MODULE_VER               {0, 1}  // See revision history in file header
 #define AI_MAX_ERR_NMB              50      // Maximum errors numbers in a row for reinit
 #define AI_SAMPLE_NUM               10      // Samples number for averaging
 #define AI_INIT_TIMEOUT_MS          2000    // 2 sec
