@@ -88,7 +88,7 @@ sand_prop_list = {
 	"sand_prop_callback_t":{
 		# opt_name		# opt_type						# comment for header-file
 		"header":		{"type":	"sand_header_t",	"comment":	"Header of property"},
-		"callback":		{"type": 	"void*",			"comment":	"Pointer to callback-function"},
+		"callback":		{"type": 	"void *",			"comment":	"Pointer to callback-function"},
 		"only_end":		{"type": 	"u8",				"comment":	"Call callback only if last array-element changed (if =0 any element changing will call callback)"},
 	},
 }

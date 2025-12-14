@@ -95,6 +95,9 @@ def regs_handler(Proj):
     #2.5 sand_prop_access_t
     sand_prop_access_handle(Proj)
 
+    #2.6 sand_prop_callback_t
+    sand_prop_callback_handle(Proj)
+
     #3. Appoint property headers links
     #3.1 Add header_t struct to property headers for all regs and properties
     for struct_name in Proj.struct_list:
@@ -400,7 +403,7 @@ def sand_prop_save_handle(Proj):
     # Print save info
     print(Fore.GREEN + "Save data info:" + Style.RESET_ALL)
     print(Fore.GREEN + "\tregisters number\t= {}".format(save_info["regs_num"]) + Style.RESET_ALL)
-    print(Fore.GREEN + "\tsave are size   \t= {} bytes".format(save_info["save_area_size"]) + Style.RESET_ALL)
+    print(Fore.GREEN + "\tsave area size   \t= {} bytes".format(save_info["save_area_size"]) + Style.RESET_ALL)
 
 def sand_prop_access_handle(Proj):
     for reg_name in Proj.prop_list["sand_prop_access_t"]["reg_list"]:
@@ -428,3 +431,18 @@ def sand_prop_access_handle(Proj):
                                     "changed to \"{}\"".format(reg_name, struct_name, access_lvl, access_lvl_new)
                       + Style.RESET_ALL)
         reg.prop_list["sand_prop_access_t"]["access_en_timer_ms"]["value"] = 0
+
+def sand_prop_callback_handle(Proj):
+    for reg_name in Proj.prop_list["sand_prop_callback_t"]["reg_list"]:
+        reg = Proj.prop_list["sand_prop_callback_t"]["reg_list"][reg_name]
+        struct_name = get_struct_of_reg(reg_name, Proj)
+        function_name = reg.prop_list["sand_prop_callback_t"]["callback"]["value"]
+        only_end = reg.prop_list["sand_prop_callback_t"]["only_end"]["value"]
+        if (only_end == 1) or (only_end.lower() == "true"):
+            reg.prop_list["sand_prop_callback_t"]["only_end"]["value"] = 1
+        elif (only_end == 0) or (only_end.lower() == "false"):
+            reg.prop_list["sand_prop_callback_t"]["only_end"]["value"] = 0
+        else:
+            reg.prop_list["sand_prop_callback_t"]["only_end"]["value"] = 0
+            print(Fore.YELLOW + "WARNING: register \"{}\" in struct \"{}\" only_end is undefined so setted to 0"
+                  .format(reg_name, struct_name) + Style.RESET_ALL)

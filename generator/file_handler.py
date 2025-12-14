@@ -207,6 +207,8 @@ def reg_map_module_xls_processing(Proj):
         while column < (max_column + 1):
             property = worksheet.cell(1, column).value
             if property != None:
+                if property == "SAND_PROP_END":
+                    break;
                 property = property.lower() + "_t"
                 if property in sand_reg.sand_prop_list:
                     property_list[property] = copy.copy(sand_reg.sand_prop_list[property])
