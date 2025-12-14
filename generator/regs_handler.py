@@ -436,7 +436,7 @@ def sand_prop_callback_handle(Proj):
     for reg_name in Proj.prop_list["sand_prop_callback_t"]["reg_list"]:
         reg = Proj.prop_list["sand_prop_callback_t"]["reg_list"][reg_name]
         struct_name = get_struct_of_reg(reg_name, Proj)
-        function_name = reg.prop_list["sand_prop_callback_t"]["callback"]["value"]
+        function_name = reg.prop_list["sand_prop_callback_t"]["(*callback)(void)"]["value"]
         only_end = reg.prop_list["sand_prop_callback_t"]["only_end"]["value"]
         if (only_end == 1) or (only_end.lower() == "true"):
             reg.prop_list["sand_prop_callback_t"]["only_end"]["value"] = 1
