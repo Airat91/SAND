@@ -171,6 +171,10 @@ int debug_buf_read(char *string, u16 read_len, u32 ms_timeout){
     return result;
 }
 
+void debug_err_led_on(void){
+    debug_led_err_on_time = 1000;
+}
+
 int debug_buf_get_len(void){
     int result = 0;
     if(debug_buf.end_for_read == debug_buf.start_for_read){

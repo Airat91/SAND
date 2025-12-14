@@ -11,6 +11,7 @@
 /*add includes below */
 #include "type_def.h"
 #include "sand_reg.h"
+#include "main.h"
 /*add includes before */
 #ifdef __cplusplus
    extern "C" {
@@ -43,7 +44,7 @@
 #define SAND_PROP_RANGE_REG_NUM    	18
 #define SAND_PROP_SAVE_REG_NUM     	17
 #define SAND_PROP_ACCESS_REG_NUM   	0
-#define SAND_PROP_CALLBACK_REG_NUM 	0
+#define SAND_PROP_CALLBACK_REG_NUM 	3
 //#generator_message{"msg":"sand_struct_define", "action":"insert_end"}
 
 //--------Macro--------
@@ -86,10 +87,10 @@ typedef union{
 		float  v_pwr;               // "Power voltage (V)"
 		float  vref_int;            // "Vref internal (V)"
 		float  vref_ext;            // "Vref external (V)"
-		float  tmpr_add;            // "Temperature calibration additional coeff"
-		float  v_pwr_mul;           // "Power voltage calibration multiple coeff"
-		float  v_pwr_add;           // "Power voltage calibration additional coe"
-		u16    vref_sel;            // "Select Vref source (0-Vref_int, 1-Vref_e"
+		float  tmpr_add;            // "Temperature add coeff"
+		float  v_pwr_mul;           // "Power voltage mul coeff"
+		float  v_pwr_add;           // "Power voltage add coeff"
+		u16    vref_sel;            // "Select Vref source (0-Int, 1-Ext)"
 	}vars;
 	u8 bytes[DEVICE_STRUCT_SIZE];
 }device_struct;

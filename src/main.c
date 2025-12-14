@@ -131,7 +131,7 @@ void main_task(void const * argument){
         main_IWDG_refresh();
 
         // Command handle
-        cmd_sand_execute(&os.vars.command);
+        //cmd_sand_execute(&os.vars.command);
 
         // Checks other tasks state and restart them if error or suspend
 

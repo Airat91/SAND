@@ -176,6 +176,19 @@ int reg_save_check(sand_prop_base_t* reg);
  */
 int reg_access_blocked(sand_prop_base_t* reg);
 
+//=======Regs prop_callback functions=======
+
+/**
+ * @brief Check callback function and execute it
+ * @param reg - pointer to register
+ * @param array_ind - register array index (set 1 if register isn't array)
+ * @param value - pointer to value
+ * @ingroup reg
+ * @return  0 - ok,\n
+ *          -1 not end of array,\n
+ */
+int reg_callback_exe(sand_prop_base_t* reg, u16 array_ind, reg_var_t* value);
+
 #ifdef __cplusplus
 }
 #endif

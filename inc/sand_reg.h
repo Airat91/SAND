@@ -105,7 +105,7 @@ typedef struct{
 
 typedef struct{
 	sand_header_t      header;             // Header of property
-	void*              callback;           // Pointer to callback-function
+	void               (*callback)(void);  // Pointer to callback-function
 	u8                 only_end;           // Call callback only if last array-element changed (if =0 any element changing will call callback)
 }sand_prop_callback_t;
 

@@ -82,6 +82,7 @@ int reg_base_write(sand_prop_base_t* reg, u16 array_ind, reg_var_t* value){
                     if(in_storage){
                         storage_mutex_release();
                     }
+                    reg_callback_exe(reg, array_ind, value);
                 }else{
                     result = -4;
                 }
@@ -343,6 +344,31 @@ int reg_access_blocked(sand_prop_base_t* reg){
         // Check access enable timer
         if(property->access_en_timer_ms == 0){
             result = 1;
+        }
+    }
+
+    return result;
+}
+
+//=======Regs prop_callback functions=======
+
+int reg_callback_exe(sand_prop_base_t* reg, u16 array_ind, reg_var_t* value){
+    int result = 0;
+    u16 val_size = reg_base_get_byte_size(reg);
+    void* callback();
+    // Find prop_callback of reg
+    sand_prop_callback_t* property = (sand_prop_callback_t*)reg_base_get_prop(reg, SAND_PROP_CALLBACK);
+    if(property != NULL){
+        // Check only_end parameter
+        if(property->only_end == 1){
+            // Check array element is last?
+            if(array_ind != (reg->array_len - 1)){
+                result = -1;
+            }
+        }
+        // Call callback function
+        if(result == 0){
+            property->callback();
         }
     }
 
