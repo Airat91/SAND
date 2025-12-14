@@ -13,11 +13,13 @@
 
 #if(DEVICE_TYPE == SAND_AI)
     #define AI_EN       1
+#elif(DEVICE_TYPE == BRIOM_2AI)
+    #define AI_EN       1
 #elif(DEVICE_TYPE == SAND_DI)
     #define DI_EN       1
 #elif(DEVICE_TYPE == SAND_AO)
     #define AO_EN       1
-#elif(DEVICE_TYPE == SAND_D))
+#elif(DEVICE_TYPE == SAND_DO)
     #define DO_EN       1
 #elif(DEVICE_TYPE == SAND_RELE)
     #define RELE_EN     1

@@ -5,6 +5,8 @@
  * Revision history: 0.1
  */
 
+#if(DEVICE_TYPE == SAND_AI)
+
 #include "regs_sand_ai.h"
 
 //#generator_message{"msg":"sand_properties", "action":"insert_start"}
@@ -245,3 +247,5 @@ const sand_prop_access_t sand_prop_access_list[SAND_PROP_ACCESS_REG_NUM]={
 };
 
 //#generator_message{"msg":"sand_properties", "action":"insert_end"}
+
+#endif // (DEVICE_TYPE == SAND_AI)

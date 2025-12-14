@@ -60,4 +60,8 @@ int cmd_sand_execute(u16* command_reg){
     return result;
 }
 
+void cmd_sand_callback(void){
+    cmd_sand_execute(&os.vars.command);
+}
+
 //-------Static functions----------

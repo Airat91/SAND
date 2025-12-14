@@ -117,6 +117,13 @@ int debug_buf_read(char *string, u16 read_len, u32 ms_timeout);
  * @ingroup debug
  */
 int debug_buf_get_len(void);
+
+/**
+ * @brief Turn on ERR LED to 1 second
+ * @ingroup debug
+ */
+void debug_err_led_on(void);
+
 #ifdef __cplusplus
 }
 #endif // __cplusplus

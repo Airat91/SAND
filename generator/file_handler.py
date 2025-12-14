@@ -207,6 +207,8 @@ def reg_map_module_xls_processing(Proj):
         while column < (max_column + 1):
             property = worksheet.cell(1, column).value
             if property != None:
+                if property == "SAND_PROP_END":
+                    break;
                 property = property.lower() + "_t"
                 if property in sand_reg.sand_prop_list:
                     property_list[property] = copy.copy(sand_reg.sand_prop_list[property])
@@ -629,11 +631,11 @@ def regs_module_c_processing(Proj):
                 for header_param in header_param_list:
                     ind = header_param_list.index(header_param)
                     spaces = " " * (max_spaces[ind] - len(header_param) + 1)
-                    buffer_prop.append("{}{}\t".format(header_param, spaces))
+                    buffer_prop.append("{}{} \t".format(header_param, spaces))
                 for prop_param in prop_param_list:
                     ind = prop_param_list.index(prop_param) + len(header_param_list)
                     spaces = " " * (max_spaces[ind] - len(prop_param) + 1)
-                    buffer_prop.append("{}{}\t".format(prop_param, spaces))
+                    buffer_prop.append("{}{} \t".format(prop_param, spaces))
                 # Add reg name like comment to end of line
                 if prop_name != "sand_prop_base_t":
                     ind = len(prop_param_list) + len(header_param_list)
@@ -652,10 +654,10 @@ def regs_module_c_processing(Proj):
                         header_val = reg.prop_list[prop_name]["header"]["header_t"][header_param]
                         if header_param != header_param_list[-1]:
                             spaces = " " * (max_spaces[ind] - len(header_val))
-                            buffer_prop.append("{},{}\t".format(header_val, spaces))
+                            buffer_prop.append("{},{} \t".format(header_val, spaces))
                         else:
                             spaces = " " * (max_spaces[ind] - len(header_val))
-                            buffer_prop.append(header_val + "}," + spaces + "\t")
+                            buffer_prop.append(header_val + "}," + spaces + " \t")
 
                     step = "1.1.5.4 Write prop_list reg prop values"
                     for prop_param in prop_param_list:
@@ -666,7 +668,7 @@ def regs_module_c_processing(Proj):
                             prop_val = "error"
                         if prop_param != prop_param_list[-1]:
                             spaces = " " * (max_spaces[ind] - len(str(prop_val)))
-                            buffer_prop.append("{},{}\t".format(prop_val, spaces))
+                            buffer_prop.append("{},{} \t".format(prop_val, spaces))
                         else:
                             # Last prop_param (end of line)
                             if prop_name != "sand_prop_base_t":

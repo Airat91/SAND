@@ -85,6 +85,12 @@ sand_prop_list = {
 		"access_lvl":	{"type": 	"u8",				"comment":	"Access level (lower value is strongly protect)"},
 		"access_en_timer_ms":	{"type": 	"u32",		"comment":	"Timer for access (if =0 the access disable)"},
 	},
+	"sand_prop_callback_t":{
+		# opt_name					# opt_type						# comment for header-file
+		"header":					{"type":	"sand_header_t",	"comment":	"Header of property"},
+		"(*callback)(void)":		{"type": 	"void",				"comment":	"Pointer to callback-function"},
+		"only_end":					{"type": 	"u8",				"comment":	"Call callback only if last array-element changed (if =0 any element changing will call callback)"},
+	},
 }
 
 class reg():

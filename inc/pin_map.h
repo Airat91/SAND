@@ -8,6 +8,8 @@
     #include "pin_map_defpcb.h"
 #elif(DEVICE_TYPE == SAND_AI)
     #include "pin_map_sand_ai.h"
+#elif(DEVICE_TYPE == BRIOM_2AI)
+    #include "pin_map_briom_2ai.h"
 #endif // DEVICE_TYPE
 
 #define PWR_PORT        GPIOA

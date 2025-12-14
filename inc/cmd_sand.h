@@ -70,6 +70,12 @@ typedef enum{
  */
 int cmd_sand_execute(u16* command_reg);
 
+/**
+ * @brief Call this function after os.vars.command change
+ * @ingroup cmd_sand
+ */
+void cmd_sand_callback(void);
+
 #ifdef __cplusplus
 }
 #endif

@@ -17,6 +17,7 @@ from colorama import Fore, Back, Style, init
 #from pkg_resources import file_ns_handler
 import file_handler
 import regs_handler
+import output_handler
 
 GENERATOR = {
     "marker": "#generator_message",     #marker in file for parse by generator
@@ -34,7 +35,11 @@ DEVICE = {
     "sand_ai"   : {
         "device_type"   : 10,
         "device_name"   : "SAND_AI",
-    }
+    },
+    "briom_2ai"   : {
+        "device_type"   : 11,
+        "device_name"   : "BRIOM_2AI",
+    },
 }
 
 compilation_max_len = 40    #max length of compilation info string
@@ -60,6 +65,8 @@ class Project():
             "regs_module_h"             : project_path + "\\inc\\regs_{}.h".format(module_name),
             "regs_module_c"             : project_path + "\\src\\regs_{}.c".format(module_name),
             "reg_map_{}_xls".format(module_name)    : project_path + "\\generator\\input\\reg_maps\\reg_map_{}.xlsx".format(module_name),
+            "mdb_space_{}_rst".format(module_name)  : project_path + "\\generator\\output\\rst\\mdb_space_{}.rst".format(module_name),
+            "output_dir_rst"            : project_path + "\\generator\\output\\rst\\",
         }
         self.version = []               #version
         self.version_str = ""           #version like string
@@ -73,7 +80,7 @@ class Project():
             "sand_reg_py",
             "reg_map_{}_xls".format(module_name),
             "regs_module_h",
-            "regs_module_c",
+            "mdb_space_{}_rst".format(module_name),
         ]
         self.was_changed_list = []      #list of files for generate
         self.sand_properties = {        #list of sand_prop_xxx_t structs
@@ -290,6 +297,11 @@ def main():
             if "regs_module_h" not in PROJECT.was_changed_list:
                 PROJECT.was_changed_list.append("regs_module_h")
 
+            # Add mdb_space_module_rst to changed list
+            mdb_space_module_rst = "mdb_space_{}_rst".format(PROJECT.module)
+            if mdb_space_module_rst not in PROJECT.was_changed_list:
+                PROJECT.was_changed_list.append(mdb_space_module_rst)
+
         #4.6 If regs_module_h in changed list
         if "regs_module_h" in PROJECT.was_changed_list:
             if len(PROJECT.struct_list) == 0:
@@ -330,6 +342,21 @@ def main():
             hash_json = open(PROJECT.path["hash_json"], "r", encoding='UTF-8')
             hash_data = json.load(hash_json)
             hash_data["regs_module_c"] = hash_calc(PROJECT.path["regs_module_c"])
+            hash_json = open(PROJECT.path["hash_json"], "w", encoding='UTF-8')
+            json.dump(hash_data, hash_json, indent=4)
+            hash_json.close()
+
+        #4.8 If mdb_space_module_rst i nchange_list
+        mdb_space_module_rst = "mdb_space_{}_rst".format(PROJECT.module)
+        if mdb_space_module_rst in PROJECT.was_changed_list:
+            output_handler.mdb_space_rst_generate(PROJECT)
+            if PROJECT.errors["err_cnt"] > 0:
+                PROJECT.print_all_errors()
+                quit("Generator breaked")
+            # Rewrite hash for regs_module_c
+            hash_json = open(PROJECT.path["hash_json"], "r", encoding='UTF-8')
+            hash_data = json.load(hash_json)
+            hash_data[mdb_space_module_rst] = hash_calc(PROJECT.path[mdb_space_module_rst])
             hash_json = open(PROJECT.path["hash_json"], "w", encoding='UTF-8')
             json.dump(hash_data, hash_json, indent=4)
             hash_json.close()
