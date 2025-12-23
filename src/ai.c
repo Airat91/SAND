@@ -283,15 +283,22 @@ static int ai_adc_deinit(ai_pcb_t* ai_pcb){
     return result;
 }
 
+/**
+ * @brief Write AI results to ai.vars
+ * @param ai_pcb
+ * @ingroup ai
+ * @return  0 - ok,\n
+ *          -1 = adc_int_vref_code_avg is NULL
+ */
 static int ai_handle_results(ai_pcb_t* ai_pcb){
     int result = 0;
     float value = 0.0f;
 
-    if(adc_int_vref_code_avg == NULL){
+    if(adc_int_vref_ext_code_avg == NULL){
         result = -1;
     }else{
         for(u16 i = 0; i < AI_CH_NUM; i++){
-            value = ADC_INT_VREF_VALUE * ai_pcb->sample[i].value_avg / *adc_int_vref_code_avg *
+            value = ADC_INT_VREF_VALUE * ai_pcb->sample[i].value_avg / *adc_int_vref_ext_code_avg *
                     ai.vars.ai_calib_a[i] + ai.vars.ai_calib_b[i];
             ai.vars.ai_value[i] = value;
             ai.vars.ai_adc[i] = (u16)ai_pcb->sample[i].value_avg;

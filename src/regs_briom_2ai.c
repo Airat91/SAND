@@ -215,7 +215,7 @@ const sand_prop_range_t sand_prop_range_list[SAND_PROP_RANGE_REG_NUM]={
 {{SAND_PROP_RANGE, 	(void*)&sand_prop_save_list[7],  	(void*)&sand_prop_base_list[26]}, 	(void*)&float_0_0f,        	NULL,            	NULL},              // tmpr_add
 {{SAND_PROP_RANGE, 	(void*)&sand_prop_save_list[8],  	(void*)&sand_prop_base_list[27]}, 	(void*)&float_16_0f,       	NULL,            	NULL},              // v_pwr_mul
 {{SAND_PROP_RANGE, 	(void*)&sand_prop_save_list[9],  	(void*)&sand_prop_base_list[28]}, 	(void*)&float_0_0f,        	NULL,            	NULL},              // v_pwr_add
-{{SAND_PROP_RANGE, 	(void*)&sand_prop_save_list[10], 	(void*)&sand_prop_base_list[29]}, 	(void*)&u16_0,             	(void*)&u16_0,   	(void*)&u16_1},     // vref_sel
+{{SAND_PROP_RANGE, 	(void*)&sand_prop_save_list[10], 	(void*)&sand_prop_base_list[29]}, 	(void*)&u16_1,             	(void*)&u16_0,   	(void*)&u16_1},     // vref_sel
 {{SAND_PROP_RANGE, 	NULL,                            	(void*)&sand_prop_base_list[36]}, 	NULL,                      	(void*)&u16_1,   	(void*)&u16_12},    // month
 {{SAND_PROP_RANGE, 	NULL,                            	(void*)&sand_prop_base_list[37]}, 	NULL,                      	(void*)&u16_1,   	(void*)&u16_31},    // day
 {{SAND_PROP_RANGE, 	NULL,                            	(void*)&sand_prop_base_list[38]}, 	NULL,                      	(void*)&u16_0,   	(void*)&u16_23},    // hour

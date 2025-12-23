@@ -10,8 +10,9 @@
 //-------Global variables------
 
 osThreadId adc_int_task_handle = {0};
-adc_int_pcb_t adc_int_pcb = {0};        // Internal ADC process control block
-float* adc_int_vref_code_avg = NULL;    // Pointer to voltage reference averaged code
+adc_int_pcb_t adc_int_pcb = {0};            // Internal ADC process control block
+float* adc_int_vref_ext_code_avg = NULL;    // Pointer to external voltage reference averaged code
+float* adc_int_vref_int_code_avg = NULL;    // Pointer to internal voltage reference averaged code
 
 //-------Static variables------
 
@@ -94,19 +95,15 @@ int adc_int_init (adc_int_pcb_t* adc_int_pcb){
 #endif // ADC_INT_TEMP_EN
 
 #if(ADC_INT_VREF_INT_EN == 1)
-    #if(ADC_INT_VREF_USE == ADC_INT_VREF_INT)
     // set pointer to VREF code
-    adc_int_vref_code_avg = &adc_int_pcb->sample[ptr].value_avg;
-    #endif // ADC_INT_VREF_USE
+    adc_int_vref_int_code_avg = &adc_int_pcb->sample[ptr].value_avg;
     adc_int_pcb->adc_inp[ptr] = _ADC_CHANNEL_VREF_INT;
     adc_int_pcb->adc_channel[ptr++] = ADC_INT_CH_VREF_INT;
 #endif // ADC_INT_VREF_INT_EN
 
 #if(ADC_INT_VREF_EXT_EN == 1)
-    #if(ADC_INT_VREF_USE == ADC_INT_VREF_EXT)
-    // set pointer to VREF code
-    adc_int_vref_code_avg = &adc_int_pcb->sample[ptr].value_avg;
-    #endif // ADC_INT_VREF_USE
+    // set pointer to VREF_EXT code
+    adc_int_vref_ext_code_avg = &adc_int_pcb->sample[ptr].value_avg;
     adc_int_pcb->adc_inp[ptr] = _ADC_CHANNEL_VREF_EXT;
     adc_int_pcb->adc_channel[ptr++] = ADC_INT_CH_VREF_EXT;
 #endif // ADC_INT_VREF_EXT_EN
@@ -326,36 +323,52 @@ static int adc_int_adc_deinit(adc_int_pcb_t* adc_int_pcb){
 static int adc_int_handle_results(adc_int_pcb_t* adc_int_pcb){
     int result = 0;
     float value = 0.0f;
+    float* vref_code_avg = NULL;
+    float vref_value = 0.0f;
+    switch(device.vars.vref_sel){
+    case ADC_INT_VREF_SEL_INT:
+        vref_code_avg = adc_int_vref_int_code_avg;
+        vref_value = ADC_INT_VREF_INT_VALUE;
+        break;
+    case ADC_INT_VREF_SEL_EXT:
+        vref_code_avg = adc_int_vref_ext_code_avg;
+        vref_value = ADC_INT_VREF_EXT_VALUE;
+        break;
+    default:
+        // Set VREF_INT
+        vref_code_avg = adc_int_vref_int_code_avg;
+        vref_value = ADC_INT_VREF_INT_VALUE;
+    }
 
-    if(adc_int_vref_code_avg == NULL){
+    if(vref_code_avg == NULL){
         result = -1;
     }else{
 
 #if(ADC_INT_PWR_EN == 1)
-        value = ADC_INT_VREF_VALUE * adc_int_get_result_avg(adc_int_pcb, ADC_INT_CH_PWR) / *adc_int_vref_code_avg *
+        value = vref_value * adc_int_get_result_avg(adc_int_pcb, ADC_INT_CH_PWR) / *vref_code_avg *
                 device.vars.v_pwr_mul + device.vars.v_pwr_add;
         device.vars.v_pwr = value;
 #endif // ADC_INT_PWR_EN
 
 #if(ADC_INT_BAT_EN == 1)
-        value = ADC_INT_VREF_VALUE * adc_int_get_result_avg(adc_int_pcb, ADC_INT_CH_BAT) / *adc_int_vref_code_avg *
+        value = vref_value * adc_int_get_result_avg(adc_int_pcb, ADC_INT_CH_BAT) / *vref_code_avg *
                 ADC_INT_BAT_A + ADC_INT_BAT_B;
         device.vars.v_bat = value;
 #endif // ADC_INT_BAT_EN
 
 #if(ADC_INT_TEMP_EN == 1)
-        value = ADC_INT_VREF_VALUE * adc_int_get_result_avg(adc_int_pcb, ADC_INT_CH_TEMP) / *adc_int_vref_code_avg *
+        value = vref_value * adc_int_get_result_avg(adc_int_pcb, ADC_INT_CH_TEMP) / *vref_code_avg *
                 ADC_INT_TEMP_A + ADC_INT_TEMP_B + device.vars.tmpr_add;
         device.vars.temperature = value;
 #endif // ADC_INT_TEMP_EN
 
 #if(ADC_INT_VREF_INT_EN == 1)
-        value = ADC_INT_VREF_VALUE * adc_int_get_result_avg(adc_int_pcb, ADC_INT_CH_VREF_INT) / *adc_int_vref_code_avg;
+        value = vref_value * adc_int_get_result_avg(adc_int_pcb, ADC_INT_CH_VREF_INT) / *vref_code_avg;
         device.vars.vref_int = value;
 #endif // ADC_INT_VREF_INT_EN
 
 #if(ADC_INT_VREF_EXT_EN == 1)
-        value = ADC_INT_VREF_VALUE * adc_int_get_result_avg(adc_int_pcb, ADC_INT_CH_VREF_EXT) / *adc_int_vref_code_avg;
+        value = vref_value * adc_int_get_result_avg(adc_int_pcb, ADC_INT_CH_VREF_EXT) / *vref_code_avg;
         device.vars.vref_ext = value;
 #endif // ADC_INT_VREF_EXT_EN
     }

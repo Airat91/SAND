@@ -116,6 +116,11 @@ extern "C" {
 
 //--------Typedefs-------
 
+typedef enum{
+    ADC_INT_VREF_SEL_INT    = 0,    // Select VREF_INT as reference
+    ADC_INT_VREF_SEL_EXT    = 1,    // Select VREF_EXT as reference
+}adc_int_vref_sel_t;
+
 typedef struct{
    u16 value[ADC_INT_SAMPLE_NUM];   // ADC code values array
    u32 period[ADC_INT_SAMPLE_NUM];  // Time periods array between two samples in us
@@ -154,8 +159,9 @@ typedef struct{
 //-------External variables------
 
 extern osThreadId adc_int_task_handle;
-extern adc_int_pcb_t adc_int_pcb;   // Internal ADC process control block
-extern float* adc_int_vref_code_avg;// Pointer to voltage reference averaged code
+extern adc_int_pcb_t adc_int_pcb;           // Internal ADC process control block
+extern float* adc_int_vref_ext_code_avg;    // Pointer to external voltage reference averaged code
+extern float* adc_int_vref_int_code_avg;    // Pointer to internal voltage reference averaged code
 
 //-------Function prototypes----------
 
