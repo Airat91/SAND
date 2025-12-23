@@ -31,10 +31,11 @@ extern "C" {
 //--------Defines--------
 
 #define ADC_INT_MAX_ERR_NMB         50      // Maximum errors numbers in a row for reinit
-#define ADC_INT_SAMPLE_NUM          10      // Samples number for averaging
+#define ADC_INT_SAMPLE_NUM          100     // Samples number for averaging
 #define ADC_INT_MAX_RANGE           4096    // ADC code max value
 #define ADC_INT_TASK_PERIOD         100     // Equal measurement period in ms
 #define ADC_INT_INIT_TIMEOUT_MS     2000    // 2 sec
+#define ADC_INT_AVG_BUF_EN          0       // Use buffers for samples averaging
 
 //========Vref configuration========
 #define ADC_INT_VREF_INT            0x01    // Vref code for select
@@ -122,8 +123,10 @@ typedef enum{
 }adc_int_vref_sel_t;
 
 typedef struct{
+#if(ADC_INT_AVG_BUF_EN == 1)
    u16 value[ADC_INT_SAMPLE_NUM];   // ADC code values array
    u32 period[ADC_INT_SAMPLE_NUM];  // Time periods array between two samples in us
+#endif // (ADC_INT_AVG_BUF_EN == 1)
    u32 last_time;                   // Last time of sample in us
    u16 sample_ptr;                  // Pointer of buffers
    u16 sample_avg_divider;          // For correct averaging

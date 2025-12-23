@@ -287,18 +287,33 @@ static int ai_adc_deinit(ai_pcb_t* ai_pcb){
  * @brief Write AI results to ai.vars
  * @param ai_pcb
  * @ingroup ai
- * @return  0 - ok,\n
- *          -1 = adc_int_vref_code_avg is NULL
+ * @return  0
  */
 static int ai_handle_results(ai_pcb_t* ai_pcb){
     int result = 0;
     float value = 0.0f;
+    float* vref_code_avg = NULL;
+    float vref_value = 0.0f;
+    switch(ai.vars.ai_vref_sel){
+    case ADC_INT_VREF_SEL_INT:
+        vref_code_avg = adc_int_vref_int_code_avg;
+        vref_value = ADC_INT_VREF_INT_VALUE;
+        break;
+    case ADC_INT_VREF_SEL_EXT:
+        vref_code_avg = adc_int_vref_ext_code_avg;
+        vref_value = ADC_INT_VREF_EXT_VALUE;
+        break;
+    default:
+        // Set VREF_INT
+        vref_code_avg = adc_int_vref_int_code_avg;
+        vref_value = ADC_INT_VREF_INT_VALUE;
+    }
 
-    if(adc_int_vref_ext_code_avg == NULL){
+    if(vref_code_avg == NULL){
         result = -1;
     }else{
         for(u16 i = 0; i < AI_CH_NUM; i++){
-            value = ADC_INT_VREF_VALUE * ai_pcb->sample[i].value_avg / *adc_int_vref_ext_code_avg *
+            value = vref_value * ai_pcb->sample[i].value_avg / *vref_code_avg *
                     ai.vars.ai_calib_a[i] + ai.vars.ai_calib_b[i];
             ai.vars.ai_value[i] = value;
             ai.vars.ai_adc[i] = (u16)ai_pcb->sample[i].value_avg;
