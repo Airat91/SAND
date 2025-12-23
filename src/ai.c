@@ -2,7 +2,8 @@
  * File:        ai.h
  * Authors:     Girfanov.Ayrat@yandex.ru
  * Description: Work with AI channels based on internal ADC
- * Revision history: 0.1
+ * Revision history: 0.2
+ *      0.2 - Added pseudo buffering algorithm
  */
 
 #include "ai.h"
@@ -116,20 +117,22 @@ int ai_irq_callback(ai_pcb_t* ai_pcb){
 
     HAL_ADC_Stop_IT(&ai_pcb->hadc);
     // Get local vars
-    u32 time = us_tim_get_value();
-    u16 sample_ptr = ai_pcb->sample[ai_pcb->cur_channel].sample_ptr;
+    u32 cur_time = us_tim_get_value();
+    u16 adc_value = (u16)ai_pcb->hadc.Instance->DR;
     u16 channel = ai_pcb->cur_channel;
+#if(AI_AVG_BUF_EN == 1)
+    u16 sample_ptr = ai_pcb->sample[ai_pcb->cur_channel].sample_ptr;
     //Read ADC result to sample
-    ai_pcb->sample[channel].value[sample_ptr] = (u16)ai_pcb->hadc.Instance->DR;
-    ai_pcb->sample[channel].period[sample_ptr] = time - ai_pcb->sample[channel].last_time;
-    ai_pcb->sample[channel].last_time = time;
+    ai_pcb->sample[channel].value[sample_ptr] = adc_value;
+    ai_pcb->sample[channel].period[sample_ptr] = cur_time - ai_pcb->sample[channel].last_time;
     //Increase sample_ptr
     ai_pcb->sample[channel].sample_ptr++;
-    if(ai_pcb->sample[channel].sample_ptr >= AI_SAMPLE_NUM){
+    if(ai_pcb->sample[channel].sample_ptr >= ai.vars.avg_num[channel]){
         ai_pcb->sample[channel].sample_ptr = 0;
     }
+#endif // AI_AVG_BUF_EN
     //Increase sample avg divider
-    if(ai_pcb->sample[channel].sample_avg_divider < AI_SAMPLE_NUM){
+    if(ai_pcb->sample[channel].sample_avg_divider < ai.vars.avg_num[channel]){
         ai_pcb->sample[channel].sample_avg_divider++;
     }
     //Increase channel
@@ -141,15 +144,36 @@ int ai_irq_callback(ai_pcb_t* ai_pcb){
     sConfig.Channel = ai_pcb->adc_inp[ai_pcb->cur_channel];
     HAL_ADC_ConfigChannel(&ai_pcb->hadc, &sConfig);
     //Calc average value
+#if(AI_AVG_BUF_EN == 1)
     u32 val_sum = 0;
     u32 time_sum = 0;
-    for(u16 i = 0; i < AI_SAMPLE_NUM; i++){
+    for(u16 i = 0; i < ai.vars.avg_num[channel]; i++){
         val_sum += ai_pcb->sample[channel].value[i];
         time_sum += ai_pcb->sample[channel].period[i];
     }
+    //Write values to registers
     ai_pcb->sample[channel].value_avg = (float)val_sum/ai_pcb->sample[channel].sample_avg_divider;
     ai_pcb->sample[channel].sample_rate = (float)ai_pcb->sample[channel].sample_avg_divider/time_sum*1000000.0f;
+#else
+    float avg_val = 0.0f;
+    float avg_sample_rate = 0.0f;
+    u32 sample_period = cur_time - ai_pcb->sample[channel].last_time;
+    float sample_rate = 1000000.0f/sample_period;
 
+    avg_val = ai_pcb->sample[channel].value_avg * (ai_pcb->sample[channel].sample_avg_divider - 1);
+    avg_val += (float)adc_value;
+    avg_val = avg_val/ai_pcb->sample[channel].sample_avg_divider;
+
+    avg_sample_rate = ai_pcb->sample[channel].sample_rate * (ai_pcb->sample[channel].sample_avg_divider - 1);
+    avg_sample_rate += (float)sample_rate;
+    avg_sample_rate = avg_sample_rate/ai_pcb->sample[channel].sample_avg_divider;
+
+    //Write values to registers
+    ai_pcb->sample[channel].value_avg = avg_val;
+    ai_pcb->sample[channel].sample_rate = avg_sample_rate;
+#endif // AI_AVG_BUF_EN
+    //Save cur_time in last_time
+    ai_pcb->sample[channel].last_time = cur_time;
     if(ai_pcb->cycle_done == 0){
         // Run ADC convertion if cycle not done
         HAL_ADC_Start_IT(&ai_pcb->hadc);
@@ -259,19 +283,43 @@ static int ai_adc_deinit(ai_pcb_t* ai_pcb){
     return result;
 }
 
+/**
+ * @brief Write AI results to ai.vars
+ * @param ai_pcb
+ * @ingroup ai
+ * @return  0
+ */
 static int ai_handle_results(ai_pcb_t* ai_pcb){
     int result = 0;
     float value = 0.0f;
+    float* vref_code_avg = NULL;
+    float vref_value = 0.0f;
+    switch(ai.vars.ai_vref_sel){
+    case ADC_INT_VREF_SEL_INT:
+        vref_code_avg = adc_int_vref_int_code_avg;
+        vref_value = ADC_INT_VREF_INT_VALUE;
+        break;
+    case ADC_INT_VREF_SEL_EXT:
+        vref_code_avg = adc_int_vref_ext_code_avg;
+        vref_value = ADC_INT_VREF_EXT_VALUE;
+        break;
+    default:
+        // Set VREF_INT
+        vref_code_avg = adc_int_vref_int_code_avg;
+        vref_value = ADC_INT_VREF_INT_VALUE;
+    }
 
-    if(adc_int_vref_code_avg == NULL){
+    if(vref_code_avg == NULL){
         result = -1;
     }else{
         for(u16 i = 0; i < AI_CH_NUM; i++){
-            value = ADC_INT_VREF_VALUE * ai_pcb->sample[i].value_avg / *adc_int_vref_code_avg *
+            value = vref_value * ai_pcb->sample[i].value_avg / *vref_code_avg *
                     ai.vars.ai_calib_a[i] + ai.vars.ai_calib_b[i];
             ai.vars.ai_value[i] = value;
             ai.vars.ai_adc[i] = (u16)ai_pcb->sample[i].value_avg;
             ai.vars.ai_sample_rate[i] = ai_pcb->sample[i].sample_rate;
+            // Engineer units
+            ai.vars.meas_value[i] = value * ai.vars.meas_calib_a[i] + ai.vars.meas_calib_b[i];
         }
     }
     return result;

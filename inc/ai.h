@@ -2,7 +2,8 @@
  * File:        ai.h
  * Authors:     Girfanov.Ayrat@yandex.ru
  * Description: Work with AI channels based on internal ADC
- * Revision history: 0.1
+ * Revision history: 0.2
+ *      0.2 - Added pseudo buffering algorithm
  */
 
 #ifndef AI_H
@@ -31,13 +32,14 @@ extern "C" {
 
 //--------Defines--------
 
-#define AI_MODULE_VER               {0, 1}  // See revision history in file header
+#define AI_MODULE_VER               {0, 2}  // See revision history in file header
 #define AI_MAX_ERR_NMB              50      // Maximum errors numbers in a row for reinit
-#define AI_SAMPLE_NUM               10      // Samples number for averaging
+#define AI_SAMPLE_MAX_NUM           50      // Samples number for averaging
 #define AI_INIT_TIMEOUT_MS          2000    // 2 sec
 #define AI_ADC_MAX_RANGE            4096    // ADC code max value
 #define AI_TASK_PERIOD              10      // Equal measurement period in ms
 #define AI_CH_NUM                   2       // Module have 2 Analog Inputs
+#define AI_AVG_BUF_EN               0       // Use buffers for samples averaging
 
 //========Vref configuration========
 #define AI_VREF_USE                 ADC_INT_VREF_USE    // AI_ADC use the same VREF than ADC_INT
@@ -69,10 +71,12 @@ extern "C" {
 //--------Typedefs-------
 
 typedef struct{
-    u16 value[AI_SAMPLE_NUM];       // ADC code values array
-    u32 period[AI_SAMPLE_NUM];      // Time periods array between two samples in us
-    u32 last_time;                  // Last time of sample in us
+#if(AI_AVG_BUF_EN == 1)
+    u16 value[AI_SAMPLE_MAX_NUM];   // ADC code values array
+    u32 period[AI_SAMPLE_MAX_NUM];  // Time periods array between two samples in us
     u16 sample_ptr;                 // Pointer of buffers
+#endif // AI_AVG_BUF_EN
+    u32 last_time;                  // Last time of sample in us
     u16 sample_avg_divider;         // For correct averaging
     float value_avg;                // Average value of ADC measurement
     float sample_rate;              // Samples per second (Hz)

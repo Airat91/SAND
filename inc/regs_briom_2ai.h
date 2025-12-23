@@ -28,7 +28,7 @@
 // This part of file generated automatically, don't change it
 #define DEVICE_NAME                	"BRIOM_2AI"
 
-#define SAND_SAVE_DATA_SIZE        	132
+#define SAND_SAVE_DATA_SIZE        	154
 
 #define OS_STRUCT_SIZE             	96
 #define DEVICE_STRUCT_SIZE         	214
@@ -36,13 +36,13 @@
 #define TIME_STRUCT_SIZE           	20
 #define STORAGE_STRUCT_SIZE        	26
 #define MODBUS_STRUCT_SIZE         	10
-#define AI_STRUCT_SIZE             	36
+#define AI_STRUCT_SIZE             	66
 #define TEST_STRUCT_SIZE           	870
 
-#define SAND_PROP_BASE_REG_NUM     	75
-#define SAND_PROP_MDB_REG_NUM      	75
-#define SAND_PROP_RANGE_REG_NUM    	18
-#define SAND_PROP_SAVE_REG_NUM     	17
+#define SAND_PROP_BASE_REG_NUM     	80
+#define SAND_PROP_MDB_REG_NUM      	80
+#define SAND_PROP_RANGE_REG_NUM    	22
+#define SAND_PROP_SAVE_REG_NUM     	21
 #define SAND_PROP_ACCESS_REG_NUM   	0
 #define SAND_PROP_CALLBACK_REG_NUM 	3
 //#generator_message{"msg":"sand_struct_define", "action":"insert_end"}
@@ -155,6 +155,11 @@ typedef union{
 		float  ai_calib_b[2];       // "Calibration coef B"
 		u16    ai_adc[2];           // "ADC raw data"
 		float  ai_sample_rate[2];   // "Samples per second"
+		u16    avg_num[2];          // "Samples number for average"
+		float  meas_value[2];       // "Engineer units value"
+		float  meas_calib_a[2];     // "Engineer units add"
+		float  meas_calib_b[2];     // "Engineer units mul"
+		u16    ai_vref_sel;         // "Select Vref source (0-Int, 1-Ext)"
 	}vars;
 	u8 bytes[AI_STRUCT_SIZE];
 }ai_struct;

@@ -10,8 +10,9 @@
 //-------Global variables------
 
 osThreadId adc_int_task_handle = {0};
-adc_int_pcb_t adc_int_pcb = {0};        // Internal ADC process control block
-float* adc_int_vref_code_avg = NULL;    // Pointer to voltage reference averaged code
+adc_int_pcb_t adc_int_pcb = {0};            // Internal ADC process control block
+float* adc_int_vref_ext_code_avg = NULL;    // Pointer to external voltage reference averaged code
+float* adc_int_vref_int_code_avg = NULL;    // Pointer to internal voltage reference averaged code
 
 //-------Static variables------
 
@@ -94,19 +95,15 @@ int adc_int_init (adc_int_pcb_t* adc_int_pcb){
 #endif // ADC_INT_TEMP_EN
 
 #if(ADC_INT_VREF_INT_EN == 1)
-    #if(ADC_INT_VREF_USE == ADC_INT_VREF_INT)
     // set pointer to VREF code
-    adc_int_vref_code_avg = &adc_int_pcb->sample[ptr].value_avg;
-    #endif // ADC_INT_VREF_USE
+    adc_int_vref_int_code_avg = &adc_int_pcb->sample[ptr].value_avg;
     adc_int_pcb->adc_inp[ptr] = _ADC_CHANNEL_VREF_INT;
     adc_int_pcb->adc_channel[ptr++] = ADC_INT_CH_VREF_INT;
 #endif // ADC_INT_VREF_INT_EN
 
 #if(ADC_INT_VREF_EXT_EN == 1)
-    #if(ADC_INT_VREF_USE == ADC_INT_VREF_EXT)
-    // set pointer to VREF code
-    adc_int_vref_code_avg = &adc_int_pcb->sample[ptr].value_avg;
-    #endif // ADC_INT_VREF_USE
+    // set pointer to VREF_EXT code
+    adc_int_vref_ext_code_avg = &adc_int_pcb->sample[ptr].value_avg;
     adc_int_pcb->adc_inp[ptr] = _ADC_CHANNEL_VREF_EXT;
     adc_int_pcb->adc_channel[ptr++] = ADC_INT_CH_VREF_EXT;
 #endif // ADC_INT_VREF_EXT_EN
@@ -152,17 +149,19 @@ int adc_int_irq_callback(adc_int_pcb_t* adc_int_pcb){
     HAL_ADC_Stop_IT(&adc_int_pcb->hadc);
     // Get local vars
     u32 time = us_tim_get_value();
-    u16 sample_ptr = adc_int_pcb->sample[adc_int_pcb->cur_channel].sample_ptr;
     u16 channel = adc_int_pcb->cur_channel;
+    u16 value = adc_int_pcb->hadc.Instance->DR;
+#if(ADC_INT_AVG_BUF_EN == 1)
+    u16 sample_ptr = adc_int_pcb->sample[adc_int_pcb->cur_channel].sample_ptr;
     //Read ADC result to sample
-    adc_int_pcb->sample[channel].value[sample_ptr] = (u16)adc_int_pcb->hadc.Instance->DR;
+    adc_int_pcb->sample[channel].value[sample_ptr] = value;
     adc_int_pcb->sample[channel].period[sample_ptr] = time - adc_int_pcb->sample[channel].last_time;
-    adc_int_pcb->sample[channel].last_time = time;
     //Increase sample_ptr
     adc_int_pcb->sample[channel].sample_ptr++;
     if(adc_int_pcb->sample[channel].sample_ptr >= ADC_INT_SAMPLE_NUM){
         adc_int_pcb->sample[channel].sample_ptr = 0;
     }
+#endif // (ADC_INT_AVG_BUF_EN == 1)
     //Increase sample avg divider
     if(adc_int_pcb->sample[channel].sample_avg_divider < ADC_INT_SAMPLE_NUM){
         adc_int_pcb->sample[channel].sample_avg_divider++;
@@ -187,15 +186,36 @@ int adc_int_irq_callback(adc_int_pcb_t* adc_int_pcb){
     sConfig.Channel = adc_int_pcb->adc_inp[adc_int_pcb->cur_channel];
     HAL_ADC_ConfigChannel(&adc_int_pcb->hadc, &sConfig);
     //Calc average value
+#if(ADC_INT_AVG_BUF_EN == 1)
     u32 val_sum = 0;
     u32 time_sum = 0;
     for(u16 i = 0; i < ADC_INT_SAMPLE_NUM; i++){
         val_sum += adc_int_pcb->sample[channel].value[i];
         time_sum += adc_int_pcb->sample[channel].period[i];
     }
+    //Write values to registers
     adc_int_pcb->sample[channel].value_avg = (float)val_sum/adc_int_pcb->sample[channel].sample_avg_divider;
     adc_int_pcb->sample[channel].sample_rate = (float)adc_int_pcb->sample[channel].sample_avg_divider/time_sum*1000000.0f;
+#else
+    float avg_val = 0.0f;
+    float avg_sample_rate = 0.0f;
+    u32 sample_period = time - adc_int_pcb->sample[channel].last_time;
+    float sample_rate = 1000000.0f/sample_period;
 
+    avg_val = adc_int_pcb->sample[channel].value_avg * (adc_int_pcb->sample[channel].sample_avg_divider - 1);
+    avg_val += (float)value;
+    avg_val = avg_val/adc_int_pcb->sample[channel].sample_avg_divider;
+
+    avg_sample_rate = adc_int_pcb->sample[channel].sample_rate * (adc_int_pcb->sample[channel].sample_avg_divider - 1);
+    avg_sample_rate += (float)sample_rate;
+    avg_sample_rate = avg_sample_rate/adc_int_pcb->sample[channel].sample_avg_divider;
+
+    //Write values to registers
+    adc_int_pcb->sample[channel].value_avg = avg_val;
+    adc_int_pcb->sample[channel].sample_rate = avg_sample_rate;
+#endif // (ADC_INT_AVG_BUF_EN == 1)
+    //Save cur_time in last_time
+    adc_int_pcb->sample[channel].last_time = time;
     if(adc_int_pcb->cycle_done == 0){
         // Run ADC convertion if cycle not done
         HAL_ADC_Start_IT(&adc_int_pcb->hadc);
@@ -323,39 +343,61 @@ static int adc_int_adc_deinit(adc_int_pcb_t* adc_int_pcb){
     return result;
 }
 
+/**
+ * @brief Write ADC_INT results to device.vars
+ * @param adc_int_pcb
+ * @ingroup adc_int
+ * @return 0
+ */
 static int adc_int_handle_results(adc_int_pcb_t* adc_int_pcb){
     int result = 0;
     float value = 0.0f;
+    float* vref_code_avg = NULL;
+    float vref_value = 0.0f;
+    switch(device.vars.vref_sel){
+    case ADC_INT_VREF_SEL_INT:
+        vref_code_avg = adc_int_vref_int_code_avg;
+        vref_value = ADC_INT_VREF_INT_VALUE;
+        break;
+    case ADC_INT_VREF_SEL_EXT:
+        vref_code_avg = adc_int_vref_ext_code_avg;
+        vref_value = ADC_INT_VREF_EXT_VALUE;
+        break;
+    default:
+        // Set VREF_INT
+        vref_code_avg = adc_int_vref_int_code_avg;
+        vref_value = ADC_INT_VREF_INT_VALUE;
+    }
 
-    if(adc_int_vref_code_avg == NULL){
+    if(vref_code_avg == NULL){
         result = -1;
     }else{
 
 #if(ADC_INT_PWR_EN == 1)
-        value = ADC_INT_VREF_VALUE * adc_int_get_result_avg(adc_int_pcb, ADC_INT_CH_PWR) / *adc_int_vref_code_avg *
+        value = vref_value * adc_int_get_result_avg(adc_int_pcb, ADC_INT_CH_PWR) / *vref_code_avg *
                 device.vars.v_pwr_mul + device.vars.v_pwr_add;
         device.vars.v_pwr = value;
 #endif // ADC_INT_PWR_EN
 
 #if(ADC_INT_BAT_EN == 1)
-        value = ADC_INT_VREF_VALUE * adc_int_get_result_avg(adc_int_pcb, ADC_INT_CH_BAT) / *adc_int_vref_code_avg *
+        value = vref_value * adc_int_get_result_avg(adc_int_pcb, ADC_INT_CH_BAT) / *vref_code_avg *
                 ADC_INT_BAT_A + ADC_INT_BAT_B;
         device.vars.v_bat = value;
 #endif // ADC_INT_BAT_EN
 
 #if(ADC_INT_TEMP_EN == 1)
-        value = ADC_INT_VREF_VALUE * adc_int_get_result_avg(adc_int_pcb, ADC_INT_CH_TEMP) / *adc_int_vref_code_avg *
+        value = vref_value * adc_int_get_result_avg(adc_int_pcb, ADC_INT_CH_TEMP) / *vref_code_avg *
                 ADC_INT_TEMP_A + ADC_INT_TEMP_B + device.vars.tmpr_add;
         device.vars.temperature = value;
 #endif // ADC_INT_TEMP_EN
 
 #if(ADC_INT_VREF_INT_EN == 1)
-        value = ADC_INT_VREF_VALUE * adc_int_get_result_avg(adc_int_pcb, ADC_INT_CH_VREF_INT) / *adc_int_vref_code_avg;
+        value = vref_value * adc_int_get_result_avg(adc_int_pcb, ADC_INT_CH_VREF_INT) / *vref_code_avg;
         device.vars.vref_int = value;
 #endif // ADC_INT_VREF_INT_EN
 
 #if(ADC_INT_VREF_EXT_EN == 1)
-        value = ADC_INT_VREF_VALUE * adc_int_get_result_avg(adc_int_pcb, ADC_INT_CH_VREF_EXT) / *adc_int_vref_code_avg;
+        value = vref_value * adc_int_get_result_avg(adc_int_pcb, ADC_INT_CH_VREF_EXT) / *vref_code_avg;
         device.vars.vref_ext = value;
 #endif // ADC_INT_VREF_EXT_EN
     }
