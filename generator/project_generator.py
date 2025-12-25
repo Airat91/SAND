@@ -40,6 +40,10 @@ DEVICE = {
         "device_type"   : 11,
         "device_name"   : "BRIOM_2AI",
     },
+    "briom_1rele"   : {
+        "device_type"   : 12,
+        "device_name"   : "BRIOM_1RELE",
+    },
 }
 
 compilation_max_len = 40    #max length of compilation info string

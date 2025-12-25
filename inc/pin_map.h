@@ -10,7 +10,11 @@
     #include "pin_map_sand_ai.h"
 #elif(DEVICE_TYPE == BRIOM_2AI)
     #include "pin_map_briom_2ai.h"
+#elif(DEVICE_TYPE == BRIOM_1RELE)
+    #include "pin_map_briom_1rele.h"
 #endif // DEVICE_TYPE
+
+//---Unrefactoried---
 
 #define PWR_PORT        GPIOA
 #define PWR_PIN         GPIO_PIN_0

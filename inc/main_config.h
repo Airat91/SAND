@@ -21,7 +21,7 @@
     #define AO_EN       1
 #elif(DEVICE_TYPE == SAND_DO)
     #define DO_EN       1
-#elif(DEVICE_TYPE == SAND_RELE)
+#elif(DEVICE_TYPE == BRIOM_1RELE)
     #define RELE_EN     1
 #endif // DEVICE_TYPE
 
