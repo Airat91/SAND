@@ -28,7 +28,7 @@
 // This part of file generated automatically, don't change it
 #define DEVICE_NAME                	"BRIOM_1RELE"
 
-#define SAND_SAVE_DATA_SIZE        	136
+#define SAND_SAVE_DATA_SIZE        	120
 
 #define OS_STRUCT_SIZE             	96
 #define DEVICE_STRUCT_SIZE         	214
@@ -36,12 +36,12 @@
 #define TIME_STRUCT_SIZE           	20
 #define STORAGE_STRUCT_SIZE        	26
 #define MODBUS_STRUCT_SIZE         	10
-#define RELE_STRUCT_SIZE           	42
+#define RELE_STRUCT_SIZE           	18
 
-#define SAND_PROP_BASE_REG_NUM     	67
-#define SAND_PROP_MDB_REG_NUM      	67
-#define SAND_PROP_RANGE_REG_NUM    	18
-#define SAND_PROP_SAVE_REG_NUM     	18
+#define SAND_PROP_BASE_REG_NUM     	64
+#define SAND_PROP_MDB_REG_NUM      	64
+#define SAND_PROP_RANGE_REG_NUM    	17
+#define SAND_PROP_SAVE_REG_NUM     	16
 #define SAND_PROP_ACCESS_REG_NUM   	0
 #define SAND_PROP_CALLBACK_REG_NUM 	1
 //#generator_message{"msg":"sand_struct_define", "action":"insert_end"}
@@ -149,9 +149,6 @@ typedef union{
 
 typedef union{
 	struct MCU_PACK{
-		float ai_value[2];          // "Measured value"
-		float ai_calib_a[2];        // "Calibration coef A"
-		float ai_calib_b[2];        // "Calibration coef B"
 		u16   rele_version[2];      // "Software version"
 		u16   rele_ctrl;            // "Control rele state (0-off, 1-on)"
 		u32   rele_cnt;             // "Rele counter from last reset"

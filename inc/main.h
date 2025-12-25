@@ -80,6 +80,9 @@
 #if AI_EN
     #include "ai.h"
 #endif // AI_EN
+#if RELE_EN
+    #include "rele.h"
+#endif // RELE_EN
 
 /*add includes before */
 

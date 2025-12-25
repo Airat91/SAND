@@ -127,6 +127,10 @@ void main_task(void const * argument){
         // Storage handle
         storage_handle(&storage_pcb, MAIN_TASK_PERIOD);
 
+#if RELE_EN
+        rele_handle(&rele_pcb, MAIN_TASK_PERIOD);
+#endif // RELE_EN
+
         // Refresh IWDG
         main_IWDG_refresh();
 
@@ -244,6 +248,10 @@ static int main_init(void){
     }
 #endif // AI_EN
 
+#if RELE_EN
+    rele_init(&rele_pcb);
+#endif // RELE_EN
+
     osThreadDef(adc_int_task, adc_int_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
     adc_int_task_handle = osThreadCreate(osThread(adc_int_task), NULL);
     if(adc_int_task_handle == NULL){
@@ -285,6 +293,10 @@ static int main_deinit(void){
     ai_deinit(&ai_pcb);
     service.vars.ai_state &= ~(u32)SRV_ST_CREATED;
 #endif // AI_EN
+
+#if RELE_EN
+    rele_deinit(&rele_pcb);
+#endif // RELE_EN
 
     adc_int_deinit(&adc_int_pcb);
     service.vars.adc_int_state &= ~(u32)SRV_ST_CREATED;
@@ -561,7 +573,11 @@ static int main_save_before_reset(void){
     int result = 0;
 
     os.vars.runtime_storage += os.vars.runtime;
-    os.vars.reset_num++;
+    os.vars.reset_num++;    
+
+#if RELE_EN
+    rele_save_before_reset();
+#endif // RELE_EN
 
     return result;
 }
