@@ -275,4 +275,4 @@ const sand_prop_callback_t sand_prop_callback_list[SAND_PROP_CALLBACK_REG_NUM]={
 
 //#generator_message{"msg":"sand_properties", "action":"insert_end"}
 
-#endif // (DEVICE_TYPE == BRIOM_2AI)
+#endif // DEVICE_TYPE

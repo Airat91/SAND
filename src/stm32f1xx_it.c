@@ -252,10 +252,12 @@ void ADC1_2_IRQHandler(void){
         HAL_ADC_IRQHandler(&adc_int_pcb.hadc);
         adc_int_irq_callback(&adc_int_pcb);
     }
+#if(DEVICE_TYPE == BRIOM_2AI)
     if(__HAL_ADC_GET_FLAG(&ai_pcb.hadc, ADC_FLAG_EOC)){
         HAL_ADC_IRQHandler(&ai_pcb.hadc);
         ai_irq_callback(&ai_pcb);
     }
+#endif // DEVICE_TYPE
 }
 
 void PVD_IRQHandler(void){

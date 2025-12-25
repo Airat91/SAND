@@ -6,6 +6,8 @@
  *      0.2 - Added pseudo buffering algorithm
  */
 
+#if(DEVICE_TYPE == BRIOM_2AI)
+
 #include "ai.h"
 
 //-------Global variables------
@@ -324,3 +326,5 @@ static int ai_handle_results(ai_pcb_t* ai_pcb){
     }
     return result;
 }
+
+#endif // DEVICE_TYPE
